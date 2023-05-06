@@ -16,7 +16,7 @@ impl AppConfig {
 
 }
 
-pub fn load_config(file: &str) {
+pub fn load_app_config(file: &str) {
     let settings = Config::builder()
         .add_source(Path::new(file))
         .build()
