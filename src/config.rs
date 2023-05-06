@@ -1,5 +1,5 @@
 use std::path::Path;
-use config::{Config};
+use config::Config;
 use lazy_static::lazy_static;
 use serde::{Serialize, Deserialize};
 use std::sync::{Arc, RwLock};
