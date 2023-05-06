@@ -12,7 +12,8 @@ async fn main() -> Result<(), Box<dyn Error>>{
         "Config.toml".to_string()
     };
     load_app_config(&config_file_path);
-    let _ = get_app_config();
+    let app_config = get_app_config();
+    println!("{:?}", app_config);
     Ok(())
 }
 
