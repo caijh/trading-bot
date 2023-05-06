@@ -1,6 +1,7 @@
 use std::path::Path;
-use config::{Config, ConfigBuilder};
+use config::{Config};
 use lazy_static::lazy_static;
+use serde::{Serialize, Deserialize};
 use std::sync::{Arc, RwLock};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -18,7 +19,7 @@ impl AppConfig {
 
 pub fn load_app_config(file: &str) {
     let settings = Config::builder()
-        .add_source(Path::new(file))
+        .add_source(config::File::from(Path::new(file)))
         .build()
         .expect(format!("[!] Fail to load config file {}", file).as_str());
     let cfg = settings.try_deserialize::<AppConfig>().unwrap();
