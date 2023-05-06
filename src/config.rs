@@ -9,13 +9,14 @@ pub struct AppConfig {
 
 }
 
+impl AppConfig {
+
+}
+
 lazy_static! {
     static ref CONFIG: Arc<RwLock<AppConfig>> = Arc::new(RwLock::new(AppConfig::default()));
 }
 
-impl AppConfig {
-
-}
 
 pub fn load_app_config(file: &str) {
     let settings = Config::builder()
