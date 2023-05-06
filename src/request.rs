@@ -1,4 +1,4 @@
-use std::{sync::{Arc, RwLock}};
+use std::sync::{Arc, RwLock};
 
 use lazy_static::lazy_static;
 use reqwest::Client;
