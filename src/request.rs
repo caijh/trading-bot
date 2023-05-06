@@ -13,6 +13,6 @@ lazy_static! {
     };
 }
 
-pub async fn client() -> std::sync::RwLockReadGuard<'static, Client> {
+pub async fn get_client() -> std::sync::RwLockReadGuard<'static, Client> {
     CLIENT.read().unwrap()
 }
