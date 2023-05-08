@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use clap::{command, Parser};
-use stock_bot::config::{load_app_config, get_app_config};
+use stock_bot::config::AppConfig;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>>{
@@ -11,8 +11,8 @@ async fn main() -> Result<(), Box<dyn Error>>{
     } else {
         "Config.toml".to_string()
     };
-    load_app_config(&config_file_path);
-    let app_config = get_app_config();
+    AppConfig::load_app_config(&config_file_path);
+    let app_config = AppConfig::get_app_config();
     println!("{:?}", app_config);
     Ok(())
 }
