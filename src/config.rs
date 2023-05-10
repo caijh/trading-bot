@@ -12,7 +12,7 @@ impl AppConfig {
         let settings = Config::builder()
             .add_source(config::File::from(Path::new(file)))
             .build()
-            .expect(format!("[!] Fail to load config file {}", file).as_str());
+            .unwrap_or_else(|_| panic!("[!] Fail to load config file {}", file));
         let cfg = settings.try_deserialize::<AppConfig>().unwrap();
         let config_clone = CONFIG.clone();
         let mut config = config_clone.write().unwrap();
