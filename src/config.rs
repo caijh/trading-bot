@@ -1,3 +1,4 @@
+use clap::{Parser, Subcommand};
 use config::Config;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -27,3 +28,18 @@ impl AppConfig {
 lazy_static! {
     static ref CONFIG: Arc<RwLock<AppConfig>> = Arc::new(RwLock::new(AppConfig::default()));
 }
+
+#[derive(Parser, Debug)]
+pub struct Cli {
+    #[command(subcommand)]
+    subcommand: CliSubCommand,
+}
+
+
+#[derive(Subcommand,Debug)]
+enum CliSubCommand {
+
+}
+
+
+
