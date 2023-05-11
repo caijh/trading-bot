@@ -5,6 +5,15 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
+#[derive(Parser, Debug)]
+pub struct Cli {
+    #[command(subcommand)]
+    subcommand: CliSubCommand,
+}
+
+#[derive(Subcommand, Debug)]
+enum CliSubCommand {}
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct AppConfig {}
 
@@ -28,18 +37,3 @@ impl AppConfig {
 lazy_static! {
     static ref CONFIG: Arc<RwLock<AppConfig>> = Arc::new(RwLock::new(AppConfig::default()));
 }
-
-#[derive(Parser, Debug)]
-pub struct Cli {
-    #[command(subcommand)]
-    subcommand: CliSubCommand,
-}
-
-
-#[derive(Subcommand,Debug)]
-enum CliSubCommand {
-
-}
-
-
-
