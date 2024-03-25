@@ -7,8 +7,21 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.2.7", features = ["cargo", "derive"] }
-config = "0.13.3"
+cli = {git = "https://caijh@bitbucket.org/bytebinary/cli-rs.git"}
+config = "0.14.0"
+configuration= {git = "https://caijh@bitbucket.org/bytebinary/configuration-rs.git"}
+logger = {git = "https://caijh@bitbucket.org/bytebinary/logger-rs.git"}
+registration = {git = "https://caijh@bitbucket.org/bytebinary/registration-rs.git"}
 lazy_static = "1.4.0"
 reqwest = { version = "0.11.17", features = ["cookies"] }
 serde = { version = "1.0.162", features = ["derive"] }
 tokio = { version = "1.28.0", features = ["full"] }
+async-trait = "0.1.77"
+axum = "0.7.4"
+web = {git = "https://caijh@bitbucket.org/bytebinary/web-rs.git"}
+dotenvy = "0.15.7"
+tracing = "0.1.40"
+tracing-core = "0.1.32"
+tracing-log = "0.2.0"
+tracing-appender = "0.2.3"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

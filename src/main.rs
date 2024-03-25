@@ -1,25 +1,27 @@
 use std::error::Error;
 
-use clap::{command, Parser};
-use stock_bot::config::AppConfig;
+use clap::{Parser};
+use cli::Cli;
+use configuration::Configuration;
+use registration::deregister;
+use web::bootstrap::Bootstrap;
+
+use stock_bot::server::StockBotServer;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>>{
-    let args = Args::parse();
-    let config_file_path  = if let Some(config_path) = args.config_path {
-        config_path
-    } else {
-        "Config.toml".to_string()
-    };
-    AppConfig::load_app_config(&config_file_path);
-    let app_config = AppConfig::get_app_config();
-    println!("{:?}", app_config);
+async fn main() -> Result<(), Box<dyn Error>> {
+    let cli: Cli = Cli::parse();
+
+    dotenvy::dotenv().ok();
+
+    let server = StockBotServer;
+    server.run(&cli.command, || { tokio::spawn(register()); }, || { tokio::spawn(deregister()); }).await;
+
     Ok(())
 }
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-pub struct Args {
-    #[arg(long, required = false)]
-    pub config_path: Option<String>,
+pub async fn register() {
+    tracing::info!("Register service instance ...");
+    let config = Configuration::get_config().await;
+    let _ = registration::register(&config).await;
 }
