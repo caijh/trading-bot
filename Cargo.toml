@@ -6,22 +6,34 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# cli
 clap = { version = "4.2.7", features = ["cargo", "derive"] }
 cli = {git = "https://caijh@bitbucket.org/bytebinary/cli-rs.git"}
+# config
+dotenvy = "0.15.7"
 config = "0.14.0"
 configuration= {git = "https://caijh@bitbucket.org/bytebinary/configuration-rs.git"}
+# log
 logger = {git = "https://caijh@bitbucket.org/bytebinary/logger-rs.git"}
-registration = {git = "https://caijh@bitbucket.org/bytebinary/registration-rs.git"}
-lazy_static = "1.4.0"
-reqwest = { version = "0.11.17", features = ["cookies"] }
-serde = { version = "1.0.162", features = ["derive"] }
-tokio = { version = "1.28.0", features = ["full"] }
-async-trait = "0.1.77"
-axum = "0.7.4"
-web = {git = "https://caijh@bitbucket.org/bytebinary/web-rs.git"}
-dotenvy = "0.15.7"
 tracing = "0.1.40"
 tracing-core = "0.1.32"
 tracing-log = "0.2.0"
 tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+# database
+rbatis = "4.5.13"
+rbdc-mysql = "4.5.5"
+rbs = "4.5.3"
+database = {git = "https://caijh@bitbucket.org/bytebinary/database-rs.git"}
+# web
+async-trait = "0.1.77"
+axum = "0.7.4"
+web = {git = "https://caijh@bitbucket.org/bytebinary/web-rs.git"}
+# service register
+registration = {git = "https://caijh@bitbucket.org/bytebinary/registration-rs.git"}
+
+lazy_static = "1.4.0"
+state = "0.6.0"
+reqwest = { version = "0.11.17", features = ["cookies"] }
+serde = { version = "1.0.162", features = ["derive"] }
+tokio = { version = "1.28.0", features = ["full"] }
