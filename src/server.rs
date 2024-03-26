@@ -1,17 +1,14 @@
 use async_trait::async_trait;
 use axum::Router;
 use config::Config;
+use context::SERVICES;
 use database::DbService;
 use logger::{Logger, LoggerConfig};
-use state::TypeMap;
 use web::bootstrap::Bootstrap;
 use web::health::health_routers;
 
 pub struct StockBotServer;
 
-lazy_static::lazy_static! {
-    pub static ref SERVICES: TypeMap![Send + Sync] = <TypeMap![Send + Sync]>::new();
-}
 
 #[async_trait]
 impl Bootstrap for StockBotServer {
