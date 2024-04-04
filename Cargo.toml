@@ -36,9 +36,13 @@ axum = "0.7.4"
 web = {git = "https://caijh@bitbucket.org/bytebinary/web-rs.git"}
 # service register
 registration = {git = "https://caijh@bitbucket.org/bytebinary/registration-rs.git"}
+# util
+util = { git = "https://caijh@bitbucket.org/bytebinary/util-rs.git"}
+
 #
 lazy_static = "1.4.0"
 state = "0.6.0"
 reqwest = { version = "0.11.17", features = ["cookies"] }
 serde = { version = "1.0.162", features = ["derive"] }
 tokio = { version = "1.28.0", features = ["full"] }
+serde_json = "1.0.114"

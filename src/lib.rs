@@ -1,4 +1,5 @@
 pub mod server;
-
-pub mod request;
+pub mod stock;
+pub mod stock_ctrl;
+pub mod stock_router;
 
