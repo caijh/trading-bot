@@ -6,7 +6,8 @@ use database::DbService;
 use logger::{Logger, LoggerConfig};
 use web::bootstrap::Bootstrap;
 use web::health::health_routers;
-use crate::stock_router::stock_routers;
+
+use crate::stock_ctrl::stock_routers;
 
 pub struct StockBotServer;
 
