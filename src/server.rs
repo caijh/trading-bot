@@ -16,8 +16,7 @@ pub struct StockBotServer;
 impl Bootstrap for StockBotServer {
     async fn init(&self, config: &Config) {
         // set logger.
-        let logger_config = LoggerConfig::get_config(config);
-        Logger::init_logger(&logger_config);
+        Logger::init_logger(config);
 
         let database_service = DbService::create(config).await;
         SERVICES.set(database_service);
