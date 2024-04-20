@@ -16,3 +16,15 @@ enabled = true
 level = "info"
 file = "stock-boot-server.log"
 log_dir = "./logs"
+
+[database]
+host = "127.0.0.1"
+port = 3306
+user = "root"
+password = "123456"
+name = "stock"
+kind = "mysql"
+
+[stock.api]
+licence = ""
+baseurl = ""

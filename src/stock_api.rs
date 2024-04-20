@@ -14,8 +14,8 @@ pub struct StockDTO {
 pub async fn get_stocks() -> Result<Vec<StockDTO>, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.base_url").unwrap();
-    let licence = config.get_string("stock.licence").unwrap();
+    let url = config.get_string("stock.api.baseurl").unwrap();
+    let licence = config.get_string("stock.api.licence").unwrap();
     let response = client.get(format!("{}/hslt/list/{}", url, licence)).send().await?;
     let stocks: Vec<StockDTO> = response.json().await.unwrap();
     Ok(stocks)
@@ -39,8 +39,8 @@ pub struct StockDailyPriceDTO {
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.base_url").unwrap();
-    let licence = config.get_string("stock.licence").unwrap();
+    let url = config.get_string("stock.api.baseurl").unwrap();
+    let licence = config.get_string("stock.api.licence").unwrap();
     let response = client.get(format!("{}/hszbl/fsjy/{}/dh/{}", url, code, licence)).send().await?;
     let stocks: Vec<StockDailyPriceDTO> = response.json().await.unwrap();
     Ok(stocks)
@@ -74,8 +74,8 @@ pub struct StockPriceDTO {
 pub async fn get_current_price(code: &str)-> Result<StockPriceDTO, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.base_url").unwrap();
-    let licence = config.get_string("stock.licence").unwrap();
+    let url = config.get_string("stock.api.baseurl").unwrap();
+    let licence = config.get_string("stock.api.licence").unwrap();
     let response = client.get(format!("{}/hsrl/ssjy/{}/{}", url, code, licence)).send().await?;
     let price: StockPriceDTO = response.json().await.unwrap();
     Ok(price)
