@@ -4,36 +4,37 @@ RUN USER=root cargo new --bin rust-docker-web
 WORKDIR ./rust-docker-web
 COPY ./Cargo.toml ./Cargo.toml
 RUN cargo build --release
-RUN rm src/*.rs
+RUN rm src/*.rs ./target/release/deps/stock_bot*
 
 ADD . ./
 
-RUN rm ./target/release/deps/stock_bot*
 RUN cargo build --release
 
 
-FROM alpine:latest
+FROM debian:bookworm-slim
 
 ARG APP=/usr/src/app
+
+RUN apt-get update \
+  && apt-get install -y ca-certificates tzdata openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 8080
 
 ENV TZ=Etc/UTC \
-    APP_USER=appuser
+  APP_USER=appuser
 
-RUN addgroup -S $APP_USER \
-    && adduser -S -g $APP_USER $APP_USER
-
-RUN apk update \
-    && apk add --no-cache ca-certificates tzdata \
-    && rm -rf /var/cache/apk/*
+RUN groupadd $APP_USER \
+  && useradd -g $APP_USER $APP_USER \
+  && mkdir -p ${APP}
 
 COPY --from=builder /rust-docker-web/target/release/stock-bot ${APP}/rust-docker-web
 COPY --from=builder /rust-docker-web/config.toml ${APP}/config.toml
 
 RUN chown -R $APP_USER:$APP_USER ${APP}
+RUN chmod +x ${APP}/rust-docker-web
 
 USER $APP_USER
 WORKDIR ${APP}
 
-CMD ["sh", "-c", "./rust-docker-web start"]
+CMD ["./rust-docker-web", "start"]
