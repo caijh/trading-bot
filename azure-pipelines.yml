@@ -10,13 +10,9 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-  - script: |
-      curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
-    displayName: 'Run rustup script'
-  - script: |
-      cargo build --release
-    displayName: 'Run cargo build --release'
-  - task: PublishPipelineArtifact@1
+  - task: Docker@2
     inputs:
-      targetPath: 'target/release/stock-bot'
-      publishLocation: 'pipeline'
+      containerRegistry: 'DockerHub'
+      repository: 'caijunhui/stock-boot'
+      command: 'buildAndPush'
+      Dockerfile: '**/Dockerfile'
