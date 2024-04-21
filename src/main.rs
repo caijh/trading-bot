@@ -11,9 +11,7 @@ use stock_bot::server::StockBotServer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli: Cli = Cli::parse();
-
-    dotenvy::dotenv().ok();
-
+    
     let server = StockBotServer;
     server.run(&cli.command, || { tokio::spawn(register()); }, || { tokio::spawn(deregister()); }).await;
 

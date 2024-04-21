@@ -3,7 +3,7 @@ use axum::Router;
 use config::Config;
 use context::SERVICES;
 use database::DbService;
-use logger::{Logger, LoggerConfig};
+use logger::Logger;
 use web::bootstrap::Bootstrap;
 use web::health::health_routers;
 
