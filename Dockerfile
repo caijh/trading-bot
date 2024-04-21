@@ -36,4 +36,4 @@ RUN chown -R $APP_USER:$APP_USER ${APP}
 USER $APP_USER
 WORKDIR ${APP}
 
-CMD ["./rust-docker-web", "start"]
+CMD ["/rust-docker-web", "start"]
