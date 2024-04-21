@@ -16,3 +16,6 @@ steps:
       repository: 'caijunhui/stock-boot'
       command: 'buildAndPush'
       Dockerfile: '**/Dockerfile'
+      tags: |
+        latest
+        $(Build.BuildId)
