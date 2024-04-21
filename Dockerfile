@@ -1,4 +1,4 @@
-FROM ekidd/rust-musl-builder:stable as builder
+FROM rust as builder
 
 RUN USER=root cargo new --bin rust-docker-web
 WORKDIR ./rust-docker-web
@@ -8,7 +8,7 @@ RUN rm src/*.rs
 
 ADD . ./
 
-RUN rm ./target/x86_64-unknown-linux-musl/release/deps/rust_docker_web*
+RUN rm ./target/release/deps/stock_bot*
 RUN cargo build --release
 
 
@@ -28,7 +28,8 @@ RUN apk update \
     && apk add --no-cache ca-certificates tzdata \
     && rm -rf /var/cache/apk/*
 
-COPY --from=builder /home/rust/src/rust-docker-web/target/x86_64-unknown-linux-musl/release/stock-bot ${APP}/rust-docker-web
+COPY --from=builder /rust-docker-web/target/release/stock-bot ${APP}/rust-docker-web
+COPY --from=builder /rust-docker-web/config.toml ${APP}/config.toml
 
 RUN chown -R $APP_USER:$APP_USER ${APP}
 
