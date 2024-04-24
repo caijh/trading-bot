@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use configuration::Configuration;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use util::request::Request;
 
@@ -11,12 +12,27 @@ pub struct StockDTO {
     pub jys: String,
 }
 
+/// split licence, get random licence from it
+fn get_licence(licence: String) -> String {
+    let mut licences = licence.split(',').collect::<Vec<&str>>();
+
+    let mut rng = rand::thread_rng();
+    licences.shuffle(&mut rng);
+    match licences.first() {
+        Some(licence) => licence.to_string(),
+        None => licence,
+    }
+}
+
 pub async fn get_stocks() -> Result<Vec<StockDTO>, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
     let url = config.get_string("stock.api.baseurl").unwrap();
-    let licence = config.get_string("stock.api.licence").unwrap();
-    let response = client.get(format!("{}/hslt/list/{}", url, licence)).send().await?;
+    let licence = get_licence(config.get_string("stock.api.licence").unwrap());
+    let response = client
+        .get(format!("{}/hslt/list/{}", url, licence))
+        .send()
+        .await?;
     let stocks: Vec<StockDTO> = response.json().await.unwrap();
     Ok(stocks)
 }
@@ -40,8 +56,11 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPriceDTO>
     let client = Request::client().await;
     let config = Configuration::get_config().await;
     let url = config.get_string("stock.api.baseurl").unwrap();
-    let licence = config.get_string("stock.api.licence").unwrap();
-    let response = client.get(format!("{}/hszbl/fsjy/{}/dh/{}", url, code, licence)).send().await?;
+    let licence = get_licence(config.get_string("stock.api.licence").unwrap());
+    let response = client
+        .get(format!("{}/hszbl/fsjy/{}/dh/{}", url, code, licence))
+        .send()
+        .await?;
     let stocks: Vec<StockDailyPriceDTO> = response.json().await.unwrap();
     Ok(stocks)
 }
@@ -53,31 +72,33 @@ pub struct StockPriceDTO {
     pub hs: String,
     pub lb: String,
     pub l: String,
-    pub  lt: String,
-    pub  o: String,
-    pub  pe: String,
-    pub  pc: String,
-    pub  p: String,
-    pub  sz: String,
-    pub  cje: String,
-    pub  ud: String,
-    pub  v: String,
-    pub  yc: String,
-    pub  zf: String,
-    pub  zs: String,
-    pub  sjl: String,
-    pub  zdf60: String,
-    pub  zdfnc: String,
+    pub lt: String,
+    pub o: String,
+    pub pe: String,
+    pub pc: String,
+    pub p: String,
+    pub sz: String,
+    pub cje: String,
+    pub ud: String,
+    pub v: String,
+    pub yc: String,
+    pub zf: String,
+    pub zs: String,
+    pub sjl: String,
+    pub zdf60: String,
+    pub zdfnc: String,
     pub t: String,
 }
 
-pub async fn get_current_price(code: &str)-> Result<StockPriceDTO, Box<dyn Error>> {
+pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
     let url = config.get_string("stock.api.baseurl").unwrap();
-    let licence = config.get_string("stock.api.licence").unwrap();
-    let response = client.get(format!("{}/hsrl/ssjy/{}/{}", url, code, licence)).send().await?;
+    let licence = get_licence(config.get_string("stock.api.licence").unwrap());
+    let response = client
+        .get(format!("{}/hsrl/ssjy/{}/{}", url, code, licence))
+        .send()
+        .await?;
     let price: StockPriceDTO = response.json().await.unwrap();
     Ok(price)
 }
-
