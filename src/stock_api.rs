@@ -1,9 +1,16 @@
 use std::error::Error;
 
+use chrono::Local;
 use configuration::Configuration;
+use context::SERVICES;
+use database::DbService;
 use rand::seq::SliceRandom;
+use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use util::request::Request;
+
+use crate::stock::Stock;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDTO {
@@ -27,8 +34,8 @@ fn get_licence(licence: String) -> String {
 pub async fn get_stocks() -> Result<Vec<StockDTO>, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.api.baseurl").unwrap();
-    let licence = get_licence(config.get_string("stock.api.licence").unwrap());
+    let url = config.get_string("stock.api.biying.baseurl").unwrap();
+    let licence = get_licence(config.get_string("stock.api.biying.licence").unwrap());
     let response = client
         .get(format!("{}/hslt/list/{}", url, licence))
         .send()
@@ -55,8 +62,8 @@ pub struct StockDailyPriceDTO {
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.api.baseurl").unwrap();
-    let licence = get_licence(config.get_string("stock.api.licence").unwrap());
+    let url = config.get_string("stock.api.biying.baseurl").unwrap();
+    let licence = get_licence(config.get_string("stock.api.biying.licence").unwrap());
     let response = client
         .get(format!("{}/hszbl/fsjy/{}/dh/{}", url, code, licence))
         .send()
@@ -67,38 +74,85 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPriceDTO>
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockPriceDTO {
-    pub fm: String,
+    // 最高价
     pub h: String,
-    pub hs: String,
-    pub lb: String,
+    // 最低价
     pub l: String,
-    pub lt: String,
+    // 开盘价
     pub o: String,
-    pub pe: String,
+    // 涨跌幅（%）
     pub pc: String,
     pub p: String,
-    pub sz: String,
+    // 成交额（元）
     pub cje: String,
+    // 涨跌额（元）
     pub ud: String,
+    // 成交量（手）
     pub v: String,
+    // 昨收
     pub yc: String,
-    pub zf: String,
-    pub zs: String,
-    pub sjl: String,
-    pub zdf60: String,
-    pub zdfnc: String,
+    // 时间
     pub t: String,
 }
 
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+    let db = SERVICES.get::<DbService>().dao();
+    let stock = Stock::select_by_code(db, code).await?;
+    if stock.is_none() {
+        return Err("stock not found".into());
+    }
+    let stock = stock.unwrap();
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.api.baseurl").unwrap();
-    let licence = get_licence(config.get_string("stock.api.licence").unwrap());
-    let response = client
-        .get(format!("{}/hsrl/ssjy/{}/{}", url, code, licence))
-        .send()
-        .await?;
-    let price: StockPriceDTO = response.json().await.unwrap();
-    Ok(price)
+    if "hz" == stock.exchange {
+        let url = config.get_string("stock.api.hz.baseurl").unwrap();
+        let response = client
+            .get(format!(
+                "{}/v1/sh1/snap/{}?_={}",
+                url,
+                code,
+                Local::now().timestamp_millis()
+            ))
+            .send()
+            .await?;
+        let json: Value = response.json().await?;
+        let snp = json.get("snap").unwrap();
+        Ok(StockPriceDTO {
+            h: snp.get(3).unwrap().to_string().string(),
+            l: snp.get(4).unwrap().to_string(),
+            o: snp.get(2).unwrap().to_string(),
+            pc: snp.get(7).unwrap().to_string(),
+            p: snp.get(5).unwrap().to_string(),
+            cje: snp.get(10).unwrap().to_string(),
+            ud: snp.get(8).unwrap().to_string(),
+            v: snp.get(9).unwrap().to_string(),
+            yc: snp.get(1).unwrap().to_string(),
+            t: json.get("time").unwrap().to_string(),
+        })
+    } else {
+        let url = config.get_string("stock.api.sz.baseurl").unwrap();
+        let response = client
+            .get(format!(
+                "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
+                url,
+                Local::now().timestamp_millis(),
+                code
+            ))
+            .send()
+            .await?;
+        let json: Value = response.json().await?;
+        let data = json.get("data").unwrap();
+        Ok(StockPriceDTO {
+            h: data["high"].as_str().unwrap().to_string(),
+            l: data["low"].as_str().unwrap().to_string(),
+            o: data["open"].as_str().unwrap().to_string(),
+            pc: data["deltaPercent"].as_str().unwrap().to_string(),
+            p: data["now"].as_str().unwrap().to_string(),
+            cje: data["amount"].as_number().unwrap().to_string(),
+            ud: data["delta"].as_str().unwrap().to_string(),
+            v: data["volume"].as_number().unwrap().to_string(),
+            yc: "".to_string(),
+            t: data["marketTime"].as_str().unwrap().to_string(),
+        })
+    }
 }

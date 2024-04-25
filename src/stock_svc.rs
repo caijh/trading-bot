@@ -4,8 +4,8 @@ use context::SERVICES;
 use database::DbService;
 use rbatis::rbdc::Decimal;
 
-use crate::{stock, stock_api};
 use crate::stock::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
+use crate::{stock, stock_api};
 
 pub async fn init_stocks() -> Result<(), Box<dyn Error>> {
     let stocks = stock_api::get_stocks().await?;
@@ -15,30 +15,45 @@ pub async fn init_stocks() -> Result<(), Box<dyn Error>> {
         let stock = Stock::select_by_code(db, &stock_dto.dm).await?;
         let s = stock_dto.clone();
         if stock.is_none() {
-            Stock::insert(db, &Stock {
-                code: s.dm,
-                name: s.mc,
-                exchange: s.jys,
-            }).await?;
+            Stock::insert(
+                db,
+                &Stock {
+                    code: s.dm,
+                    name: s.mc,
+                    exchange: s.jys,
+                },
+            )
+            .await?;
         } else {
-            Stock::update_by_column(db, &Stock {
-                code: s.dm,
-                name: s.mc,
-                exchange: s.jys,
-            }, stock::COLUMN_CODE).await?;
+            Stock::update_by_column(
+                db,
+                &Stock {
+                    code: s.dm,
+                    name: s.mc,
+                    exchange: s.jys,
+                },
+                stock::COLUMN_CODE,
+            )
+            .await?;
         }
     }
 
     Ok(())
 }
 
-
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
     let db = SERVICES.get::<DbService>().dao();
-    let date = chrono::Local::now().format("%Y%m%d").to_string().parse::<i64>().unwrap();
-    let mut daily_prices: Vec<StockDailyPrice> = StockDailyPrice::select_by_column(db, "code", code).await?;
+    let date = chrono::Local::now()
+        .format("%Y%m%d")
+        .to_string()
+        .parse::<i64>()
+        .unwrap();
+    let mut daily_prices: Vec<StockDailyPrice> =
+        StockDailyPrice::select_by_column(db, "code", code).await?;
     let mut updated: bool = false;
-    if let Some(stock_daily_price_sync_record) = StockDailyPriceSyncRecord::select_by_code_date(db, code, date).await? {
+    if let Some(stock_daily_price_sync_record) =
+        StockDailyPriceSyncRecord::select_by_code_date(db, code, date).await?
+    {
         updated = stock_daily_price_sync_record.updated;
     }
     if !updated {
@@ -64,42 +79,36 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
                 daily_prices.push(daily_price);
             }
         }
-        StockDailyPriceSyncRecord::insert(db, &StockDailyPriceSyncRecord {
-            code: code.to_string(),
-            date,
-            updated: true,
-        }).await?;
+        StockDailyPriceSyncRecord::insert(
+            db,
+            &StockDailyPriceSyncRecord {
+                code: code.to_string(),
+                date,
+                updated: true,
+            },
+        )
+        .await?;
     }
 
     Ok(daily_prices)
 }
-
 
 pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
     let price_dto = stock_api::get_current_price(code).await?;
 
     let price = StockPrice {
         code: code.to_string(),
-        fm: Some(Decimal::new(&price_dto.fm).unwrap()),
         high: Some(Decimal::new(&price_dto.h).unwrap()),
-        hs: Some(Decimal::new(&price_dto.hs).unwrap()),
-        lb: Some(Decimal::new(&price_dto.lb).unwrap()),
         low: Some(Decimal::new(&price_dto.l).unwrap()),
-        lt: Some(Decimal::new(&price_dto.lt).unwrap()),
         open: Some(Decimal::new(&price_dto.o).unwrap()),
-        pe: Some(Decimal::new(&price_dto.pe).unwrap()),
         pc: Some(Decimal::new(&price_dto.pc).unwrap()),
         price: Some(Decimal::new(&price_dto.p).unwrap()),
-        sz: Some(Decimal::new(&price_dto.sz).unwrap()),
         amount: Some(Decimal::new(&price_dto.cje).unwrap()),
         ud: Some(Decimal::new(&price_dto.ud).unwrap()),
         volume: Some(Decimal::new(&price_dto.v).unwrap()),
-        yc: Some(Decimal::new(&price_dto.yc).unwrap()),
-        zf: Some(Decimal::new(&price_dto.zf).unwrap()),
-        zs: Some(Decimal::new(&price_dto.zs).unwrap()),
-        sjl: Some(Decimal::new(&price_dto.sjl).unwrap()),
-        zdf60: Some(Decimal::new(&price_dto.zdf60).unwrap()),
-        zdfnc: Some(Decimal::new(&price_dto.zdfnc).unwrap()),
+        yc: None,
+        zf: None,
+        zs: None,
         time: price_dto.t.clone(),
     };
 
