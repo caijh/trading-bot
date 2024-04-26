@@ -117,19 +117,19 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             .send()
             .await?;
         let json: Value = response.json().await?;
-        let snp = json.get("snap").unwrap();
+        let snap = json.get("snap").unwrap();
         let date = json.get("date").unwrap().to_string();
         let time = json.get("time").unwrap().to_string();
         Ok(StockPriceDTO {
-            h: snp.get(3).unwrap().to_string().string(),
-            l: snp.get(4).unwrap().to_string(),
-            o: snp.get(2).unwrap().to_string(),
-            pc: snp.get(7).unwrap().to_string(),
-            p: snp.get(5).unwrap().to_string(),
-            cje: snp.get(10).unwrap().to_string(),
-            ud: snp.get(8).unwrap().to_string(),
-            v: snp.get(9).unwrap().to_string(),
-            yc: snp.get(1).unwrap().to_string(),
+            h: snap.get(3).unwrap().to_string().string(),
+            l: snap.get(4).unwrap().to_string(),
+            o: snap.get(2).unwrap().to_string(),
+            pc: snap.get(7).unwrap().to_string(),
+            p: snap.get(5).unwrap().to_string(),
+            cje: snap.get(10).unwrap().to_string(),
+            ud: snap.get(8).unwrap().to_string(),
+            v: snap.get(9).unwrap().to_string(),
+            yc: snap.get(1).unwrap().to_string(),
             t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S").unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
         })
     } else {
