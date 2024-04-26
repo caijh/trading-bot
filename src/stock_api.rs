@@ -99,10 +99,10 @@ pub struct StockPriceDTO {
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
     let db = SERVICES.get::<DbService>().dao();
     let stock = Stock::select_by_code(db, code).await?;
-    if stock.is_none() {
-        return Err("stock not found".into());
-    }
-    let stock = stock.unwrap();
+    let stock = match stock {
+        Some(s) => s,
+        None => return Err("Stock not found".into()),
+    };
     let client = Request::client().await;
     let config = Configuration::get_config().await;
     if "hz" == stock.exchange {
