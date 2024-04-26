@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use chrono::Local;
+use chrono::{Local, NaiveDateTime};
 use configuration::Configuration;
 use context::SERVICES;
 use database::DbService;
@@ -82,6 +82,7 @@ pub struct StockPriceDTO {
     pub o: String,
     // 涨跌幅（%）
     pub pc: String,
+    // 当前价
     pub p: String,
     // 成交额（元）
     pub cje: String,
@@ -117,6 +118,8 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             .await?;
         let json: Value = response.json().await?;
         let snp = json.get("snap").unwrap();
+        let date = json.get("date").unwrap().to_string();
+        let time = json.get("time").unwrap().to_string();
         Ok(StockPriceDTO {
             h: snp.get(3).unwrap().to_string().string(),
             l: snp.get(4).unwrap().to_string(),
@@ -127,7 +130,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             ud: snp.get(8).unwrap().to_string(),
             v: snp.get(9).unwrap().to_string(),
             yc: snp.get(1).unwrap().to_string(),
-            t: json.get("time").unwrap().to_string(),
+            t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S").unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
         })
     } else {
         let url = config.get_string("stock.api.sz.baseurl").unwrap();
