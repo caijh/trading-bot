@@ -1,4 +1,4 @@
 pub enum Exchange {
-    HZ(String),
+    SH(String),
     SZ(String),
 }

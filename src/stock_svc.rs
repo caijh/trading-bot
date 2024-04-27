@@ -1,4 +1,6 @@
 use std::error::Error;
+use std::fs::File;
+use std::io::copy;
 use std::path::Path;
 
 use calamine::{open_workbook, Reader, Xls, Xlsx};
@@ -7,8 +9,47 @@ use database::DbService;
 use rbatis::rbdc::Decimal;
 use util::request::Request;
 
-use crate::{stock, stock_api};
 use crate::stock::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
+use crate::{stock, stock_api};
+
+pub async fn sync_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
+    if "sh" == exchange {
+        let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1&COMPANY_STATUS=2,4,5,7,8";
+        download(url, Path::new("sh_stocks.xls")).await?;
+        let stocks = read_stocks_from_hz_excel("sh_stocks.xls")?;
+        save_or_update_stocks(stocks).await?;
+    } else if "sz" == exchange {
+        let url = "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random=0.4030052742011667";
+        Request::download(url, Path::new("sz_stocks.xlsx")).await?;
+        let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx")?;
+        save_or_update_stocks(stocks).await?;
+    }
+    Ok(())
+}
+
+pub async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
+    headers.insert(
+        "Referer",
+        "http://www.sse.com.cn/assortment/stock/list/share/"
+            .parse()
+            .unwrap(),
+    );
+    headers.insert("Connection", "keep-alive".parse().unwrap());
+    let client = reqwest::Client::builder().build().unwrap();
+    let response = client.get(url).headers(headers).send().await;
+    match response {
+        Ok(response) => {
+            let bytes = response.bytes().await?;
+            let mut file = File::create(path)?;
+            copy(&mut bytes.as_ref(), &mut file)?;
+            Ok(())
+        }
+        Err(e) => Err(e.into()),
+    }
+}
 
 pub fn read_stocks_from_hz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xls: Xls<_> = open_workbook(path)?;
@@ -16,13 +57,14 @@ pub fn read_stocks_from_hz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error
     let mut stocks = Vec::new();
     if let Ok(r) = excel_xls.worksheet_range("股票") {
         for row in r.rows() {
-            if row[0] == "A股代码" { // 跳过标题行
+            if row[0] == "A股代码" {
+                // 跳过标题行
                 continue;
             }
             stocks.push(Stock {
                 code: row[0].to_string(),
-                name: row[1].to_string(),
-                exchange: "hz".to_string(),
+                name: row[2].to_string(),
+                exchange: "sh".to_string(),
             });
         }
     }
@@ -36,7 +78,8 @@ pub fn read_stocks_from_sz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error
     let mut stocks = Vec::new();
     if let Ok(r) = excel_xlsx.worksheet_range("A股列表") {
         for row in r.rows() {
-            if row[0] == "板块" { // 跳过标题行
+            if row[0] == "板块" {
+                // 跳过标题行
                 continue;
             }
             stocks.push(Stock {
@@ -49,37 +92,6 @@ pub fn read_stocks_from_sz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error
 
     Ok(stocks)
 }
-
-pub async fn sync_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
-    if "hz" == exchange {
-        let url = "";
-        let result = Request::download(url, Path::new("hz_stocks.xls")).await;
-        match result {
-            Ok(_) => {
-                let stocks = read_stocks_from_hz_excel("hz_stocks.xls")?;
-                save_or_update_stocks(stocks).await?;
-                Ok(())
-            }
-            Err(e) => {
-                Err(e.into())
-            }
-        }
-    } else  {
-        let url = "";
-        let result = Request::download(url, Path::new("sz_stocks.xlsx")).await;
-        match result {
-            Ok(_) => {
-                let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx")?;
-                save_or_update_stocks(stocks).await?;
-                Ok(())
-            }
-            Err(e) => {
-                Err(e.into())
-            }
-        }
-    }
-}
-
 
 /// 保存或更新股票列表
 ///
@@ -101,18 +113,9 @@ async fn save_or_update_stocks(stocks: Vec<Stock>) -> Result<(), Box<dyn Error>>
         let old_stock = Stock::select_by_code(db, &stock.code).await?;
 
         if old_stock.is_none() {
-            Stock::insert(
-                db,
-                &stock,
-            )
-                .await?;
+            Stock::insert(db, &stock).await?;
         } else {
-            Stock::update_by_column(
-                db,
-                &stock,
-                stock::COLUMN_CODE,
-            )
-                .await?;
+            Stock::update_by_column(db, &stock, stock::COLUMN_CODE).await?;
         }
     }
 
@@ -165,7 +168,7 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
                 updated: true,
             },
         )
-            .await?;
+        .await?;
     }
 
     Ok(daily_prices)
