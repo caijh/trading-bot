@@ -4,17 +4,27 @@ use axum::Router;
 use axum::routing::get;
 use web::response::RespBody;
 
-use crate::stock_svc::{get_stock_daily_price, get_stock_price, init_stocks};
+use crate::stock_svc::{get_stock_daily_price, get_stock_price, sync_stocks};
 
 pub fn stock_routers() -> Router {
     Router::new()
-        .route("/init", get(init))
+        .route("/sync/:exchange", get(sync))
         .route("/:code/daily", get(stock_daily))
         .route("/:code/price", get(stock_price))
 }
 
-pub async fn init() -> impl IntoResponse {
-    let r = init_stocks().await;
+/**
+ * 同步指定交易所的股票数据。
+ * 
+ * # 参数
+ * `exchange`: 代表需要同步的交易所的名称, hz or sz.
+ * 
+ * # 返回值
+ * 实现了 `IntoResponse` 的一个类型，通常用于构建HTTP响应。
+ */
+pub async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
+    let r = sync_stocks(&exchange).await;
+    
     RespBody::from_result(&r).response()
 }
 

@@ -48,3 +48,4 @@ tokio = { version = "1.37.0", features = ["full"] }
 serde_json = "1.0.116"
 chrono = "0.4"
 rand = "0.8.5"
+calamine = "0.24.0"
