@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::str::FromStr;
 
 use chrono::{Local, NaiveDateTime};
 use configuration::Configuration;
@@ -9,6 +10,7 @@ use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use util::request::Request;
+use crate::exchange::Exchange;
 
 use crate::stock::Stock;
 
@@ -29,19 +31,6 @@ fn get_licence(licence: String) -> String {
         Some(licence) => licence.to_string(),
         None => licence,
     }
-}
-
-pub async fn get_stocks() -> Result<Vec<StockDTO>, Box<dyn Error>> {
-    let client = Request::client().await;
-    let config = Configuration::get_config().await;
-    let url = config.get_string("stock.api.biying.baseurl").unwrap();
-    let licence = get_licence(config.get_string("stock.api.biying.licence").unwrap());
-    let response = client
-        .get(format!("{}/hslt/list/{}", url, licence))
-        .send()
-        .await?;
-    let stocks: Vec<StockDTO> = response.json().await.unwrap();
-    Ok(stocks)
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -105,57 +94,62 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
     };
     let client = Request::client().await;
     let config = Configuration::get_config().await;
-    if "hz" == stock.exchange {
-        let url = config.get_string("stock.api.hz.baseurl").unwrap();
-        let response = client
-            .get(format!(
-                "{}/v1/sh1/snap/{}?_={}",
-                url,
-                code,
-                Local::now().timestamp_millis()
-            ))
-            .send()
-            .await?;
-        let json: Value = response.json().await?;
-        let snap = json.get("snap").unwrap();
-        let date = json.get("date").unwrap().to_string();
-        let time = json.get("time").unwrap().to_string();
-        Ok(StockPriceDTO {
-            h: snap.get(3).unwrap().to_string().string(),
-            l: snap.get(4).unwrap().to_string(),
-            o: snap.get(2).unwrap().to_string(),
-            pc: snap.get(7).unwrap().to_string(),
-            p: snap.get(5).unwrap().to_string(),
-            cje: snap.get(10).unwrap().to_string(),
-            ud: snap.get(8).unwrap().to_string(),
-            v: snap.get(9).unwrap().to_string(),
-            yc: snap.get(1).unwrap().to_string(),
-            t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S").unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
-        })
-    } else {
-        let url = config.get_string("stock.api.sz.baseurl").unwrap();
-        let response = client
-            .get(format!(
-                "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
-                url,
-                Local::now().timestamp_millis(),
-                code
-            ))
-            .send()
-            .await?;
-        let json: Value = response.json().await?;
-        let data = json.get("data").unwrap();
-        Ok(StockPriceDTO {
-            h: data["high"].as_str().unwrap().to_string(),
-            l: data["low"].as_str().unwrap().to_string(),
-            o: data["open"].as_str().unwrap().to_string(),
-            pc: data["deltaPercent"].as_str().unwrap().to_string(),
-            p: data["now"].as_str().unwrap().to_string(),
-            cje: data["amount"].as_number().unwrap().to_string(),
-            ud: data["delta"].as_str().unwrap().to_string(),
-            v: data["volume"].as_number().unwrap().to_string(),
-            yc: "".to_string(),
-            t: data["marketTime"].as_str().unwrap().to_string(),
-        })
+    let exchange = Exchange::from_str(&stock.exchange).unwrap();
+    match exchange {
+        Exchange::SH(_exchange) => {
+            let url = config.get_string("stock.api.sh.baseurl").unwrap();
+            let response = client
+                .get(format!(
+                    "{}/v1/sh1/snap/{}?_={}",
+                    url,
+                    code,
+                    Local::now().timestamp_millis()
+                ))
+                .send()
+                .await?;
+            let json: Value = response.json().await?;
+            let snap = json.get("snap").unwrap();
+            let date = json.get("date").unwrap().to_string();
+            let time = json.get("time").unwrap().to_string();
+            Ok(StockPriceDTO {
+                h: snap.get(3).unwrap().to_string().string(),
+                l: snap.get(4).unwrap().to_string(),
+                o: snap.get(2).unwrap().to_string(),
+                pc: snap.get(7).unwrap().to_string(),
+                p: snap.get(5).unwrap().to_string(),
+                cje: snap.get(10).unwrap().to_string(),
+                ud: snap.get(8).unwrap().to_string(),
+                v: snap.get(9).unwrap().to_string(),
+                yc: snap.get(1).unwrap().to_string(),
+                t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S").unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
+            }) 
+        }
+        Exchange::SZ(_exchange) => {
+            let url = config.get_string("stock.api.sz.baseurl").unwrap();
+            let response = client
+                .get(format!(
+                    "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
+                    url,
+                    Local::now().timestamp_millis(),
+                    code
+                ))
+                .send()
+                .await?;
+            let json: Value = response.json().await?;
+            let data = json.get("data").unwrap();
+            Ok(StockPriceDTO {
+                h: data["high"].as_str().unwrap().to_string(),
+                l: data["low"].as_str().unwrap().to_string(),
+                o: data["open"].as_str().unwrap().to_string(),
+                pc: data["deltaPercent"].as_str().unwrap().to_string(),
+                p: data["now"].as_str().unwrap().to_string(),
+                cje: data["amount"].as_number().unwrap().to_string(),
+                ud: data["delta"].as_str().unwrap().to_string(),
+                v: data["volume"].as_number().unwrap().to_string(),
+                yc: "".to_string(),
+                t: data["marketTime"].as_str().unwrap().to_string(),
+            })
+        }
     }
+
 }

@@ -28,7 +28,7 @@ kind = "mysql"
 [stock.api.biying]
 licence = ""
 baseurl = ""
-[stock.api.hz]
+[stock.api.sh]
 baseurl = "http://yunhq.sse.com.cn:32041"
 [stock.api.sz]
 baseurl = "https://www.szse.cn"
