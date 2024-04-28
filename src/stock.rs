@@ -1,10 +1,10 @@
-use rbatis::rbdc::Decimal;
 use rbatis::{crud, impl_select};
-use serde::{de, Deserialize, Deserializer, Serialize};
+use rbatis::rbdc::Decimal;
+use serde::{Deserialize, Serialize};
 
 /**
  * 表示股票的结构体。
- * 
+ *
  * # 属性
  * - `code`：股票代码，唯一标识一只股票。
  * - `name`：股票名称。
@@ -17,7 +17,7 @@ pub struct Stock {
     /// 股票名称
     pub name: String,
     /// 交易所代码
-    pub exchange: String,  
+    pub exchange: String,
 }
 
 crud!(Stock {});
@@ -44,40 +44,8 @@ crud!(StockDailyPrice {});
 pub struct StockDailyPriceSyncRecord {
     pub code: String,
     pub date: i64,
-    #[serde(deserialize_with = "bool_or_int")]
+    #[serde(deserialize_with = "database::bool_or_int")]
     pub updated: bool,
-}
-
-fn bool_or_int<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct BoolOrIntVisitor;
-
-    impl<'de> de::Visitor<'de> for BoolOrIntVisitor {
-        type Value = bool;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("a boolean or an integer")
-        }
-
-        fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            Ok(value)
-        }
-
-        fn visit_i32<E>(self, value: i32) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            // Map 0 to false, any other value to true
-            Ok(value != 0)
-        }
-    }
-
-    deserializer.deserialize_any(BoolOrIntVisitor)
 }
 
 crud!(StockDailyPriceSyncRecord {});
