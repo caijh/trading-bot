@@ -2,12 +2,24 @@ use rbatis::rbdc::Decimal;
 use rbatis::{crud, impl_select};
 use serde::{de, Deserialize, Deserializer, Serialize};
 
+/**
+ * 表示股票的结构体。
+ * 
+ * # 属性
+ * - `code`：股票代码，唯一标识一只股票。
+ * - `name`：股票名称。
+ * - `exchange`：股票交易所代码，表明该股票在哪个交易所上市。
+ */
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Stock {
+    /// 股票代码
     pub code: String,
+    /// 股票名称
     pub name: String,
-    pub exchange: String,
+    /// 交易所代码
+    pub exchange: String,  
 }
+
 crud!(Stock {});
 impl_select!(Stock {select_by_code(code: &str) -> Option => "`where code = #{code}`"});
 
