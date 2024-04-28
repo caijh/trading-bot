@@ -11,18 +11,23 @@ use util::request::Request;
 
 use crate::stock::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 use crate::{stock, stock_api};
+use crate::exchange::Exchange;
 
-pub async fn sync_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
-    if "sh" == exchange {
-        let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1&COMPANY_STATUS=2,4,5,7,8";
-        download(url, Path::new("sh_stocks.xls")).await?;
-        let stocks = read_stocks_from_hz_excel("sh_stocks.xls")?;
-        save_or_update_stocks(stocks).await?;
-    } else if "sz" == exchange {
-        let url = "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random=0.4030052742011667";
-        Request::download(url, Path::new("sz_stocks.xlsx")).await?;
-        let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx")?;
-        save_or_update_stocks(stocks).await?;
+pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
+    match exchange {
+        Exchange::SH(exchange) => {
+            let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1&COMPANY_STATUS=2,4,5,7,8";
+            download(url, Path::new("sh_stocks.xls")).await?;
+            let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
+            save_or_update_stocks(stocks).await?;
+
+        }
+        Exchange::SZ(exchange) => {
+            let url = "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random=0.4030052742011667";
+            Request::download(url, Path::new("sz_stocks.xlsx")).await?;
+            let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx", exchange)?;
+            save_or_update_stocks(stocks).await?; 
+        }
     }
     Ok(())
 }
@@ -51,7 +56,7 @@ pub async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub fn read_stocks_from_hz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_stocks_from_hz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xls: Xls<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();
@@ -64,7 +69,7 @@ pub fn read_stocks_from_hz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error
             stocks.push(Stock {
                 code: row[0].to_string(),
                 name: row[2].to_string(),
-                exchange: "sh".to_string(),
+                exchange: exchange.to_string(),
             });
         }
     }
@@ -72,7 +77,7 @@ pub fn read_stocks_from_hz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error
     Ok(stocks)
 }
 
-pub fn read_stocks_from_sz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_stocks_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xlsx: Xlsx<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();
@@ -85,7 +90,7 @@ pub fn read_stocks_from_sz_excel(path: &str) -> Result<Vec<Stock>, Box<dyn Error
             stocks.push(Stock {
                 code: row[4].to_string(),
                 name: row[5].to_string(),
-                exchange: "sz".to_string(),
+                exchange: exchange.to_string(),
             });
         }
     }

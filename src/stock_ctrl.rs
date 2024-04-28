@@ -1,8 +1,10 @@
+use std::str::FromStr;
 use axum::extract::Path;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use web::response::RespBody;
+use crate::exchange::Exchange;
 
 use crate::stock_svc::{get_stock_daily_price, get_stock_price, sync_stocks};
 
@@ -23,6 +25,8 @@ pub fn stock_routers() -> Router {
  * 实现了 `IntoResponse` 的一个类型，通常用于构建HTTP响应。
  */
 pub async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
+    let exchange = Exchange::from_str(&exchange).unwrap();
+    
     let r = sync_stocks(&exchange).await;
 
     RespBody::from_result(&r).response()

@@ -6,13 +6,13 @@ mod tests {
 
     #[test]
     fn test_read_stocks_from_hz_excel() {
-        let vec = read_stocks_from_hz_excel("./GPLIST.xls").unwrap();
+        let vec = read_stocks_from_hz_excel("./GPLIST.xls", "SH" ).unwrap();
         assert_ne!(vec.len(), 0);
     }
 
     #[test]
     fn test_read_stocks_from_sz_excel() {
-        let vec = read_stocks_from_sz_excel("./A股列表.xlsx").unwrap();
+        let vec = read_stocks_from_sz_excel("./A股列表.xlsx", "SZ").unwrap();
         assert_ne!(vec.len(), 0);
     }
 
