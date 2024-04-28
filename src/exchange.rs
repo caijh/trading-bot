@@ -1,10 +1,15 @@
 use std::error::Error;
 use std::str::FromStr;
 
+/// 股票交易所
+/// 枚举中的每个变体都包含一个String类型，用于存放交易所的名称或代码
 pub enum Exchange {
+    /// 表示上海交易所，SH代表上海，后面跟着交易所的名称或代码
     SH(String),
+    /// 表示深圳交易所，SZ代表深圳，后面跟着交易所的名称或代码
     SZ(String),
 }
+
 
 impl AsRef<str> for Exchange {
     fn as_ref(&self) -> &str {
