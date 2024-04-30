@@ -143,9 +143,8 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
         updated = stock_daily_price_sync_record.updated;
     }
     if !updated {
-        let daily_price_dtos = stock_api::get_stock_daily_price(code).await?;
         let dates: Vec<i64> = daily_prices.iter().map(|e| e.date).collect();
-        for dto in daily_price_dtos {
+        for dto in stock_api::get_stock_daily_price(code).await? {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
                 date: dto.d.replace('-', "").parse::<i64>().unwrap(),
