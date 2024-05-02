@@ -6,6 +6,7 @@ use database::DbService;
 use logger::Logger;
 use web::bootstrap::Bootstrap;
 use web::health::health_routers;
+use crate::holiday_ctrl::holiday_routers;
 
 use crate::stock_ctrl::stock_routers;
 
@@ -26,6 +27,7 @@ impl Bootstrap for StockBotServer {
         // route
         router
             .nest("/health", health_routers())
+            .nest("/holiday", holiday_routers())
             .nest("/stock", stock_routers())
     }
 }

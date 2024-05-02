@@ -5,3 +5,5 @@ pub mod stock_ctrl;
 pub mod stock_api;
 pub mod stock_svc;
 pub mod holiday;
+pub mod holiday_ctrl;
+pub mod holiday_svc;

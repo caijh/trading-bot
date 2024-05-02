@@ -26,7 +26,7 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             let url = "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random=0.4030052742011667";
             Request::download(url, Path::new("sz_stocks.xlsx")).await?;
             let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx", exchange)?;
-            save_or_update_stocks(stocks).await?; 
+            save_or_update_stocks(stocks).await?;
         }
     }
     Ok(())
@@ -144,7 +144,8 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     }
     if !updated {
         let dates: Vec<i64> = daily_prices.iter().map(|e| e.date).collect();
-        for dto in stock_api::get_stock_daily_price(code).await? {
+        let prices = stock_api::get_stock_daily_price(code).await?;
+        for dto in prices {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
                 date: dto.d.replace('-', "").parse::<i64>().unwrap(),
