@@ -10,7 +10,6 @@ pub enum Exchange {
     SZ(String),
 }
 
-
 impl AsRef<str> for Exchange {
     fn as_ref(&self) -> &str {
         match self {
@@ -26,7 +25,7 @@ impl FromStr for Exchange {
         match s.to_uppercase().as_str() {
             "SH" => Ok(Exchange::SH("SH".to_string())),
             "SZ" => Ok(Exchange::SZ("SZ".to_string())),
-            _ => Err("SH or SZ".into()),
+            _ => Err("Error Exchange value, SH（上海证券交易所） or SZ（深圳证券交易所）".into()),
         }
     }
 }
