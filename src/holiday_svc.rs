@@ -1,12 +1,11 @@
 use std::error::Error;
 
-use chrono::{Datelike, DateTime, Local};
+use chrono::{DateTime, Datelike, Local};
 use context::SERVICES;
 use database::DbService;
 use rbdc_mysql::types::year::Year;
-use util::request::Request;
 
-use crate::holiday::MarketHoliday;
+use crate::{holiday::MarketHoliday, holiday_api::get_holidays};
 
 pub async fn is_holiday(date: &DateTime<Local>) -> Result<bool, Box<dyn Error>> {
     if date.weekday().number_from_monday() == 6 || date.weekday().number_from_monday() == 7 {
@@ -17,16 +16,13 @@ pub async fn is_holiday(date: &DateTime<Local>) -> Result<bool, Box<dyn Error>> 
     let dao = SERVICES.get::<DbService>().dao();
     let market_holiday = MarketHoliday::select_by_id(dao, date.parse::<u64>().unwrap()).await?;
     match market_holiday {
-        Some(_) => { Ok(true) },
-        None => { Ok(false) }
+        Some(_) => Ok(true),
+        None => Ok(false),
     }
 }
 
 pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
-    let url = "https://raw.githubusercontent.com/rainx/cn_stock_holidays/main/cn_stock_holidays/data.txt";
-    let response = Request::get_response(url).await?;
-    let content = response.text().await?;
-    let dates: Vec<&str> = content.split('\n').filter(|s| !s.is_empty()).collect();
+    let dates = get_holidays().await?;
     let mut market_holidays = Vec::new();
     let mut ids = Vec::new();
     for date in dates {
