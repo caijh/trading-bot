@@ -1,6 +1,6 @@
 use axum::response::IntoResponse;
-use axum::Router;
 use axum::routing::get;
+use axum::Router;
 use chrono::Local;
 use web::response::RespBody;
 
@@ -8,7 +8,7 @@ use crate::holiday_svc::{is_holiday, sync_holidays};
 
 pub fn holiday_routers() -> Router {
     Router::new()
-        .route("/syc", get(sync_holiday))
+        .route("/syc", get(sync))
         .route("/today", get(today_is_holiday))
 }
 
@@ -19,7 +19,7 @@ pub async fn today_is_holiday() -> impl IntoResponse {
     RespBody::from_result(&r).response()
 }
 
-pub async fn sync_holiday() -> impl IntoResponse {
+pub async fn sync() -> impl IntoResponse {
     let r = sync_holidays().await;
 
     RespBody::from_result(&r).response()
