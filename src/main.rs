@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use clap::{Parser};
+use clap::Parser;
 use cli::Cli;
 use configuration::Configuration;
 use registration::deregister;
@@ -11,9 +11,19 @@ use stock_bot::server::StockBotServer;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let cli: Cli = Cli::parse();
-    
+
     let server = StockBotServer;
-    server.run(&cli.command, || { tokio::spawn(register()); }, || { tokio::spawn(deregister()); }).await;
+    server
+        .run(
+            &cli.command,
+            || {
+                tokio::spawn(register());
+            },
+            || {
+                tokio::spawn(deregister());
+            },
+        )
+        .await;
 
     Ok(())
 }
