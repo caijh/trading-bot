@@ -1,5 +1,5 @@
-use rbatis::{crud, impl_select};
 use rbatis::rbdc::Decimal;
+use rbatis::{crud, impl_select};
 use serde::{Deserialize, Serialize};
 
 /**
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
  * - `name`：股票名称。
  * - `exchange`：股票交易所代码，表明该股票在哪个交易所上市。
  */
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Stock {
     /// 股票代码
     pub code: String,
@@ -65,7 +65,6 @@ pub struct StockDailyPriceSyncRecord {
     #[serde(deserialize_with = "database::bool_or_int")]
     pub updated: bool,
 }
-
 
 crud!(StockDailyPriceSyncRecord {});
 impl_select!(StockDailyPriceSyncRecord {select_by_code_date(code: &str, date: u64) -> Option => "`where code = #{code} and date = #{date}`"});
