@@ -4,11 +4,13 @@ use chrono::{DateTime, Datelike, Local};
 use context::SERVICES;
 use database::DbService;
 use rbdc_mysql::types::year::Year;
+use serde::{Deserialize, Serialize};
 
 use crate::{holiday::MarketHoliday, holiday_api::get_holidays};
 
-struct HolidayQueryResult {
-    is_holiday: bool,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct HolidayQueryResult {
+    pub is_holiday: bool,
 }
 
 pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Box<dyn Error>> {
