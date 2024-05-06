@@ -5,13 +5,12 @@ use chrono::{Local, NaiveDateTime};
 use configuration::Configuration;
 use context::SERVICES;
 use database::DbService;
-use rand::seq::SliceRandom;
 use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use util::request::Request;
-use crate::exchange::Exchange;
 
+use crate::exchange::Exchange;
 use crate::stock::Stock;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -19,18 +18,6 @@ pub struct StockDTO {
     pub dm: String,
     pub mc: String,
     pub jys: String,
-}
-
-/// split licence, get random licence from it
-fn get_licence(licence: String) -> String {
-    let mut licences = licence.split(',').collect::<Vec<&str>>();
-
-    let mut rng = rand::thread_rng();
-    licences.shuffle(&mut rng);
-    match licences.first() {
-        Some(licence) => licence.to_string(),
-        None => licence,
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -48,17 +35,84 @@ pub struct StockDailyPriceDTO {
     pub zde: String,
 }
 
-pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
-    let client = Request::client().await;
+pub async fn get_stock_daily_price(
+    stock: &Stock,
+) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
+    let exchange = Exchange::from_str(stock.exchange.as_str()).unwrap();
     let config = Configuration::get_config().await;
-    let url = config.get_string("stock.api.biying.baseurl").unwrap();
-    let licence = get_licence(config.get_string("stock.api.biying.licence").unwrap());
-    let response = client
-        .get(format!("{}/hszbl/fsjy/{}/dh/{}", url, code, licence))
-        .send()
-        .await?;
-    let stocks: Vec<StockDailyPriceDTO> = response.json().await.unwrap();
-    Ok(stocks)
+    match exchange {
+        Exchange::SH(_) => {
+            let url = "https://yunhq.sse.com.cn:32042";
+            let url = format!(
+                "{}/v1/sh1/dayk/{}?begin=-1000&end=-1&period=day&_={}",
+                url,
+                &stock.code,
+                Local::now().timestamp_millis()
+            );
+            let response = Request::get_response(&url).await?;
+            let json: Value = response.json().await?;
+            let kline = json.get("kline").unwrap().as_array();
+            let mut stock_prices = Vec::new();
+            if let Some(kline) = kline {
+                for k in kline {
+                    let k = k.as_array().unwrap();
+                    let price = StockDailyPriceDTO {
+                        d: k.first().unwrap().to_string(),
+                        o: k.get(1).unwrap().to_string(),
+                        h: k.get(2).unwrap().to_string(),
+                        l: k.get(3).unwrap().to_string(),
+                        c: k.get(4).unwrap().to_string(),
+                        v: k.get(5).unwrap().to_string(),
+                        e: k.get(6).unwrap().to_string(),
+                        zf: "".to_string(),
+                        hs: "".to_string(),
+                        zd: "".to_string(),
+                        zde: "".to_string(),
+                    };
+                    stock_prices.push(price);
+                }
+            }
+            Ok(stock_prices)
+        }
+        Exchange::SZ(_) => {
+            let url = config.get_string("stock.api.sz.baseurl").unwrap();
+            let url = format!(
+                "{}/api/market/ssjjhq/getHistoryData?random={}&cycleType=32&marketId=1&code={}",
+                url,
+                Local::now().timestamp_millis(),
+                &stock.code
+            );
+            let response = Request::get_response(&url).await?;
+            let json: Value = response.json().await?;
+            let kline = json
+                .get("data")
+                .unwrap()
+                .get("picupdata")
+                .unwrap()
+                .as_array();
+            let mut stock_prices = Vec::new();
+            if let Some(kline) = kline {
+                for k in kline {
+                    let k = k.as_array().unwrap();
+                    let price = StockDailyPriceDTO {
+                        d: k.first().unwrap().to_string().replace('-', ""),
+                        o: k.get(1).unwrap().to_string(),
+                        h: k.get(4).unwrap().to_string(),
+                        l: k.get(3).unwrap().to_string(),
+                        c: k.get(2).unwrap().to_string(),
+                        v: k.get(5).unwrap().to_string(),
+                        e: k.get(6).unwrap().to_string(),
+                        zf: "".to_string(),
+                        hs: "".to_string(),
+                        zd: "".to_string(),
+                        zde: "".to_string(),
+                    };
+                    stock_prices.push(price);
+                }
+            }
+            Ok(stock_prices)
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -121,8 +175,11 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 ud: snap.get(8).unwrap().to_string(),
                 v: snap.get(9).unwrap().to_string(),
                 yc: snap.get(1).unwrap().to_string(),
-                t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S").unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
-            }) 
+                t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S")
+                    .unwrap()
+                    .format("%Y-%m-%d %H:%M:%S")
+                    .to_string(),
+            })
         }
         Exchange::SZ(_exchange) => {
             let url = config.get_string("stock.api.sz.baseurl").unwrap();
@@ -151,5 +208,4 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             })
         }
     }
-
 }

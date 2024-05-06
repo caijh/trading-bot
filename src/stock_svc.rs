@@ -9,9 +9,9 @@ use database::DbService;
 use rbatis::rbdc::Decimal;
 use util::request::Request;
 
+use crate::exchange::Exchange;
 use crate::stock::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 use crate::{stock, stock_api};
-use crate::exchange::Exchange;
 
 pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
     match exchange {
@@ -20,7 +20,6 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             download(url, Path::new("sh_stocks.xls")).await?;
             let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
             save_or_update_stocks(stocks).await?;
-
         }
         Exchange::SZ(exchange) => {
             let url = "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random=0.4030052742011667";
@@ -128,45 +127,50 @@ async fn save_or_update_stocks(stocks: Vec<Stock>) -> Result<(), Box<dyn Error>>
 }
 
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
-    let db = SERVICES.get::<DbService>().dao();
+    let dao = SERVICES.get::<DbService>().dao();
+    let stock = Stock::select_by_code(dao, code).await?;
+    if stock.is_none() {
+        return Err("Stock not found".into());
+    }
+    let stock = stock.unwrap();
     let date = chrono::Local::now()
         .format("%Y%m%d")
         .to_string()
         .parse::<u64>()
         .unwrap();
     let mut daily_prices: Vec<StockDailyPrice> =
-        StockDailyPrice::select_by_column(db, "code", code).await?;
+        StockDailyPrice::select_by_column(dao, "code", code).await?;
     let mut updated: bool = false;
     if let Some(stock_daily_price_sync_record) =
-        StockDailyPriceSyncRecord::select_by_code_date(db, code, date).await?
+        StockDailyPriceSyncRecord::select_by_code_date(dao, code, date).await?
     {
         updated = stock_daily_price_sync_record.updated;
     }
     if !updated {
         let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
-        let prices = stock_api::get_stock_daily_price(code).await?;
+        let prices = stock_api::get_stock_daily_price(&stock).await?;
         for dto in prices {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
-                date: dto.d.replace('-', "").parse::<u64>().unwrap(),
+                date: dto.d.parse::<u64>().unwrap(),
                 open: Decimal::new(&dto.o).unwrap(),
                 close: Decimal::new(&dto.c).unwrap(),
                 high: Decimal::new(&dto.h).unwrap(),
                 low: Decimal::new(&dto.l).unwrap(),
                 volume: Some(Decimal::new(&dto.v).unwrap()),
                 amount: Some(Decimal::new(&dto.e).unwrap()),
-                zf: Some(Decimal::new(&dto.zf).unwrap()),
-                hs: Some(Decimal::new(&dto.hs).unwrap()),
-                zd: Some(Decimal::new(&dto.zd).unwrap()),
-                zde: Some(Decimal::new(&dto.zde).unwrap()),
+                zf: None,
+                hs: None,
+                zd: None,
+                zde: None,
             };
             if !dates.contains(&daily_price.date) {
-                StockDailyPrice::insert(db, &daily_price).await?;
+                StockDailyPrice::insert(dao, &daily_price).await?;
                 daily_prices.push(daily_price);
             }
         }
         StockDailyPriceSyncRecord::insert(
-            db,
+            dao,
             &StockDailyPriceSyncRecord {
                 code: code.to_string(),
                 date,
