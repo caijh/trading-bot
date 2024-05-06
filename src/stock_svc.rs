@@ -132,7 +132,7 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     let date = chrono::Local::now()
         .format("%Y%m%d")
         .to_string()
-        .parse::<i64>()
+        .parse::<u64>()
         .unwrap();
     let mut daily_prices: Vec<StockDailyPrice> =
         StockDailyPrice::select_by_column(db, "code", code).await?;
@@ -143,12 +143,12 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
         updated = stock_daily_price_sync_record.updated;
     }
     if !updated {
-        let dates: Vec<i64> = daily_prices.iter().map(|e| e.date).collect();
+        let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
         let prices = stock_api::get_stock_daily_price(code).await?;
         for dto in prices {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
-                date: dto.d.replace('-', "").parse::<i64>().unwrap(),
+                date: dto.d.replace('-', "").parse::<u64>().unwrap(),
                 open: Decimal::new(&dto.o).unwrap(),
                 close: Decimal::new(&dto.c).unwrap(),
                 high: Decimal::new(&dto.h).unwrap(),

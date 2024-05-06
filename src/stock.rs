@@ -29,7 +29,7 @@ pub struct StockDailyPrice {
     /// 股票代码
     pub code: String,
     /// 交易日期
-    pub date: i64,
+    pub date: u64,
     /// 当日开盘价
     pub open: Decimal,
     /// 当日收盘价
@@ -42,11 +42,11 @@ pub struct StockDailyPrice {
     pub volume: Option<Decimal>,
     /// 当日成交金额，可能为空
     pub amount: Option<Decimal>,
-    /// 当日涨跌幅，可能为空
+    /// 当日振幅，可能为空
     pub zf: Option<Decimal>,
     /// 当日换手率，可能为空
     pub hs: Option<Decimal>,
-    /// 当日振幅，可能为空
+    /// 当日涨跌幅，可能为空
     pub zd: Option<Decimal>,
     /// 当日涨跌额，可能为空
     pub zde: Option<Decimal>,
@@ -54,16 +54,21 @@ pub struct StockDailyPrice {
 
 crud!(StockDailyPrice {});
 
+/// 表示股票每日价格同步记录的结构体。
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StockDailyPriceSyncRecord {
+    /// 股票代码，以字符串形式存储。
     pub code: String,
-    pub date: i64,
+    /// 日期，以整型64位有符号数存储，代表自1970年1月1日以来的秒数。
+    pub date: u64,
+    /// 更新状态，使用特殊序列化方法处理，可以是布尔值或整型。
     #[serde(deserialize_with = "database::bool_or_int")]
     pub updated: bool,
 }
 
+
 crud!(StockDailyPriceSyncRecord {});
-impl_select!(StockDailyPriceSyncRecord {select_by_code_date(code: &str, date: i64) -> Option => "`where code = #{code} and date = #{date}`"});
+impl_select!(StockDailyPriceSyncRecord {select_by_code_date(code: &str, date: u64) -> Option => "`where code = #{code} and date = #{date}`"});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockPrice {
