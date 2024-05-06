@@ -58,7 +58,7 @@ pub struct StockPrice {
     pub low: Option<Decimal>,
     pub open: Option<Decimal>,
     pub pc: Option<Decimal>,
-    pub price: Option<Decimal>,
+    pub price: Decimal,
     pub amount: Option<Decimal>,
     pub ud: Option<Decimal>,
     pub yc: Option<Decimal>,

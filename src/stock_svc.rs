@@ -188,7 +188,7 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
         low: Some(Decimal::new(&price_dto.l).unwrap()),
         open: Some(Decimal::new(&price_dto.o).unwrap()),
         pc: Some(Decimal::new(&price_dto.pc).unwrap()),
-        price: Some(Decimal::new(&price_dto.p).unwrap()),
+        price: Decimal::new(&price_dto.p).unwrap(),
         amount: Some(Decimal::new(&price_dto.cje).unwrap()),
         ud: Some(Decimal::new(&price_dto.ud).unwrap()),
         volume: Some(Decimal::new(&price_dto.v).unwrap()),
