@@ -24,20 +24,34 @@ crud!(Stock {});
 impl_select!(Stock {select_by_code(code: &str) -> Option => "`where code = #{code}`"});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+/// 表示股票每日价格信息的结构体
 pub struct StockDailyPrice {
+    /// 股票代码
     pub code: String,
+    /// 交易日期
     pub date: i64,
+    /// 当日开盘价
     pub open: Decimal,
-    pub close:Decimal,
+    /// 当日收盘价
+    pub close: Decimal,
+    /// 当日最高价
     pub high: Decimal,
+    /// 当日最低价
     pub low: Decimal,
+    /// 当日成交量，可能为空
     pub volume: Option<Decimal>,
+    /// 当日成交金额，可能为空
     pub amount: Option<Decimal>,
+    /// 当日涨跌幅，可能为空
     pub zf: Option<Decimal>,
+    /// 当日换手率，可能为空
     pub hs: Option<Decimal>,
+    /// 当日振幅，可能为空
     pub zd: Option<Decimal>,
+    /// 当日涨跌额，可能为空
     pub zde: Option<Decimal>,
 }
+
 crud!(StockDailyPrice {});
 
 #[derive(Debug, Serialize, Deserialize)]
