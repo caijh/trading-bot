@@ -8,7 +8,7 @@ use crate::holiday_svc::{is_holiday, sync_holidays};
 
 pub fn holiday_routers() -> Router {
     Router::new()
-        .route("/syc", get(sync))
+        .route("/sync", get(sync))
         .route("/today", get(today_is_holiday))
 }
 
