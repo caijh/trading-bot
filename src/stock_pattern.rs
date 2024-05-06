@@ -1,6 +1,7 @@
 use bigdecimal::BigDecimal;
 use crate::stock::StockDailyPrice;
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum StockPattern {
     /// 长下影线
     LongLowerShadow,
