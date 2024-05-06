@@ -7,17 +7,21 @@ use rbdc_mysql::types::year::Year;
 
 use crate::{holiday::MarketHoliday, holiday_api::get_holidays};
 
-pub async fn is_holiday(date: &DateTime<Local>) -> Result<bool, Box<dyn Error>> {
+struct HolidayQueryResult {
+    is_holiday: bool,
+}
+
+pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Box<dyn Error>> {
     if date.weekday().number_from_monday() == 6 || date.weekday().number_from_monday() == 7 {
-        return Ok(true);
+        return Ok(HolidayQueryResult {is_holiday: true });
     }
 
     let date = date.format("%Y%m%d").to_string();
     let dao = SERVICES.get::<DbService>().dao();
     let market_holiday = MarketHoliday::select_by_id(dao, date.parse::<u64>().unwrap()).await?;
     match market_holiday {
-        Some(_) => Ok(true),
-        None => Ok(false),
+        Some(_) => Ok(HolidayQueryResult {is_holiday: true }),
+        None => Ok(HolidayQueryResult {is_holiday: false }),
     }
 }
 
