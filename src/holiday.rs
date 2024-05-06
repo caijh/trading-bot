@@ -1,12 +1,11 @@
 use rbatis::{crud, impl_select};
-use rbdc_mysql::types::year::Year;
 use serde::{Deserialize, Serialize};
 
 /// 休市日期
 #[derive(Serialize, Deserialize)]
 pub struct MarketHoliday {
     pub id: u64,
-    pub year: Year,
+    pub year: u16,
     pub month: u8,
     pub day: u8,
 }

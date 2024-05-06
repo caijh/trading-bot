@@ -3,7 +3,6 @@ use std::error::Error;
 use chrono::{DateTime, Datelike, Local};
 use context::SERVICES;
 use database::DbService;
-use rbdc_mysql::types::year::Year;
 use serde::{Deserialize, Serialize};
 
 use crate::{holiday::MarketHoliday, holiday_api::get_holidays};
@@ -15,15 +14,15 @@ pub struct HolidayQueryResult {
 
 pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Box<dyn Error>> {
     if date.weekday().number_from_monday() == 6 || date.weekday().number_from_monday() == 7 {
-        return Ok(HolidayQueryResult {is_holiday: true });
+        return Ok(HolidayQueryResult { is_holiday: true });
     }
 
     let date = date.format("%Y%m%d").to_string();
     let dao = SERVICES.get::<DbService>().dao();
     let market_holiday = MarketHoliday::select_by_id(dao, date.parse::<u64>().unwrap()).await?;
     match market_holiday {
-        Some(_) => Ok(HolidayQueryResult {is_holiday: true }),
-        None => Ok(HolidayQueryResult {is_holiday: false }),
+        Some(_) => Ok(HolidayQueryResult { is_holiday: true }),
+        None => Ok(HolidayQueryResult { is_holiday: false }),
     }
 }
 
@@ -36,7 +35,7 @@ pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
         ids.push(id);
         let d = MarketHoliday {
             id,
-            year: Year(date[0..4].parse::<u16>().unwrap()),
+            year: date[0..4].parse::<u16>().unwrap(),
             month: date[4..6].parse::<u8>().unwrap(),
             day: date[6..8].parse::<u8>().unwrap(),
         };
