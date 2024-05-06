@@ -29,7 +29,7 @@ pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Bo
 
 pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
     let dates = get_holidays().await?;
-    let mut market_holidays = Vec::new();
+    let mut holidays = Vec::new();
     let mut ids = Vec::new();
     for date in dates {
         let id = date.parse::<u64>().unwrap();
@@ -40,13 +40,13 @@ pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
             month: date[4..6].parse::<u8>().unwrap(),
             day: date[6..8].parse::<u8>().unwrap(),
         };
-        market_holidays.push(d);
+        holidays.push(d);
     }
     if ids.is_empty() {
         return Ok(());
     }
     let dao = SERVICES.get::<DbService>().dao();
     MarketHoliday::delete_in_column(dao, "id", &ids).await?;
-    MarketHoliday::insert_batch(dao, &market_holidays, market_holidays.len() as u64).await?;
+    MarketHoliday::insert_batch(dao, &holidays, holidays.len() as u64).await?;
     Ok(())
 }
