@@ -19,8 +19,7 @@ impl Bootstrap for StockBotServer {
         // set logger.
         Logger::init_logger(config);
 
-        let database_service = DbService::create(config).await;
-        SERVICES.set(database_service);
+        SERVICES.set(DbService::create(config).await);
     }
 
     async fn init_routes(&self, router: Router) -> Router {
