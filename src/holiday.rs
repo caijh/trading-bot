@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 /// 休市日期
 #[derive(Serialize, Deserialize)]
 pub struct MarketHoliday {
+    /// id 为日期, 格式为 yyyyMMdd
     pub id: u64,
     pub year: u16,
     pub month: u8,
