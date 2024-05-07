@@ -11,7 +11,7 @@ use util::request::Request;
 
 use crate::exchange::Exchange;
 use crate::stock::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
-use crate::{stock, stock_api};
+use crate::stock_api;
 
 pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
     match exchange {
@@ -19,13 +19,15 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1&COMPANY_STATUS=2,4,5,7,8";
             download(url, Path::new("sh_stocks.xls")).await?;
             let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
-            save_or_update_stocks(stocks).await?;
+            delete_stocks(exchange).await?;
+            save_stocks(stocks).await?;
         }
         Exchange::SZ(exchange) => {
             let url = "https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random=0.4030052742011667";
             Request::download(url, Path::new("sz_stocks.xlsx")).await?;
             let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx", exchange)?;
-            save_or_update_stocks(stocks).await?;
+            delete_stocks(exchange).await?;
+            save_stocks(stocks).await?;
         }
     }
     Ok(())
@@ -110,18 +112,18 @@ pub fn read_stocks_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock
 /// ```
 ///
 /// ```
-async fn save_or_update_stocks(stocks: Vec<Stock>) -> Result<(), Box<dyn Error>> {
+async fn save_stocks(stocks: Vec<Stock>) -> Result<(), Box<dyn Error>> {
     let db = SERVICES.get::<DbService>().dao();
 
-    for stock in stocks {
-        let old_stock = Stock::select_by_code(db, &stock.code).await?;
+    Stock::insert_batch(db, &stocks, stocks.len() as u64).await?;
 
-        if old_stock.is_none() {
-            Stock::insert(db, &stock).await?;
-        } else {
-            Stock::update_by_column(db, &stock, stock::COLUMN_CODE).await?;
-        }
-    }
+    Ok(())
+}
+
+async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
+    let dao = SERVICES.get::<DbService>().dao();
+
+    Stock::delete_by_column(dao, "exchange", exchange).await?;
 
     Ok(())
 }
@@ -148,8 +150,8 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     }
     if !updated {
         let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
-        let prices = stock_api::get_stock_daily_price(&stock).await?;
-        for dto in prices {
+        let mut prices = Vec::new();
+        for dto in stock_api::get_stock_daily_price(&stock).await? {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
                 date: dto.d.parse::<u64>().unwrap(),
@@ -165,9 +167,12 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
                 zde: None,
             };
             if !dates.contains(&daily_price.date) {
-                StockDailyPrice::insert(dao, &daily_price).await?;
+                prices.push(daily_price.clone());
                 daily_prices.push(daily_price);
             }
+        }
+        if !prices.is_empty() {
+            StockDailyPrice::insert_batch(dao, &prices, prices.len() as u64).await?;
         }
         StockDailyPriceSyncRecord::insert(
             dao,
