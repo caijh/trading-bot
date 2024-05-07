@@ -42,7 +42,7 @@ pub async fn get_stock_daily_price(
     let config = Configuration::get_config().await;
     match exchange {
         Exchange::SH(_) => {
-            let url = "https://yunhq.sse.com.cn:32042";
+            let url = config.get_string("stock.api.sh.baseurl").unwrap();
             let url = format!(
                 "{}/v1/sh1/dayk/{}?begin=-1000&end=-1&period=day&_={}",
                 url,
