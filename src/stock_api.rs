@@ -165,6 +165,11 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             let snap = json.get("snap").unwrap();
             let date = json.get("date").unwrap().to_string();
             let time = json.get("time").unwrap().to_string();
+            let time = if time.len() < 6 {
+                "0".to_string() + &time
+            } else {
+                time
+            };
             Ok(StockPriceDTO {
                 h: snap.get(3).unwrap().to_string().string(),
                 l: snap.get(4).unwrap().to_string(),
