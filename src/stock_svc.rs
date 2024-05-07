@@ -16,7 +16,7 @@ use crate::stock_api;
 pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
     match exchange {
         Exchange::SH(exchange) => {
-            let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1&COMPANY_STATUS=2,4,5,7,8";
+            let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1,8&COMPANY_STATUS=2,4,5,7,8";
             download(url, Path::new("sh_stocks.xls")).await?;
             let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
             delete_stocks(exchange).await?;
