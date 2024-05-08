@@ -25,23 +25,23 @@ pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
         // 上涨
         let p = (low.clone() - open.clone()).abs() / (open.clone() - close.clone()).abs();
 
-        if p >= BigDecimal::from_str("2").unwrap() {
+        if p > BigDecimal::from_str("2").unwrap() {
             return StockPattern::LongLowerShadow;
         }
 
         let p: Decimal = open.clone() / close.clone();
-        if p >= Decimal::new("0.999").unwrap() {
+        if p > Decimal::new("0.999").unwrap() {
             return StockPattern::CrossStar;
         }
     } else {
         // 下跌
         let p = (low.clone() - close.clone()).abs() / (close.clone() - open.clone()).abs();
-        if p >= BigDecimal::from_str("2").unwrap() {
+        if p > BigDecimal::from_str("2").unwrap() {
             return StockPattern::LongLowerShadow;
         }
 
         let p: Decimal = close.clone() / open.clone();
-        if p >= Decimal::new("0.999").unwrap() {
+        if p > Decimal::new("0.999").unwrap() {
             return StockPattern::CrossStar;
         }
     }
