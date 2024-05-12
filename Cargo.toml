@@ -50,3 +50,4 @@ chrono = "0.4"
 rand = "0.8.5"
 calamine = "0.24.0"
 bigdecimal = "0.4.3"
+polars = { version = "0.39.2", features = ["json", "lazy"] }
