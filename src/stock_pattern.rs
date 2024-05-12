@@ -11,6 +11,7 @@ pub enum StockPattern {
     LongLowerShadow,
     /// 十字星
     CrossStar,
+    /// 未知形态
     UnKnown,
 }
 
@@ -19,7 +20,11 @@ pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
     let close = &price.close;
     let low = &price.low;
     if open <= close {
-        let p = (low.clone() - open.clone()).abs() / (open.clone() - close.clone()).abs();
+        let mut m = open.clone() - close.clone();
+        if m == Decimal::new("0").unwrap() {
+            m = Decimal::new("1").unwrap();
+        }
+        let p = (low.clone() - open.clone()).abs() / m.abs();
 
         if p > BigDecimal::from_str("2").unwrap() {
             return StockPattern::LongLowerShadow;
