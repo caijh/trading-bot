@@ -8,6 +8,7 @@ use web::bootstrap::Bootstrap;
 use web::health::health_routers;
 
 use crate::holiday_ctrl::holiday_routers;
+use crate::jobs::load_jobs;
 use crate::stock_analysis_ctrl::stock_analysis_routers;
 use crate::stock_ctrl::stock_routers;
 use crate::stock_index_ctrl::stock_index_routers;
@@ -21,6 +22,8 @@ impl Bootstrap for StockBotServer {
         Logger::init_logger(config);
 
         SERVICES.set(DbService::create(config).await);
+
+        load_jobs().await.expect("Fail to load jobs");
     }
 
     async fn init_routes(&self, router: Router) -> Router {
