@@ -166,7 +166,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             let date = json.get("date").unwrap().to_string();
             let time = json.get("time").unwrap().to_string();
             let time = if time.len() < 6 {
-                "0".to_string() + &time
+                format!("{}{}", 0, time)
             } else {
                 time
             };
@@ -180,7 +180,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 ud: snap.get(8).unwrap().to_string(),
                 v: snap.get(9).unwrap().to_string(),
                 yc: snap.get(1).unwrap().to_string(),
-                t: NaiveDateTime::parse_from_str((date + &time).as_str(), "%Y%m%d%H%M%S")
+                t: NaiveDateTime::parse_from_str(&format!("{}{}", date, time), "%Y%m%d%H%M%S")
                     .unwrap()
                     .format("%Y-%m-%d %H:%M:%S")
                     .to_string(),
