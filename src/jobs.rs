@@ -5,7 +5,7 @@ use database::DbService;
 use notification::{Notification, NotificationConfig};
 use tokio::spawn;
 use tokio_cron_scheduler::{JobBuilder, JobScheduler};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::exchange::Exchange;
 use crate::holiday_svc::sync_holidays;
@@ -153,7 +153,7 @@ async fn create_scheduler() -> Result<JobScheduler> {
 
     scheduler.set_shutdown_handler(Box::new(|| {
         Box::pin(async move {
-            println!("Shut down done");
+            info!("Shut down done");
         })
     }));
 
