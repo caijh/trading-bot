@@ -29,7 +29,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn register() {
-    tracing::info!("Register service instance ...");
     let config = Configuration::get_config().await;
     let _ = registration::register(&config).await;
 }
