@@ -19,8 +19,8 @@ pub async fn get_rate() -> Result<Vec<CurrencyRate>, Box<dyn Error>> {
     if let Some(rates) = body {
         for rate in rates {
             let price = CurrencyRate {
-                currency_from: rate.get("ccyNbrEng").unwrap().as_str().unwrap().to_string(),
-                currency_to: "RMB".to_string(),
+                from: rate.get("ccyNbrEng").unwrap().as_str().unwrap().to_string(),
+                to: "RMB".to_string(),
                 buy_price: BigDecimal::from_str(rate.get("rthOfr").unwrap().as_str().unwrap())
                     .unwrap()
                     / 100, // 购汇
