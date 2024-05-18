@@ -105,8 +105,8 @@ pub async fn get_stock_daily_price(
                         h: k.get(4).unwrap().as_str().unwrap().to_string(),
                         zd: k.get(5).unwrap().as_str().unwrap().to_string(),
                         zdf: k.get(6).unwrap().as_str().unwrap().to_string(),
-                        v: k.get(7).unwrap().as_str().unwrap().to_string(),
-                        e: k.get(8).unwrap().as_str().unwrap().to_string(),
+                        v: k.get(7).unwrap().to_string(),
+                        e: k.get(8).unwrap().to_string(),
                         hs: "".to_string(),
                     };
                     stock_prices.push(price);
