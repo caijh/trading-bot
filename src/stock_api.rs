@@ -29,10 +29,9 @@ pub struct StockDailyPriceDTO {
     pub c: String,
     pub v: String,
     pub e: String,
-    pub zf: String,
-    pub hs: String,
     pub zd: String,
-    pub zde: String,
+    pub zdf: String,
+    pub hs: String,
 }
 
 pub async fn get_stock_daily_price(
@@ -64,10 +63,9 @@ pub async fn get_stock_daily_price(
                         c: k.get(4).unwrap().to_string(),
                         v: k.get(5).unwrap().to_string(),
                         e: k.get(6).unwrap().to_string(),
-                        zf: "".to_string(),
-                        hs: "".to_string(),
                         zd: "".to_string(),
-                        zde: "".to_string(),
+                        zdf: "".to_string(),
+                        hs: "".to_string(),
                     };
                     stock_prices.push(price);
                 }
@@ -95,17 +93,21 @@ pub async fn get_stock_daily_price(
                 for k in kline {
                     let k = k.as_array().unwrap();
                     let price = StockDailyPriceDTO {
-                        d: k.first().unwrap().to_string().replace('-', ""),
-                        o: k.get(1).unwrap().to_string(),
-                        h: k.get(4).unwrap().to_string(),
-                        l: k.get(3).unwrap().to_string(),
-                        c: k.get(2).unwrap().to_string(),
-                        v: k.get(5).unwrap().to_string(),
-                        e: k.get(6).unwrap().to_string(),
-                        zf: "".to_string(),
+                        d: k.first()
+                            .unwrap()
+                            .as_str()
+                            .unwrap()
+                            .to_string()
+                            .replace('-', ""),
+                        o: k.get(1).unwrap().as_str().unwrap().to_string(),
+                        c: k.get(2).unwrap().as_str().unwrap().to_string(),
+                        l: k.get(3).unwrap().as_str().unwrap().to_string(),
+                        h: k.get(4).unwrap().as_str().unwrap().to_string(),
+                        zd: k.get(5).unwrap().as_str().unwrap().to_string(),
+                        zdf: k.get(6).unwrap().as_str().unwrap().to_string(),
+                        v: k.get(7).unwrap().as_str().unwrap().to_string(),
+                        e: k.get(8).unwrap().as_str().unwrap().to_string(),
                         hs: "".to_string(),
-                        zd: "".to_string(),
-                        zde: "".to_string(),
                     };
                     stock_prices.push(price);
                 }
