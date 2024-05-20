@@ -2,10 +2,11 @@ use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
 use rbatis::rbdc::Decimal;
+use serde::{Deserialize, Serialize};
 
 use crate::stock::StockDailyPrice;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum StockPattern {
     /// 长下影线
     LongLowerShadow,
