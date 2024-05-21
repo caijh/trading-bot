@@ -22,7 +22,7 @@ pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
     let low = &price.low;
     let high = &price.high;
     if open <= close {
-        let mut m = open.clone() - close.clone();
+        let mut m = close.clone() - open.clone();
         if m == Decimal::new("0").unwrap() {
             m = Decimal::new("1").unwrap();
         }
@@ -36,6 +36,24 @@ pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
         }
 
         let p: Decimal = open.clone() / close.clone();
+        if p > Decimal::new("0.999").unwrap() {
+            return StockPattern::CrossStar;
+        }
+    } else {
+        let mut m = open.clone() - close.clone();
+        if m == Decimal::new("0").unwrap() {
+            m = Decimal::new("1").unwrap();
+        }
+        let sub1 = (low.clone() - close.clone()).abs();
+        let sub2 = (open.clone() - high.clone()).abs();
+
+        let p = sub1.clone() / m.abs();
+        // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
+        if p > BigDecimal::from_str("2").unwrap() && sub1 > sub2 {
+            return StockPattern::LongLowerShadow;
+        }
+
+        let p: Decimal = close.clone() / open.clone();
         if p > Decimal::new("0.999").unwrap() {
             return StockPattern::CrossStar;
         }
