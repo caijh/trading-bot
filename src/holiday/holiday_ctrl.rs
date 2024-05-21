@@ -4,7 +4,7 @@ use axum::Router;
 use chrono::Local;
 use web::response::RespBody;
 
-use crate::holiday_svc::{is_holiday, sync_holidays};
+use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
 
 pub fn holiday_routers() -> Router {
     Router::new()

@@ -5,7 +5,8 @@ use context::SERVICES;
 use database::DbService;
 use serde::{Deserialize, Serialize};
 
-use crate::{holiday::MarketHoliday, holiday_api::get_holidays};
+use crate::holiday::holiday_api::get_holidays;
+use crate::holiday::holiday_model::MarketHoliday;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct HolidayQueryResult {

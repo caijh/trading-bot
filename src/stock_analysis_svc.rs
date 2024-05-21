@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use crate::calculate;
 use crate::stock_analysis_ctrl::Params;
 use crate::stock_index::IndexConstituent;
 use crate::stock_index_svc::{get_constituent_stocks, get_stock_index};
@@ -17,8 +18,16 @@ pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn 
         if let Some(price) = l {
             let pattern = get_stock_pattern(price);
             match pattern {
-                StockPattern::LongLowerShadow => focus_stocks.push(stock),
-                StockPattern::CrossStar => focus_stocks.push(stock),
+                StockPattern::LongLowerShadow => {
+                    if calculate::down_at_least(prices, 3) {
+                        focus_stocks.push(stock)
+                    }
+                }
+                StockPattern::CrossStar => {
+                    if calculate::down_at_least(prices, 3) {
+                        focus_stocks.push(stock)
+                    }
+                }
                 StockPattern::UnKnown => {}
             }
         }
