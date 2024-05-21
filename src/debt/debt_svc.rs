@@ -5,7 +5,7 @@ use configuration::Configuration;
 use serde_json::Value;
 use util::request::Request;
 
-use crate::debt::DebtPrice;
+use crate::debt::debt_model::DebtPrice;
 
 pub async fn get_debt_price(code: &String) -> Result<DebtPrice, Box<dyn Error>> {
     let client = Request::client().await;

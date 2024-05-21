@@ -5,7 +5,7 @@ use axum::Router;
 use serde::{Deserialize, Serialize};
 use web::response::RespBody;
 
-use crate::debt_svc;
+use crate::debt::debt_svc;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DebtPrice {
