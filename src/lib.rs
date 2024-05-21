@@ -3,7 +3,6 @@ pub mod currency;
 pub mod currency_ctrl;
 pub mod currency_svc;
 pub mod debt;
-pub mod debt_svc;
 pub mod exchange;
 pub mod jobs;
 pub mod server;
