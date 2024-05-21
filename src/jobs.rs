@@ -8,7 +8,7 @@ use tokio_cron_scheduler::{JobBuilder, JobScheduler};
 use tracing::{error, info};
 
 use crate::exchange::Exchange;
-use crate::holiday_svc::sync_holidays;
+use crate::holiday::holiday_svc::sync_holidays;
 use crate::stock_analysis_ctrl::Params;
 use crate::stock_analysis_svc::analysis;
 use crate::stock_index::{IndexConstituent, StockIndex};

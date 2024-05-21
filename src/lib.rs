@@ -5,10 +5,6 @@ pub mod currency_svc;
 pub mod debt;
 pub mod debt_svc;
 pub mod exchange;
-pub mod holiday;
-pub mod holiday_api;
-pub mod holiday_ctrl;
-pub mod holiday_svc;
 pub mod jobs;
 pub mod server;
 pub mod stock;
@@ -22,3 +18,5 @@ pub mod stock_index_ctrl;
 pub mod stock_index_svc;
 pub mod stock_pattern;
 pub mod stock_svc;
+
+pub mod holiday;

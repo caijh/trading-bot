@@ -9,7 +9,7 @@ use web::health::health_routers;
 
 use crate::currency_ctrl::currency_routers;
 use crate::debt::debt_routers;
-use crate::holiday_ctrl::holiday_routers;
+use crate::holiday::holiday_ctrl::holiday_routers;
 use crate::jobs::load_jobs;
 use crate::stock_analysis_ctrl::stock_analysis_routers;
 use crate::stock_ctrl::stock_routers;
