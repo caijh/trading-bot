@@ -11,9 +11,9 @@ use crate::exchange::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_svc::sync_constituents;
+use crate::stock::stock_svc::sync_stocks;
 use crate::stock_analysis_ctrl::Params;
 use crate::stock_analysis_svc::analysis;
-use crate::stock_svc::sync_stocks;
 
 pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;

@@ -1,6 +1,6 @@
 use polars::series::Series;
 
-use crate::stock::StockDailyPrice;
+use crate::stock::stock_model::StockDailyPrice;
 
 pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
     (0..prices.len())

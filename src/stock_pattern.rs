@@ -4,7 +4,7 @@ use bigdecimal::BigDecimal;
 use rbatis::rbdc::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::stock::StockDailyPrice;
+use crate::stock::stock_model::StockDailyPrice;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum StockPattern {

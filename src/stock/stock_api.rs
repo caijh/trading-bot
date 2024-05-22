@@ -11,7 +11,7 @@ use serde_json::Value;
 use util::request::Request;
 
 use crate::exchange::Exchange;
-use crate::stock::Stock;
+use crate::stock::stock_model::Stock;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDTO {
