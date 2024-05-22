@@ -4,7 +4,7 @@ use axum::routing::get;
 use axum::Router;
 use web::response::RespBody;
 
-use crate::stock_index_svc;
+use crate::index::stock_index_svc;
 
 pub fn stock_index_routers() -> Router {
     Router::new()
