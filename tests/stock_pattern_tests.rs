@@ -2,7 +2,7 @@
 mod tests {
     use rbatis::rbdc::Decimal;
 
-    use stock_bot::stock_model::StockDailyPrice;
+    use stock_bot::stock::stock_model::StockDailyPrice;
     use stock_bot::stock_pattern::{get_stock_pattern, StockPattern};
 
     #[test]
