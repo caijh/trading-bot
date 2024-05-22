@@ -5,7 +5,7 @@ use bigdecimal::BigDecimal;
 use serde_json::Value;
 use util::request::Request;
 
-use crate::currency::CurrencyRate;
+use crate::currency::currency_model::CurrencyRate;
 
 pub async fn get_rate() -> Result<Vec<CurrencyRate>, Box<dyn Error>> {
     let response = Request::get_response("https://fx.cmbchina.com/api/v1/fx/rate").await?;

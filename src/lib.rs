@@ -1,7 +1,4 @@
 pub mod calculate;
-pub mod currency;
-pub mod currency_ctrl;
-pub mod currency_svc;
 pub mod debt;
 pub mod exchange;
 pub mod jobs;
@@ -18,4 +15,5 @@ pub mod stock_index_svc;
 pub mod stock_pattern;
 pub mod stock_svc;
 
+mod currency;
 pub mod holiday;

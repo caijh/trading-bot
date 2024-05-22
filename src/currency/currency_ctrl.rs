@@ -3,7 +3,7 @@ use axum::routing::get;
 use axum::Router;
 use web::response::RespBody;
 
-use crate::currency_svc;
+use crate::currency::currency_svc;
 
 pub fn currency_routers() -> Router {
     Router::new().route("/rate", get(get_rate))
