@@ -7,13 +7,13 @@ use logger::Logger;
 use web::bootstrap::Bootstrap;
 use web::health::health_routers;
 
+use crate::analysis::stock_analysis_ctrl::stock_analysis_routers;
 use crate::currency::currency_ctrl::currency_routers;
 use crate::debt::debt_ctrl::debt_routers;
 use crate::holiday::holiday_ctrl::holiday_routers;
 use crate::index::stock_index_ctrl::stock_index_routers;
 use crate::jobs::load_jobs;
 use crate::stock::stock_ctrl::stock_routers;
-use crate::stock_analysis_ctrl::stock_analysis_routers;
 
 pub struct StockBotServer;
 

@@ -5,7 +5,7 @@ use axum::Router;
 use serde::{Deserialize, Serialize};
 use web::response::RespBody;
 
-use crate::stock_analysis_svc;
+use crate::analysis::stock_analysis_svc;
 
 pub fn stock_analysis_routers() -> Router {
     Router::new().route("/", get(analysis))
