@@ -7,13 +7,13 @@ use tokio::spawn;
 use tokio_cron_scheduler::{JobBuilder, JobScheduler};
 use tracing::{error, info};
 
+use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_svc::sync_constituents;
 use crate::stock::stock_svc::sync_stocks;
-use crate::stock_analysis_ctrl::Params;
-use crate::stock_analysis_svc::analysis;
 
 pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;
