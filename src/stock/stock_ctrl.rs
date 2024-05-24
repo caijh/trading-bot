@@ -7,9 +7,9 @@ use axum::Router;
 use serde::{Deserialize, Serialize};
 use web::response::RespBody;
 
+use crate::analysis::stock_pattern::get_stock_pattern;
 use crate::exchange::Exchange;
 use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price, sync_stocks};
-use crate::stock_pattern::get_stock_pattern;
 
 pub fn stock_routers() -> Router {
     Router::new()
