@@ -1,11 +1,11 @@
 use std::error::Error;
 
+use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
 use crate::calculate;
-use crate::stock_analysis_ctrl::Params;
-use crate::stock_index::IndexConstituent;
-use crate::stock_index_svc::{get_constituent_stocks, get_stock_index};
-use crate::stock_pattern::{get_stock_pattern, StockPattern};
-use crate::stock_svc::get_stock_daily_price;
+use crate::index::stock_index::IndexConstituent;
+use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
+use crate::stock::stock_svc::get_stock_daily_price;
 
 pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
     let index = &params.index_code;

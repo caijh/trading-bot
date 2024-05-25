@@ -10,8 +10,8 @@ use rbatis::rbdc::Decimal;
 use util::request::Request;
 
 use crate::exchange::Exchange;
-use crate::stock::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
-use crate::stock_api;
+use crate::stock::stock_api;
+use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 
 pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
     match exchange {

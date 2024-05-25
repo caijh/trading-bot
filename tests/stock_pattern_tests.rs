@@ -2,7 +2,7 @@
 mod tests {
     use rbatis::rbdc::Decimal;
 
-    use stock_bot::stock::StockDailyPrice;
+    use stock_bot::stock::stock_model::StockDailyPrice;
     use stock_bot::stock_pattern::{get_stock_pattern, StockPattern};
 
     #[test]
@@ -18,7 +18,7 @@ mod tests {
             hs: None,
             zd: None,
             date: 0,
-            close:  Decimal::new("11.26").unwrap(),
+            close: Decimal::new("11.26").unwrap(),
             zde: None,
         };
         let pattern = get_stock_pattern(&price);
@@ -35,7 +35,7 @@ mod tests {
             hs: None,
             zd: None,
             date: 0,
-            close:  Decimal::new("11.26").unwrap(),
+            close: Decimal::new("11.26").unwrap(),
             zde: None,
         };
         let pattern = get_stock_pattern(&price);

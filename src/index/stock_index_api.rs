@@ -7,7 +7,7 @@ use serde_json::Value;
 use util::request::Request;
 
 use crate::exchange::Exchange;
-use crate::stock::Stock;
+use crate::stock::stock_model::Stock;
 
 pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let exchange = Exchange::from_str(exchange).unwrap();

@@ -3,8 +3,8 @@ use std::error::Error;
 use context::SERVICES;
 use database::DbService;
 
-use crate::stock_index::{IndexConstituent, StockIndex};
-use crate::stock_index_api;
+use crate::index::stock_index::{IndexConstituent, StockIndex};
+use crate::index::stock_index_api;
 
 pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
