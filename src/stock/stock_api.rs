@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use util::request::Request;
 
-use crate::exchange::Exchange;
+use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_model::Stock;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

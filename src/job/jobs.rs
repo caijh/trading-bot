@@ -9,7 +9,7 @@ use tracing::{error, info};
 
 use crate::analysis::stock_analysis_ctrl::Params;
 use crate::analysis::stock_analysis_svc::analysis;
-use crate::exchange::Exchange;
+use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_svc::sync_constituents;
