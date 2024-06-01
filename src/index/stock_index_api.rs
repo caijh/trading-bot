@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use chrono::Local;
 use configuration::Configuration;
+use rand::{thread_rng, Rng};
 use serde_json::Value;
 use util::request::Request;
 
@@ -46,7 +47,7 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
             let url = config.get_string("stock.api.sz.baseurl").unwrap();
             let mut page_no = 1;
             loop {
-                let url = format!("{}/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1747_zs&PAGENO={}&ZSDM={}&random={}", url, page_no, index, Local::now().timestamp_millis());
+                let url = format!("{}/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1747_zs&PAGENO={}&ZSDM={}&random={}", url, page_no, index, thread_rng().gen::<f64>());
                 let response = client.get(url).send().await;
                 page_no += 1;
                 match response {
