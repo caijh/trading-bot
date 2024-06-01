@@ -53,7 +53,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn 
                         if ma5 > pre_ma5
                             && ma5 >= ma20
                             && ma5 < ma60
-                            && ((ma5 - ma20) / ma20 < 0.02)
+                            && ((ma5 - ma20) / ma20 < 0.01)
                         {
                             focus_stocks.push(stock);
                         }
