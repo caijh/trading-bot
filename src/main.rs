@@ -2,8 +2,7 @@ use std::error::Error;
 
 use clap::Parser;
 use cli::Cli;
-use configuration::Configuration;
-use registration::deregister;
+use registration::{deregister, register};
 use web::bootstrap::Bootstrap;
 
 use stock_bot::server::StockBotServer;
@@ -26,9 +25,4 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await;
 
     Ok(())
-}
-
-pub async fn register() {
-    let config = Configuration::get_config().await;
-    let _ = registration::register(&config).await;
 }

@@ -9,7 +9,7 @@ use database::DbService;
 use rbatis::rbdc::Decimal;
 use util::request::Request;
 
-use crate::exchange::Exchange;
+use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_api;
 use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 

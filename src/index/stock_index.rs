@@ -1,7 +1,7 @@
 use rbatis::{crud, impl_select};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 /// 指数
 pub struct StockIndex {
     /// 指数代码

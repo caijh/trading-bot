@@ -5,12 +5,13 @@ use chrono::{Local, NaiveDateTime};
 use configuration::Configuration;
 use context::SERVICES;
 use database::DbService;
+use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use util::request::Request;
 
-use crate::exchange::Exchange;
+use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_model::Stock;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -77,7 +78,7 @@ pub async fn get_stock_daily_price(
             let url = format!(
                 "{}/api/market/ssjjhq/getHistoryData?random={}&cycleType=32&marketId=1&code={}",
                 url,
-                Local::now().timestamp_millis(),
+                thread_rng().gen::<f64>(),
                 &stock.code
             );
             let response = Request::get_response(&url).await?;
@@ -194,7 +195,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 .get(format!(
                     "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
                     url,
-                    Local::now().timestamp_millis(),
+                    thread_rng().gen::<f64>(),
                     code
                 ))
                 .send()
