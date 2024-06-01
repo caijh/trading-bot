@@ -1,5 +1,4 @@
 pub mod analysis;
-pub mod calculate;
 pub mod currency;
 pub mod debt;
 pub mod exchange;
