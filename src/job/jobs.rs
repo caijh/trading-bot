@@ -42,12 +42,12 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let params = Params {
-                        index_code: index.code,
+                        index_code: index.code.clone(),
                     };
                     let result = analysis(&params).await;
                     match result {
                         Ok(stocks) => {
-                            spawn(notification_stocks(stocks));
+                            spawn(notification_stocks(stocks, index));
                         }
                         Err(e) => {
                             error!("analysis index {} stocks fail, {}", index.name, e);
@@ -61,11 +61,11 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     Ok(())
 }
 
-async fn notification_stocks(stocks: Vec<IndexConstituent>) {
+async fn notification_stocks(stocks: Vec<IndexConstituent>, index: StockIndex) {
     if stocks.is_empty() {
         return;
     }
-    let title = "股票关注";
+    let title = "股票关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks {
         content.push_str(format!("{} {}\n", stock.stock_name, stock.stock_code).as_str());
@@ -78,7 +78,7 @@ async fn notification_stocks(stocks: Vec<IndexConstituent>) {
                 "{}/send/{}",
                 notification_config.url, notification_config.receiver
             );
-            Notification::create(title, &content)
+            Notification::create(&title, &content)
                 .send(
                     url.as_str(),
                     notification_config.token.as_str(),
