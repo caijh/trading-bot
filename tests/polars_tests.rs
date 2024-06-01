@@ -4,9 +4,6 @@ mod tests {
 
     use polars::io::SerReader;
     use polars::prelude::{col, IntoLazy, JsonReader, NamedFrom};
-    use polars::series::Series;
-
-    use stock_bot::calculate::ma;
 
     #[test]
     fn test_polars() {
@@ -23,8 +20,7 @@ mod tests {
         let df = res.unwrap();
 
         let df = df.clone().lazy().select([col("close")]).collect().unwrap();
-        let ma5 = Series::new("ma", &df["close"]);
-        let vec = ma(&ma5, 5);
+        let vec = ma(&df["close"], 2);
         println!("{:?}", vec);
     }
 }

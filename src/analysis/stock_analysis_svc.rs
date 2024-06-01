@@ -1,8 +1,13 @@
 use std::error::Error;
+use std::io::Cursor;
+
+use polars::datatypes::DataType;
+use polars::io::SerReader;
+use polars::prelude::{col, IntoLazy, JsonReader};
 
 use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_calculate::{down_at_least, ma};
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
-use crate::calculate;
 use crate::index::stock_index::IndexConstituent;
 use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_svc::get_stock_daily_price;
@@ -19,16 +24,41 @@ pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn 
             let pattern = get_stock_pattern(price);
             match pattern {
                 StockPattern::LongLowerShadow => {
-                    if calculate::down_at_least(prices, 3) {
+                    if down_at_least(prices, 3) {
                         focus_stocks.push(stock)
                     }
                 }
                 StockPattern::CrossStar => {
-                    if calculate::down_at_least(prices, 3) {
+                    if down_at_least(prices, 3) {
                         focus_stocks.push(stock)
                     }
                 }
-                StockPattern::UnKnown => {}
+                StockPattern::UnKnown => {
+                    let json = serde_json::to_string(&prices)?;
+                    let polars = JsonReader::new(Cursor::new(json)).finish();
+                    let df = polars;
+                    if let Ok(df) = df {
+                        let df = df
+                            .clone()
+                            .lazy()
+                            .select([col("close").cast(DataType::Float32)])
+                            .collect()?;
+                        let ma5 = ma(&df["close"], 5);
+                        let ma20 = ma(&df["close"], 20);
+                        let ma60 = ma(&df["close"], 60);
+                        let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
+                        let ma5 = ma5.last().unwrap();
+                        let ma20 = ma20.last().unwrap();
+                        let ma60 = ma60.last().unwrap();
+                        if ma5 > pre_ma5
+                            && ma5 >= ma20
+                            && ma5 < ma60
+                            && ((ma5 - ma20) / ma20 < 0.02)
+                        {
+                            focus_stocks.push(stock);
+                        }
+                    }
+                }
             }
         }
     }
