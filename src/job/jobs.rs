@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use anyhow::Result;
 use configuration::Configuration;
 use context::SERVICES;
@@ -45,14 +43,9 @@ async fn add_sync_stock_price_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let indexes = get_all_stock_index().await;
-                match indexes {
-                    Ok(indexes) => {
-                        for index in indexes {
-                            let _ = sync_constituent_stocks_daily_price(&index.code).await;
-                        }
-                    }
-                    Err(_) => {}
+                let indexes = get_all_stock_index().await.unwrap();
+                for index in indexes {
+                    let _ = sync_constituent_stocks_daily_price(&index.code).await;
                 }
             })
         }))
