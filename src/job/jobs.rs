@@ -12,7 +12,9 @@ use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index::{IndexConstituent, StockIndex};
-use crate::index::stock_index_svc::sync_constituents;
+use crate::index::stock_index_svc::{
+    get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
+};
 use crate::stock::stock_svc::sync_stocks;
 
 pub async fn load_jobs() -> Result<()> {
@@ -25,8 +27,29 @@ pub async fn load_jobs() -> Result<()> {
 
     add_sync_index_stocks_job(&scheduler).await?;
 
+    add_sync_stock_price_job(&scheduler).await?;
+
     add_analysis_stocks_job(&scheduler).await?;
 
+    Ok(())
+}
+
+async fn add_sync_stock_price_job(scheduler: &JobScheduler) -> Result<()> {
+    let job = JobBuilder::new()
+        .with_timezone(chrono_tz::Asia::Shanghai)
+        .with_cron_job_type()
+        .with_schedule("0 0 16 * * * *")
+        .unwrap()
+        .with_run_async(Box::new(|_uuid, _locked| {
+            Box::pin(async move {
+                let indexes = get_all_stock_index().await.unwrap();
+                for index in indexes {
+                    let _ = sync_constituent_stocks_daily_price(&index.code).await;
+                }
+            })
+        }))
+        .build()?;
+    scheduler.add(job).await?;
     Ok(())
 }
 
@@ -34,7 +57,7 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     let jj = JobBuilder::new()
         .with_timezone(chrono_tz::Asia::Shanghai)
         .with_cron_job_type()
-        .with_schedule("0 0 16 * * Mon-Fri *")
+        .with_schedule("0 0 18 * * Mon-Fri *")
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {

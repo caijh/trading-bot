@@ -188,6 +188,11 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     Ok(daily_prices)
 }
 
+pub async fn sync_stock_daily_price(code: &str) -> Result<(), Box<dyn Error>> {
+    let _ = get_stock_daily_price(code).await;
+    Ok(())
+}
+
 pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
     let price_dto = stock_api::get_current_price(code).await?;
 
