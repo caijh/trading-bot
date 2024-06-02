@@ -13,10 +13,9 @@ use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_svc::{
-    get_all_stock_index, get_constituent_stocks, sync_constituent_stocks_daily_price,
-    sync_constituents,
+    get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
-use crate::stock::stock_svc::{get_stock_daily_price, sync_stock_daily_price, sync_stocks};
+use crate::stock::stock_svc::sync_stocks;
 
 pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;
