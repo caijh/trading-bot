@@ -12,17 +12,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cli: Cli = Cli::parse();
 
     let server = StockBotServer;
-    server
-        .run(
-            &cli.command,
-            || {
-                tokio::spawn(register());
-            },
-            || {
-                tokio::spawn(deregister());
-            },
-        )
-        .await;
+    server.run(&cli.command, register, deregister).await;
 
     Ok(())
 }
