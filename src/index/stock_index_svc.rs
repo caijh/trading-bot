@@ -5,6 +5,7 @@ use database::DbService;
 
 use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_api;
+use crate::stock::stock_svc::sync_stock_daily_price;
 
 pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
@@ -39,4 +40,18 @@ pub async fn get_stock_index(index: &str) -> Result<StockIndex, Box<dyn Error>> 
         None => Err("Stock index is no Supported".into()),
         Some(index) => Ok(index),
     }
+}
+
+pub async fn sync_constituent_stocks_daily_price(index: &str) -> Result<(), Box<dyn Error>> {
+    let stocks = get_constituent_stocks(index).await?;
+    for stock in stocks {
+        let _ = sync_stock_daily_price(&stock.stock_code).await;
+    }
+    Ok(())
+}
+
+pub async fn get_all_stock_index() -> Result<Vec<StockIndex>, Box<dyn Error>> {
+    let dao = SERVICES.get::<DbService>().dao();
+    let indexes = StockIndex::select_all(dao).await?;
+    Ok(indexes)
 }

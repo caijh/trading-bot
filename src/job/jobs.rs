@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use anyhow::Result;
 use configuration::Configuration;
 use context::SERVICES;
@@ -12,8 +14,11 @@ use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index::{IndexConstituent, StockIndex};
-use crate::index::stock_index_svc::sync_constituents;
-use crate::stock::stock_svc::sync_stocks;
+use crate::index::stock_index_svc::{
+    get_all_stock_index, get_constituent_stocks, sync_constituent_stocks_daily_price,
+    sync_constituents,
+};
+use crate::stock::stock_svc::{get_stock_daily_price, sync_stock_daily_price, sync_stocks};
 
 pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;
@@ -25,8 +30,34 @@ pub async fn load_jobs() -> Result<()> {
 
     add_sync_index_stocks_job(&scheduler).await?;
 
+    add_sync_stock_price_job(&scheduler).await?;
+
     add_analysis_stocks_job(&scheduler).await?;
 
+    Ok(())
+}
+
+async fn add_sync_stock_price_job(scheduler: &JobScheduler) -> Result<()> {
+    let job = JobBuilder::new()
+        .with_timezone(chrono_tz::Asia::Shanghai)
+        .with_cron_job_type()
+        .with_schedule("0 0 16 * * * *")
+        .unwrap()
+        .with_run_async(Box::new(|_uuid, _locked| {
+            Box::pin(async move {
+                let indexes = get_all_stock_index().await;
+                match indexes {
+                    Ok(indexes) => {
+                        for index in indexes {
+                            let _ = sync_constituent_stocks_daily_price(&index.code).await;
+                        }
+                    }
+                    Err(_) => {}
+                }
+            })
+        }))
+        .build()?;
+    scheduler.add(job).await?;
     Ok(())
 }
 
@@ -34,7 +65,7 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     let jj = JobBuilder::new()
         .with_timezone(chrono_tz::Asia::Shanghai)
         .with_cron_job_type()
-        .with_schedule("0 0 16 * * Mon-Fri *")
+        .with_schedule("0 0 18 * * Mon-Fri *")
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
