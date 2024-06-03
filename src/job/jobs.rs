@@ -91,7 +91,7 @@ async fn notification_stocks(stocks: Vec<IndexConstituent>, index: StockIndex) {
     let title = "股票关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks {
-        content.push_str(format!("{} {}\n", stock.stock_name, stock.stock_code).as_str());
+        content.push_str(format!("{:<4} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
     let config = Configuration::get_config().await;
     let result = config.get::<NotificationConfig>("notification");
