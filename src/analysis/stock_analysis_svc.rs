@@ -6,17 +6,17 @@ use polars::io::SerReader;
 use polars::prelude::{col, IntoLazy, JsonReader};
 
 use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_calculate::{down_at_least, ma};
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
-use crate::index::stock_index::IndexConstituent;
 use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_svc::get_stock_daily_price;
 
-pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
+pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
     let index = &params.index_code;
     let index = get_stock_index(index).await?;
     let stocks = get_constituent_stocks(&index.code).await?;
-    let mut focus_stocks = Vec::new();
+    let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
     for stock in stocks {
         let prices = get_stock_daily_price(&stock.stock_code).await?;
         let l = prices.last();
@@ -24,16 +24,24 @@ pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn 
             let pattern = get_stock_pattern(price);
             match pattern {
                 StockPattern::LongLowerShadow => {
-                    if down_at_least(prices, 3) {
-                        focus_stocks.push(stock)
+                    if down_at_least(prices, 4) {
+                        focus_stocks.push(AnalyzedStock {
+                            code: stock.stock_code.to_string(),
+                            name: stock.stock_name.to_string(),
+                            pattern,
+                        });
                     }
                 }
                 StockPattern::CrossStar => {
-                    if down_at_least(prices, 3) {
-                        focus_stocks.push(stock)
+                    if down_at_least(prices, 4) {
+                        focus_stocks.push(AnalyzedStock {
+                            code: stock.stock_code.to_string(),
+                            name: stock.stock_name.to_string(),
+                            pattern,
+                        });
                     }
                 }
-                StockPattern::UnKnown => {
+                _ => {
                     let json = serde_json::to_string(&prices)?;
                     let polars = JsonReader::new(Cursor::new(json)).finish();
                     let df = polars;
@@ -55,7 +63,11 @@ pub async fn analysis(params: &Params) -> Result<Vec<IndexConstituent>, Box<dyn 
                             && ma5 < ma60
                             && ((ma5 - ma20) / ma20 < 0.01)
                         {
-                            focus_stocks.push(stock);
+                            focus_stocks.push(AnalyzedStock {
+                                code: stock.stock_code.to_string(),
+                                name: stock.stock_name.to_string(),
+                                pattern: StockPattern::Ma5Ma20,
+                            });
                         }
                     }
                 }

@@ -8,10 +8,11 @@ use tokio_cron_scheduler::{JobBuilder, JobScheduler};
 use tracing::{error, info};
 
 use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
-use crate::index::stock_index::{IndexConstituent, StockIndex};
+use crate::index::stock_index::StockIndex;
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
@@ -84,14 +85,14 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     Ok(())
 }
 
-async fn notification_stocks(stocks: Vec<IndexConstituent>, index: StockIndex) {
+async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
     if stocks.is_empty() {
         return;
     }
     let title = "股票关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks {
-        content.push_str(format!("{:<4} {}\n", stock.stock_name, stock.stock_code).as_str());
+        content.push_str(format!("{:<4} {} {}\n", stock.name, stock.code, stock.pattern).as_str());
     }
     let config = Configuration::get_config().await;
     let result = config.get::<NotificationConfig>("notification");
