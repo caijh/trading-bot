@@ -1,3 +1,6 @@
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::fmt::Write;
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
@@ -12,8 +15,21 @@ pub enum StockPattern {
     LongLowerShadow,
     /// 十字星
     CrossStar,
+    // MA5 > MA20
+    Ma5Ma20,
     /// 未知形态
     UnKnown,
+}
+
+impl Display for StockPattern {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StockPattern::LongLowerShadow => f.write_str("长下影线"),
+            StockPattern::CrossStar => f.write_str("十字星"),
+            StockPattern::Ma5Ma20 => f.write_str("Ma5 > Ma20"),
+            StockPattern::UnKnown => f.write_str("Unknown"),
+        }
+    }
 }
 
 pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
