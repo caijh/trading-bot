@@ -15,6 +15,7 @@ pub enum StockPattern {
     LongLowerShadow,
     /// 十字星
     CrossStar,
+    // MA5 > MA20
     Ma5Ma20,
     /// 未知形态
     UnKnown,
