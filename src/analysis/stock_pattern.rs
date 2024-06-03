@@ -1,6 +1,5 @@
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::fmt::Write;
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
