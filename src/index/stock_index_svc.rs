@@ -7,6 +7,19 @@ use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_api;
 use crate::stock::stock_svc::sync_stock_daily_price;
 
+/// 获取指数的成分股
+///
+/// # Arguments
+///
+/// * `index`: 指数code
+///
+/// returns: Result<Vec<IndexConstituent, Global>, Box<dyn Error, Global>>
+///
+/// # Examples
+///
+/// ```
+///
+/// ```
 pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
     let dao = SERVICES.get::<DbService>().dao();
