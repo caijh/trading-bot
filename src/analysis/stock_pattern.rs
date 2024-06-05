@@ -1,11 +1,16 @@
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::io::Cursor;
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
+use polars::datatypes::DataType;
+use polars::io::SerReader;
+use polars::prelude::{col, IntoLazy, JsonReader};
 use rbatis::rbdc::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::analysis::stock_calculate::ma;
 use crate::stock::stock_model::StockDailyPrice;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
@@ -25,29 +30,35 @@ impl Display for StockPattern {
         match self {
             StockPattern::LongLowerShadow => f.write_str("长下影线"),
             StockPattern::CrossStar => f.write_str("十字星"),
-            StockPattern::Ma5Ma20 => f.write_str("Ma5 > Ma20"),
+            StockPattern::Ma5Ma20 => f.write_str("Ma5>Ma20"),
             StockPattern::UnKnown => f.write_str("Unknown"),
         }
     }
 }
 
-pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
+pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
+    let price = prices.last().unwrap();
     let open = &price.open;
     let close = &price.close;
     let low = &price.low;
     let high = &price.high;
-    let factor = BigDecimal::from_str("1.2").unwrap();
+    let factor = BigDecimal::from_str("1.5").unwrap();
+    let lower_shadow: BigDecimal;
+    let upper_shadow: BigDecimal;
+    let mut real_body: Decimal;
     if open <= close {
-        let mut real_body = close.clone() - open.clone();
+        real_body = close.clone() - open.clone();
         if real_body == Decimal::new("0").unwrap() {
             real_body = Decimal::new("1").unwrap();
         }
-        let lower_shadow = (low.clone() - open.clone()).abs();
-        let upper_shadow = (close.clone() - high.clone()).abs();
+        lower_shadow = (low.clone() - open.clone()).abs();
+        upper_shadow = (close.clone() - high.clone()).abs();
 
         let p = lower_shadow.clone() / real_body.abs();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        if p > BigDecimal::from_str("2").unwrap() && lower_shadow >= upper_shadow.clone() * factor {
+        if p > BigDecimal::from_str("2").unwrap()
+            && lower_shadow >= upper_shadow.clone() * factor.clone()
+        {
             return StockPattern::LongLowerShadow;
         }
 
@@ -56,22 +67,51 @@ pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
             return StockPattern::CrossStar;
         }
     } else {
-        let mut real_body = open.clone() - close.clone();
+        real_body = open.clone() - close.clone();
         if real_body == Decimal::new("0").unwrap() {
             real_body = Decimal::new("1").unwrap();
         }
-        let lower_shadow = (low.clone() - close.clone()).abs();
-        let upper_shadow = (open.clone() - high.clone()).abs();
+        lower_shadow = (low.clone() - close.clone()).abs();
+        upper_shadow = (open.clone() - high.clone()).abs();
 
         let p = lower_shadow.clone() / real_body.abs();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        if p > BigDecimal::from_str("2").unwrap() && lower_shadow >= upper_shadow.clone() * factor {
+        if p > BigDecimal::from_str("2").unwrap()
+            && lower_shadow >= upper_shadow.clone() * factor.clone()
+        {
             return StockPattern::LongLowerShadow;
         }
 
         let p: Decimal = close.clone() / open.clone();
         if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
             return StockPattern::CrossStar;
+        }
+    }
+
+    let json = serde_json::to_string(&prices).unwrap();
+    let polars = JsonReader::new(Cursor::new(json)).finish();
+    let df = polars;
+    if let Ok(df) = df {
+        let df = df
+            .clone()
+            .lazy()
+            .select([col("close").cast(DataType::Float32)])
+            .collect()
+            .unwrap();
+        let ma5 = ma(&df["close"], 5);
+        let ma20 = ma(&df["close"], 20);
+        let ma60 = ma(&df["close"], 60);
+        let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
+        let ma5 = ma5.last().unwrap();
+        let ma20 = ma20.last().unwrap();
+        let ma60 = ma60.last().unwrap();
+        if ma5 > pre_ma5
+            && ma5 >= ma20
+            && ma5 < ma60
+            && ((ma5 - ma20) / ma20 < 0.01)
+            && (real_body.abs() >= upper_shadow * factor.clone())
+        {
+            return StockPattern::Ma5Ma20;
         }
     }
 
