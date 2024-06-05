@@ -1,11 +1,16 @@
 use std::fmt::Display;
 use std::fmt::Formatter;
+use std::io::Cursor;
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
+use polars::datatypes::DataType;
+use polars::io::SerReader;
+use polars::prelude::{col, IntoLazy, JsonReader};
 use rbatis::rbdc::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::analysis::stock_calculate::ma;
 use crate::stock::stock_model::StockDailyPrice;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
@@ -73,6 +78,28 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let p: Decimal = close.clone() / open.clone();
         if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
             return StockPattern::CrossStar;
+        }
+    }
+
+    let json = serde_json::to_string(&prices).unwrap();
+    let polars = JsonReader::new(Cursor::new(json)).finish();
+    let df = polars;
+    if let Ok(df) = df {
+        let df = df
+            .clone()
+            .lazy()
+            .select([col("close").cast(DataType::Float32)])
+            .collect()
+            .unwrap();
+        let ma5 = ma(&df["close"], 5);
+        let ma20 = ma(&df["close"], 20);
+        let ma60 = ma(&df["close"], 60);
+        let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
+        let ma5 = ma5.last().unwrap();
+        let ma20 = ma20.last().unwrap();
+        let ma60 = ma60.last().unwrap();
+        if ma5 > pre_ma5 && ma5 >= ma20 && ma5 < ma60 && ((ma5 - ma20) / ma20 < 0.01) {
+            return StockPattern::Ma5Ma20;
         }
     }
 
