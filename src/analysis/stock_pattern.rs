@@ -31,7 +31,8 @@ impl Display for StockPattern {
     }
 }
 
-pub fn get_stock_pattern(price: &StockDailyPrice) -> StockPattern {
+pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
+    let price = prices.last().unwrap();
     let open = &price.open;
     let close = &price.close;
     let low = &price.low;

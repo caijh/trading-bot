@@ -52,9 +52,9 @@ async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
 }
 
 async fn stock_pattern(Query(params): Query<StockParams>) -> impl IntoResponse {
-    let r = get_stock_daily_price(&params.code).await.unwrap();
+    let prices = get_stock_daily_price(&params.code).await.unwrap();
 
-    let pattern = get_stock_pattern(r.last().unwrap());
+    let pattern = get_stock_pattern(&prices);
 
     RespBody::from(&pattern).response()
 }
