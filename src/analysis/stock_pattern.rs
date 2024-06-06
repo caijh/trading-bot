@@ -57,7 +57,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let p = lower_shadow.clone() / real_body.abs();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
         if p > BigDecimal::from_str("2").unwrap()
-            && lower_shadow >= upper_shadow.clone() * factor.clone()
+            && lower_shadow > upper_shadow.clone() * factor.clone()
         {
             return StockPattern::LongLowerShadow;
         }
@@ -77,7 +77,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let p = lower_shadow.clone() / real_body.abs();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
         if p > BigDecimal::from_str("2").unwrap()
-            && lower_shadow >= upper_shadow.clone() * factor.clone()
+            && lower_shadow > upper_shadow.clone() * factor.clone()
         {
             return StockPattern::LongLowerShadow;
         }
