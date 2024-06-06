@@ -1,4 +1,4 @@
-use rbatis::{crud, impl_select};
+use rbatis::{crud, impl_delete, impl_select};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -25,3 +25,10 @@ pub struct IndexConstituent {
     pub stock_name: String,
 }
 crud!(IndexConstituent {});
+impl_delete!(IndexConstituent {delete_by_index_code_stock_code(index_code: &str, stock_code: &str) => "`where index_code = #{index_code} and stock_code #{stock_code}`"});
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SyncIndexConstituents {
+    pub added: Vec<IndexConstituent>,
+    pub removed: Vec<IndexConstituent>,
+}
