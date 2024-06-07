@@ -19,8 +19,9 @@ pub enum StockPattern {
     LongLowerShadow,
     /// 十字星
     CrossStar,
-    // MA5 > MA20
+    /// MA5 > MA20
     Ma5Ma20,
+    /// 吞没形态
     Engulfing,
     /// 未知形态
     UnKnown,
@@ -33,7 +34,7 @@ impl Display for StockPattern {
             StockPattern::CrossStar => f.write_str("十字星"),
             StockPattern::Ma5Ma20 => f.write_str("Ma5>Ma20"),
             StockPattern::UnKnown => f.write_str("Unknown"),
-            StockPattern::Engulfing => f.write_str("阳包阴"),
+            StockPattern::Engulfing => f.write_str("吞没形态"),
         }
     }
 }
