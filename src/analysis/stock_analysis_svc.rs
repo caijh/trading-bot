@@ -42,7 +42,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                 });
             }
             StockPattern::Engulfing => {
-                if down_at_least(&prices[0..prices.len() - 1], 4) {
+                if down_at_least(&prices[0..prices.len() - 1], 3) {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
                         name: stock.stock_name.to_string(),
