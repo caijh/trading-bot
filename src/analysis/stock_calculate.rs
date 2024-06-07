@@ -14,7 +14,7 @@ pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
         .collect()
 }
 
-pub fn down_at_least(prices: Vec<StockDailyPrice>, n: i32) -> bool {
+pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
     let len = prices.len();
     let mut cur = len - 1;
     let mut count = 0;

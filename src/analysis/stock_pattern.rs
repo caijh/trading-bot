@@ -21,6 +21,7 @@ pub enum StockPattern {
     CrossStar,
     // MA5 > MA20
     Ma5Ma20,
+    Engulfing,
     /// 未知形态
     UnKnown,
 }
@@ -32,6 +33,7 @@ impl Display for StockPattern {
             StockPattern::CrossStar => f.write_str("十字星"),
             StockPattern::Ma5Ma20 => f.write_str("Ma5>Ma20"),
             StockPattern::UnKnown => f.write_str("Unknown"),
+            StockPattern::Engulfing => f.write_str("阳包阴"),
         }
     }
 }
@@ -61,6 +63,18 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let p: Decimal = open.clone() / close.clone();
         if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
             return StockPattern::CrossStar;
+        }
+
+        let pre_price = prices.get(prices.len() - 2);
+        if let Some(pre_price) = pre_price {
+            let pre_open = &pre_price.open;
+            let pre_close = &pre_price.close;
+            if pre_open > pre_close {
+                let pre_real_body: BigDecimal = (open.clone() - close.clone()).abs();
+                if pre_real_body < real_body {
+                    return StockPattern::Engulfing;
+                }
+            }
         }
     } else {
         lower_shadow = (low.clone() - close.clone()).abs();
