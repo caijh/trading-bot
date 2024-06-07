@@ -42,22 +42,18 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
     let close = &price.close;
     let low = &price.low;
     let high = &price.high;
-    let factor = BigDecimal::from_str("1.5").unwrap();
+    let factor_1 = BigDecimal::from_str("1.5").unwrap();
+    let factor_2 = BigDecimal::from_str("2").unwrap();
     let lower_shadow: BigDecimal;
     let upper_shadow: BigDecimal;
-    let mut real_body: Decimal;
+    let real_body: BigDecimal = (open.clone() - close.clone()).abs();
     if open <= close {
-        real_body = close.clone() - open.clone();
-        if real_body == Decimal::new("0").unwrap() {
-            real_body = Decimal::new("1").unwrap();
-        }
         lower_shadow = (low.clone() - open.clone()).abs();
         upper_shadow = (close.clone() - high.clone()).abs();
 
-        let p = lower_shadow.clone() / real_body.abs();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        if p > BigDecimal::from_str("2").unwrap()
-            && lower_shadow > upper_shadow.clone() * factor.clone()
+        if lower_shadow > real_body.clone() * factor_2.clone()
+            && lower_shadow > upper_shadow.clone() * factor_1.clone()
         {
             return StockPattern::LongLowerShadow;
         }
@@ -67,17 +63,12 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             return StockPattern::CrossStar;
         }
     } else {
-        real_body = open.clone() - close.clone();
-        if real_body == Decimal::new("0").unwrap() {
-            real_body = Decimal::new("1").unwrap();
-        }
         lower_shadow = (low.clone() - close.clone()).abs();
         upper_shadow = (open.clone() - high.clone()).abs();
 
-        let p = lower_shadow.clone() / real_body.abs();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        if p > BigDecimal::from_str("2").unwrap()
-            && lower_shadow > upper_shadow.clone() * factor.clone()
+        if lower_shadow > real_body.clone() * factor_2.clone()
+            && lower_shadow > upper_shadow.clone() * factor_1.clone()
         {
             return StockPattern::LongLowerShadow;
         }
@@ -109,7 +100,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             && ma5 >= ma20
             && ma5 < ma60
             && ((ma5 - ma20) / ma20 < 0.01)
-            && (real_body.abs() >= upper_shadow * factor.clone())
+            && (real_body > upper_shadow * factor_1.clone())
         {
             return StockPattern::Ma5Ma20;
         }
