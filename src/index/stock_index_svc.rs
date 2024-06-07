@@ -1,10 +1,11 @@
 use std::error::Error;
+use std::ops::Not;
 
 use context::SERVICES;
 use database::DbService;
 
-use crate::index::stock_index::{IndexConstituent, StockIndex};
 use crate::index::stock_index_api;
+use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
 use crate::stock::stock_svc::sync_stock_daily_price;
 
 /// 获取指数的成分股
@@ -27,23 +28,55 @@ pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>
     Ok(stocks)
 }
 
-pub async fn sync_constituents(index: &str) -> Result<(), Box<dyn Error>> {
+pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
 
-    let dao = SERVICES.get::<DbService>().dao();
     let stocks = stock_index_api::get_stocks(&index.code, &index.exchange).await?;
-    IndexConstituent::delete_by_column(dao, "index_code", &index.code).await?;
-    let mut constituents = Vec::new();
+
+    let dao = SERVICES.get::<DbService>().dao();
+    let old_constituents =
+        IndexConstituent::select_by_column(dao, "index_code", &index.code).await?;
+    let old_constituent_codes = old_constituents
+        .iter()
+        .map(|c| c.stock_code.clone())
+        .collect::<Vec<String>>();
+    let mut constituents_to_add = Vec::new();
+    let mut stock_codes = Vec::new();
     for stock in stocks {
-        let constituent = IndexConstituent {
-            index_code: index.code.to_string(),
-            stock_code: stock.code.to_string(),
-            stock_name: stock.name.to_string(),
-        };
-        constituents.push(constituent);
+        if !old_constituent_codes.contains(&stock.code) {
+            let constituent = IndexConstituent {
+                index_code: index.code.to_string(),
+                stock_code: stock.code.to_string(),
+                stock_name: stock.name.to_string(),
+            };
+            constituents_to_add.push(constituent);
+        }
+        stock_codes.push(stock.code);
     }
-    IndexConstituent::insert_batch(dao, &constituents, constituents.len() as u64).await?;
-    Ok(())
+    let mut constituents_to_remove = Vec::new();
+    for index_constituent in old_constituents {
+        if !stock_codes.contains(&index_constituent.stock_code) {
+            constituents_to_remove.push(index_constituent);
+        }
+    }
+    if constituents_to_add.is_empty().not() {
+        IndexConstituent::insert_batch(dao, &constituents_to_add, constituents_to_add.len() as u64)
+            .await?;
+    }
+    if constituents_to_remove.is_empty().not() {
+        for index_constituent in constituents_to_remove.clone() {
+            IndexConstituent::delete_by_index_code_stock_code(
+                dao,
+                &index_constituent.index_code,
+                &index_constituent.stock_code,
+            )
+            .await?;
+        }
+    }
+    Ok(SyncIndexConstituents {
+        added: constituents_to_add,
+        removed: constituents_to_remove,
+    })
 }
 
 pub async fn get_stock_index(index: &str) -> Result<StockIndex, Box<dyn Error>> {

@@ -12,7 +12,7 @@ use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::sync_holidays;
-use crate::index::stock_index::StockIndex;
+use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
@@ -127,13 +127,54 @@ async fn add_sync_index_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 let dao = SERVICES.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
-                    let _ = sync_constituents(&index.code).await;
+                    let constituents = sync_constituents(&index.code).await.unwrap();
+                    spawn(notification_index_stocks(index, constituents));
                 }
             })
         }))
         .build()?;
     scheduler.add(jj).await?;
     Ok(())
+}
+
+async fn notification_index_stocks(
+    index: StockIndex,
+    sync_index_constituents: SyncIndexConstituents,
+) {
+    let stocks_add = sync_index_constituents.added;
+    let stocks_remove = sync_index_constituents.removed;
+    if stocks_add.is_empty() && stocks_remove.is_empty() {
+        return;
+    }
+
+    let title = "指数成分股关注-".to_string() + index.name.as_str();
+    let mut content = "".to_string();
+    for stock in stocks_add {
+        content.push_str(format!("增加 {:<4} {}\n", stock.stock_name, stock.stock_code).as_str());
+    }
+    for stock in stocks_remove {
+        content.push_str(format!("移除 {:<4} {}\n", stock.stock_name, stock.stock_code).as_str());
+    }
+    let config = Configuration::get_config().await;
+    let result = config.get::<NotificationConfig>("notification");
+    match result {
+        Ok(notification_config) => {
+            let url = format!(
+                "{}/send/{}",
+                notification_config.url, notification_config.receiver
+            );
+            Notification::create(&title, &content)
+                .send(
+                    url.as_str(),
+                    notification_config.token.as_str(),
+                    notification_config.receiver.as_str(),
+                )
+                .await
+        }
+        Err(e) => {
+            tracing::debug!("{:?}", e);
+        }
+    }
 }
 
 async fn add_sync_stocks_job(scheduler: &JobScheduler) -> Result<()> {
