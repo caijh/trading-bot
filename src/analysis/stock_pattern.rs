@@ -65,7 +65,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         }
 
         let p: Decimal = open.clone() / close.clone();
-        if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
+        if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
             return StockPattern::CrossStar;
         }
 
@@ -99,7 +99,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         }
 
         let p: Decimal = close.clone() / open.clone();
-        if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
+        if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
             return StockPattern::CrossStar;
         }
     }
