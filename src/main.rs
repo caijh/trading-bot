@@ -5,7 +5,7 @@ use cli::Cli;
 use registration::{deregister, register};
 use web::bootstrap::Bootstrap;
 
-use stock_bot::server::StockBotServer;
+use trading_bot::server::StockBotServer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
