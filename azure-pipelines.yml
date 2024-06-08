@@ -13,7 +13,7 @@ steps:
   - task: Docker@2
     inputs:
       containerRegistry: 'DockerHub'
-      repository: 'caijunhui/stock-boot'
+      repository: 'caijunhui/trading-boot'
       command: 'buildAndPush'
       Dockerfile: '**/Dockerfile'
       tags: |

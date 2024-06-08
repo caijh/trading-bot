@@ -4,7 +4,7 @@ RUN USER=root cargo new --bin rust-docker-web
 WORKDIR ./rust-docker-web
 COPY ./Cargo.toml ./Cargo.toml
 RUN cargo build --release
-RUN rm src/*.rs ./target/release/deps/stock_bot*
+RUN rm src/*.rs ./target/release/deps/trading_bot*
 
 ADD . ./
 
@@ -28,7 +28,7 @@ RUN groupadd $APP_USER \
   && useradd -g $APP_USER $APP_USER \
   && mkdir -p ${APP}
 
-COPY --from=builder /rust-docker-web/target/release/stock-bot ${APP}/rust-docker-web
+COPY --from=builder /rust-docker-web/target/release/trading-bot ${APP}/rust-docker-web
 COPY --from=builder /rust-docker-web/config.toml ${APP}/config.toml
 
 RUN chown -R $APP_USER:$APP_USER ${APP}
