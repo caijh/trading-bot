@@ -16,17 +16,9 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
         let prices = get_stock_daily_price(&stock.stock_code).await?;
         let pattern = get_stock_pattern(&prices);
         match pattern {
-            StockPattern::LongLowerShadow => {
-                if down_at_least(prices, 4) {
-                    focus_stocks.push(AnalyzedStock {
-                        code: stock.stock_code.to_string(),
-                        name: stock.stock_name.to_string(),
-                        pattern,
-                    });
-                }
-            }
-            StockPattern::CrossStar => {
-                if down_at_least(prices, 4) {
+            StockPattern::UnKnown => {}
+            StockPattern::LongLowerShadow | StockPattern::CrossStar => {
+                if down_at_least(&prices, 4) {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
                         name: stock.stock_name.to_string(),
@@ -41,7 +33,15 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                     pattern,
                 });
             }
-            StockPattern::UnKnown => {}
+            StockPattern::Engulfing | StockPattern::Piercing => {
+                if down_at_least(&prices[0..prices.len() - 1], 3) {
+                    focus_stocks.push(AnalyzedStock {
+                        code: stock.stock_code.to_string(),
+                        name: stock.stock_name.to_string(),
+                        pattern,
+                    });
+                }
+            }
         }
     }
     Ok(focus_stocks)
