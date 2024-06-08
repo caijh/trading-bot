@@ -18,11 +18,11 @@ pub enum StockPattern {
     /// 长下影线
     LongLowerShadow,
     /// 十字星
-    CrossStar,
+    DojiStar,
     /// MA5 > MA20
     Ma5Ma20,
-    /// 吞没形态
-    Engulfing,
+    /// 看涨吞没形态
+    BullishEngulfing,
     /// 刺透形态
     Piercing,
     /// 未知形态
@@ -33,10 +33,10 @@ impl Display for StockPattern {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             StockPattern::LongLowerShadow => f.write_str("长下影线"),
-            StockPattern::CrossStar => f.write_str("十字星"),
+            StockPattern::DojiStar => f.write_str("十字星"),
             StockPattern::Ma5Ma20 => f.write_str("Ma5>Ma20"),
             StockPattern::UnKnown => f.write_str("Unknown"),
-            StockPattern::Engulfing => f.write_str("吞没形态"),
+            StockPattern::BullishEngulfing => f.write_str("看涨吞没形态"),
             StockPattern::Piercing => f.write_str("刺透形态"),
         }
     }
@@ -65,8 +65,8 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         }
 
         let p: Decimal = open.clone() / close.clone();
-        if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
-            return StockPattern::CrossStar;
+        if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
+            return StockPattern::DojiStar;
         }
 
         let pre_price = prices.get(prices.len() - 2);
@@ -76,7 +76,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             if pre_open > pre_close {
                 let pre_real_body: BigDecimal = (open.clone() - close.clone()).abs();
                 if pre_real_body < real_body {
-                    return StockPattern::Engulfing;
+                    return StockPattern::BullishEngulfing;
                 }
             }
             if pre_open < pre_close {
@@ -99,8 +99,8 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         }
 
         let p: Decimal = close.clone() / open.clone();
-        if p > Decimal::new("0.999").unwrap() && lower_shadow >= upper_shadow {
-            return StockPattern::CrossStar;
+        if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
+            return StockPattern::DojiStar;
         }
     }
 

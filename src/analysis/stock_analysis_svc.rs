@@ -17,7 +17,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
         let pattern = get_stock_pattern(&prices);
         match pattern {
             StockPattern::UnKnown => {}
-            StockPattern::LongLowerShadow | StockPattern::CrossStar => {
+            StockPattern::LongLowerShadow | StockPattern::DojiStar => {
                 if down_at_least(&prices, 4) {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
@@ -33,7 +33,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                     pattern,
                 });
             }
-            StockPattern::Engulfing | StockPattern::Piercing => {
+            StockPattern::BullishEngulfing | StockPattern::Piercing => {
                 if down_at_least(&prices[0..prices.len() - 1], 3) {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
