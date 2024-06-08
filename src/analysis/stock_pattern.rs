@@ -23,6 +23,8 @@ pub enum StockPattern {
     Ma5Ma20,
     /// 吞没形态
     Engulfing,
+    /// 刺透形态
+    Piercing,
     /// 未知形态
     UnKnown,
 }
@@ -35,6 +37,7 @@ impl Display for StockPattern {
             StockPattern::Ma5Ma20 => f.write_str("Ma5>Ma20"),
             StockPattern::UnKnown => f.write_str("Unknown"),
             StockPattern::Engulfing => f.write_str("吞没形态"),
+            StockPattern::Piercing => f.write_str("刺透形态"),
         }
     }
 }
@@ -74,6 +77,13 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                 let pre_real_body: BigDecimal = (open.clone() - close.clone()).abs();
                 if pre_real_body < real_body {
                     return StockPattern::Engulfing;
+                }
+            }
+            if pre_open < pre_close {
+                let mid_price =
+                    (pre_open.clone() + pre_close.clone()) / Decimal::from_str("2").unwrap();
+                if open < close && close > &mid_price {
+                    return StockPattern::Piercing;
                 }
             }
         }
