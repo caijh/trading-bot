@@ -1,3 +1,6 @@
+use std::ops::Not;
+
+use bigdecimal::BigDecimal;
 use rbatis::rbdc::Decimal;
 use rbatis::{crud, impl_select};
 use serde::{Deserialize, Serialize};
@@ -87,3 +90,42 @@ pub struct StockPrice {
 }
 
 pub const COLUMN_CODE: &str = "code";
+
+pub trait KLine {
+    fn is_up(&self) -> bool;
+    fn is_down(&self) -> bool;
+
+    fn get_real_body(&self) -> BigDecimal;
+    fn get_lower_shadow(&self) -> BigDecimal;
+    fn get_upper_shadow(&self) -> BigDecimal;
+}
+
+impl KLine for StockDailyPrice {
+    fn is_up(&self) -> bool {
+        self.open < self.close
+    }
+
+    fn is_down(&self) -> bool {
+        self.open > self.close
+    }
+
+    fn get_real_body(&self) -> BigDecimal {
+        (self.open.clone() - self.close.clone()).abs()
+    }
+
+    fn get_lower_shadow(&self) -> BigDecimal {
+        if self.is_down().not() {
+            (self.low.clone() - self.open.clone()).abs()
+        } else {
+            (self.low.clone() - self.close.clone()).abs()
+        }
+    }
+
+    fn get_upper_shadow(&self) -> BigDecimal {
+        if self.is_down().not() {
+            (self.high.clone() - self.close.clone()).abs()
+        } else {
+            (self.high.clone() - self.open.clone()).abs()
+        }
+    }
+}
