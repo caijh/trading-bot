@@ -11,7 +11,7 @@ use rbatis::rbdc::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::stock_calculate::ma;
-use crate::stock::stock_model::StockDailyPrice;
+use crate::stock::stock_model::{KLine, StockDailyPrice};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum StockPattern {
@@ -46,17 +46,12 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
     let price = prices.last().unwrap();
     let open = &price.open;
     let close = &price.close;
-    let low = &price.low;
-    let high = &price.high;
     let factor_1 = BigDecimal::from_str("1.5").unwrap();
     let factor_2 = BigDecimal::from_str("2").unwrap();
-    let lower_shadow: BigDecimal;
-    let upper_shadow: BigDecimal;
-    let real_body: BigDecimal = (open.clone() - close.clone()).abs();
-    if open <= close {
-        lower_shadow = (low.clone() - open.clone()).abs();
-        upper_shadow = (close.clone() - high.clone()).abs();
-
+    let real_body = price.get_real_body();
+    let lower_shadow = price.get_lower_shadow();
+    let upper_shadow = price.get_upper_shadow();
+    if !price.is_down() {
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
         if lower_shadow > real_body.clone() * factor_2.clone()
             && lower_shadow > upper_shadow.clone() * factor_1.clone()
@@ -73,24 +68,23 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         if let Some(pre_price) = pre_price {
             let pre_open = &pre_price.open;
             let pre_close = &pre_price.close;
-            if pre_open > pre_close {
-                let pre_real_body: BigDecimal = (open.clone() - close.clone()).abs();
-                if pre_real_body < real_body {
+            if pre_price.is_down() {
+                let pre_real_body: BigDecimal = pre_price.get_real_body();
+                if price.open < pre_close.clone()
+                    && price.close > pre_open.clone()
+                    && real_body > pre_real_body
+                {
                     return StockPattern::BullishEngulfing;
                 }
-            }
-            if pre_open < pre_close {
+
                 let mid_price =
                     (pre_open.clone() + pre_close.clone()) / Decimal::from_str("2").unwrap();
-                if open < close && close > &mid_price {
+                if price.is_up() && price.open < pre_close.clone() && close > &mid_price {
                     return StockPattern::Piercing;
                 }
             }
         }
     } else {
-        lower_shadow = (low.clone() - close.clone()).abs();
-        upper_shadow = (open.clone() - high.clone()).abs();
-
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
         if lower_shadow > real_body.clone() * factor_2.clone()
             && lower_shadow > upper_shadow.clone() * factor_1.clone()
@@ -121,7 +115,8 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let ma5 = ma5.last().unwrap();
         let ma20 = ma20.last().unwrap();
         let ma60 = ma60.last().unwrap();
-        if ma5 > pre_ma5
+        if price.is_up()
+            && ma5 > pre_ma5
             && ma5 >= ma20
             && ma5 < ma60
             && ((ma5 - ma20) / ma20 < 0.01)

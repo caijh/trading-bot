@@ -2,7 +2,7 @@
 port = 8080
 
 [application]
-name = "stock-bot-server"
+name = "trading-bot-server"
 
 [registry]
 address = "http://127.0.0.1:8500"
@@ -14,7 +14,7 @@ interval = "30s"
 [logger]
 enabled = true
 level = "info"
-file = "stock-boot-server.log"
+file = "trading-bot-server.log"
 log_dir = "./logs"
 
 [database]
