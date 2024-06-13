@@ -92,7 +92,7 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
     let title = "股票关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks {
-        content.push_str(format!("{:<4} {} {}\n", stock.name, stock.code, stock.pattern).as_str());
+        content.push_str(format!("{:<5} {} {}\n", stock.name, stock.code, stock.pattern).as_str());
     }
     let config = Configuration::get_config().await;
     let result = config.get::<NotificationConfig>("notification");
@@ -150,10 +150,10 @@ async fn notification_index_stocks(
     let title = "指数成分股关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks_add {
-        content.push_str(format!("增加 {:<4} {}\n", stock.stock_name, stock.stock_code).as_str());
+        content.push_str(format!("增加 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
     for stock in stocks_remove {
-        content.push_str(format!("移除 {:<4} {}\n", stock.stock_name, stock.stock_code).as_str());
+        content.push_str(format!("移除 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
     let config = Configuration::get_config().await;
     let result = config.get::<NotificationConfig>("notification");
