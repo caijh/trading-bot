@@ -1,4 +1,5 @@
 use polars::series::Series;
+use rbatis::rbdc::Decimal;
 
 use crate::stock::stock_model::StockDailyPrice;
 
@@ -32,4 +33,36 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
         cur -= 1;
     }
     count > n
+}
+
+pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
+    let mut max = prices.last().unwrap().close.clone();
+    let len = prices.len();
+    let n = if len < n { len } else { n };
+    for i in 0..len {
+        if i < n {
+            if prices[len - 1 - i].close > max {
+                max = prices[len - 1 - i].close.clone();
+            }
+        } else {
+            break;
+        }
+    }
+    max
+}
+
+pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
+    let mut min = prices.last().unwrap().low.clone();
+    let len = prices.len();
+    let n = if len < n { len } else { n };
+    for i in 0..len {
+        if i < n {
+            if prices[len - 1 - i].low < min {
+                min = prices[len - 1 - i].low.clone();
+            }
+        } else {
+            break;
+        }
+    }
+    min
 }
