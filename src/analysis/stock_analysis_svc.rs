@@ -17,6 +17,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
         let pattern = get_stock_pattern(&prices);
         let max = max(&prices, 20);
         let min = min(&prices, 20);
+        let current = prices.last().unwrap().close.clone();
         match pattern {
             StockPattern::UnKnown => {}
             StockPattern::LongLowerShadow | StockPattern::DojiStar => {
@@ -27,6 +28,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                         pattern,
                         min,
                         max,
+                        current,
                     });
                 }
             }
@@ -37,6 +39,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                     pattern,
                     min,
                     max,
+                    current,
                 });
             }
             StockPattern::BullishEngulfing | StockPattern::Piercing => {
@@ -47,6 +50,7 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                         pattern,
                         min,
                         max,
+                        current,
                     });
                 }
             }

@@ -14,4 +14,5 @@ pub struct AnalyzedStock {
     pub pattern: StockPattern,
     pub min: Decimal,
     pub max: Decimal,
+    pub current: Decimal,
 }

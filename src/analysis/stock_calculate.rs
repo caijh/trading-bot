@@ -36,7 +36,7 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
 }
 
 pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
-    let mut max = Decimal::new("0").unwrap();
+    let mut max = prices.last().unwrap().close.clone();
     let len = prices.len();
     let n = if len < n { len } else { n };
     for i in 0..len {
@@ -52,7 +52,7 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
 }
 
 pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
-    let mut min = Decimal::new("0").unwrap();
+    let mut min = prices.last().unwrap().low.clone();
     let len = prices.len();
     let n = if len < n { len } else { n };
     for i in 0..len {

@@ -94,8 +94,8 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
     for stock in stocks {
         content.push_str(
             format!(
-                "{:<5} {} {}, MIN20: {}, MAX20: {}\n",
-                stock.name, stock.code, stock.pattern, stock.min, stock.max
+                "{:<5} {} {}, C: {}, MIN20: {}, MAX20: {}\n",
+                stock.name, stock.code, stock.pattern, stock.current, stock.min, stock.max,
             )
             .as_str(),
         );
