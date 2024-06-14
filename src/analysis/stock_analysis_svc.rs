@@ -2,7 +2,7 @@ use std::error::Error;
 
 use crate::analysis::stock_analysis_ctrl::Params;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
-use crate::analysis::stock_calculate::down_at_least;
+use crate::analysis::stock_calculate::{down_at_least, max, min};
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
 use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_svc::get_stock_daily_price;
@@ -15,6 +15,8 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
     for stock in stocks {
         let prices = get_stock_daily_price(&stock.stock_code).await?;
         let pattern = get_stock_pattern(&prices);
+        let max = max(&prices, 20);
+        let min = min(&prices, 20);
         match pattern {
             StockPattern::UnKnown => {}
             StockPattern::LongLowerShadow | StockPattern::DojiStar => {
@@ -23,6 +25,8 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                         code: stock.stock_code.to_string(),
                         name: stock.stock_name.to_string(),
                         pattern,
+                        min,
+                        max,
                     });
                 }
             }
@@ -31,6 +35,8 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                     code: stock.stock_code.to_string(),
                     name: stock.stock_name.to_string(),
                     pattern,
+                    min,
+                    max,
                 });
             }
             StockPattern::BullishEngulfing | StockPattern::Piercing => {
@@ -39,6 +45,8 @@ pub async fn analysis(params: &Params) -> Result<Vec<AnalyzedStock>, Box<dyn Err
                         code: stock.stock_code.to_string(),
                         name: stock.stock_name.to_string(),
                         pattern,
+                        min,
+                        max,
                     });
                 }
             }

@@ -1,3 +1,4 @@
+use rbatis::rbdc::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::stock_pattern::StockPattern;
@@ -11,4 +12,6 @@ pub struct AnalyzedStock {
     pub name: String,
     /// 股票的技术分析模式，用于描述股票价格走势的特定模式。
     pub pattern: StockPattern,
+    pub min: Decimal,
+    pub max: Decimal,
 }
