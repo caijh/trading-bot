@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Local;
 use configuration::Configuration;
 use context::SERVICES;
 use database::DbService;
@@ -11,7 +12,7 @@ use crate::analysis::stock_analysis_ctrl::Params;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::exchange_model::Exchange;
-use crate::holiday::holiday_svc::sync_holidays;
+use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
 use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
@@ -62,6 +63,11 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
+                let now = Local::now();
+                let holiday_result = is_holiday(&now).await.unwrap();
+                if holiday_result.is_holiday {
+                    return;
+                }
                 let dao = SERVICES.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
