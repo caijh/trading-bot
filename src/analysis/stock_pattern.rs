@@ -124,7 +124,9 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             .collect()
             .unwrap();
         let ma5_volume = ma(&volume_df["volume"], 5);
+        let ma5_volume = ma5_volume.last().unwrap();
         let ma20_volume = ma(&volume_df["volume"], 20);
+        let ma20_volume = ma20_volume.last().unwrap();
 
         if price.is_up()
             && ma5 > pre_ma5
