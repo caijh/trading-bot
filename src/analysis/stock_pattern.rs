@@ -102,22 +102,36 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
     let polars = JsonReader::new(Cursor::new(json)).finish();
     let df = polars;
     if let Ok(df) = df {
-        let df = df
+        let close_df = df
             .clone()
             .lazy()
             .select([col("close").cast(DataType::Float32)])
             .collect()
             .unwrap();
-        let ma5 = ma(&df["close"], 5);
-        let ma20 = ma(&df["close"], 20);
-        let ma60 = ma(&df["close"], 60);
+        let ma5 = ma(&close_df["close"], 5);
+        let ma20 = ma(&close_df["close"], 20);
+        let ma60 = ma(&close_df["close"], 60);
         let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
         let ma5 = ma5.last().unwrap();
         let ma20 = ma20.last().unwrap();
         let ma60 = ma60.last().unwrap();
+
+        // check volume
+        let volume_df = df
+            .clone()
+            .lazy()
+            .select([col("volume").cast(DataType::Float32)])
+            .collect()
+            .unwrap();
+        let ma5_volume = ma(&volume_df["volume"], 5);
+        let ma5_volume = ma5_volume.last().unwrap();
+        let ma20_volume = ma(&volume_df["volume"], 20);
+        let ma20_volume = ma20_volume.last().unwrap();
+
         if price.is_up()
             && ma5 > pre_ma5
             && ma5 >= ma20
+            && ma5_volume >= ma20_volume
             && ma5 < ma60
             && ((ma5 - ma20) / ma20 < 0.01)
             && (real_body > upper_shadow * factor_1.clone())
