@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use polars::series::Series;
 use rbatis::rbdc::Decimal;
 
@@ -65,4 +67,18 @@ pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
         }
     }
     min
+}
+
+pub fn mean(prices: &[StockDailyPrice], n: usize) -> Decimal {
+    let mut total = Decimal::from_str("0").unwrap();
+    let len = prices.len();
+    let n = if len < n { len } else { n };
+    for i in 0..len {
+        if i < n {
+            total += prices[len - 1 - i].close.clone();
+        } else {
+            break;
+        }
+    }
+    total / Decimal::from_str(n.to_string().as_str()).unwrap()
 }

@@ -111,12 +111,10 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let ma5 = ma(&close_df["close"], 5);
         let ma20 = ma(&close_df["close"], 20);
         let ma60 = ma(&close_df["close"], 60);
-        let ma120 = ma(&close_df["close"], 120);
         let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
         let ma5 = ma5.last().unwrap();
         let ma20 = ma20.last().unwrap();
         let ma60 = ma60.last().unwrap();
-        let ma120 = ma120.last().unwrap();
 
         // check volume
         let volume_df = df
@@ -137,7 +135,6 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             && ma5 < ma60
             && ((ma5 - ma20) / ma20 < 0.01)
             && (real_body > upper_shadow * factor_1.clone())
-            && price.close.clone() > Decimal::from_str(&ma120.to_string()).unwrap()
         {
             return StockPattern::Ma5Ma20;
         }
