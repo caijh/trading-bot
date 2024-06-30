@@ -82,10 +82,15 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
 
                 let mid_price =
                     (pre_open.clone() + pre_close.clone()) / Decimal::from_str("2").unwrap();
-                if price.is_up() && price.open < pre_close.clone() && close > &mid_price {
+                if price.is_up()
+                    && price.open < pre_close.clone()
+                    && close > &mid_price
+                    && close < pre_open
+                {
                     return StockPattern::Piercing;
                 }
-                if price.is_up() && price.open.clone() > pre_price.close.clone() {
+
+                if price.is_up() && price.open.clone() > pre_price.open.clone() {
                     return StockPattern::UpGap;
                 }
             }
@@ -118,9 +123,9 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let ma20 = ma(&close_df["close"], 20);
         let ma60 = ma(&close_df["close"], 60);
         let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
-        let ma5 = ma5.last().unwrap();
-        let ma20 = ma20.last().unwrap();
-        let ma60 = ma60.last().unwrap();
+        let ma5_last = ma5.last().unwrap();
+        let ma20_last = ma20.last().unwrap();
+        let ma60_last = ma60.last().unwrap();
 
         // check volume
         let volume_df = df
@@ -135,12 +140,12 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let ma20_volume = ma20_volume.last().unwrap();
 
         if price.is_up()
-            && ma5 > pre_ma5
-            && ma5 >= ma20
+            && ma5_last > pre_ma5
+            && ma5_last >= ma20_last
+            && ma5_last < ma60_last
             && ma5_volume >= ma20_volume
-            && ma5 < ma60
-            && ((ma5 - ma20) / ma20 < 0.01)
             && (real_body > upper_shadow * factor_1.clone())
+            && (ma5 == ma20 || ((ma5_last - ma20_last) / ma20_last < 0.006))
         {
             return StockPattern::Ma5Ma20;
         }
