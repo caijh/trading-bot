@@ -8,7 +8,7 @@ use tokio::spawn;
 use tokio_cron_scheduler::{JobBuilder, JobScheduler};
 use tracing::{error, info};
 
-use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc::analysis;
 use crate::exchange::exchange_model::Exchange;
@@ -71,7 +71,7 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 let dao = SERVICES.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
-                    let params = Params {
+                    let params = IndexAnalysisParams {
                         index_code: index.code.clone(),
                     };
                     let result = analysis(&params).await;

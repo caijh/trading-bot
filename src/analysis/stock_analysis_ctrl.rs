@@ -12,11 +12,11 @@ pub fn stock_analysis_routers() -> Router {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Params {
+pub struct IndexAnalysisParams {
     pub index_code: String,
 }
 
-pub async fn analysis(Query(params): Query<Params>) -> impl IntoResponse {
+pub async fn analysis(Query(params): Query<IndexAnalysisParams>) -> impl IntoResponse {
     let r = stock_analysis_svc::analysis(&params).await;
 
     RespBody::from_result(&r).response()
