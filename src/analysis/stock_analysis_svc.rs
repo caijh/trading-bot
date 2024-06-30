@@ -51,7 +51,7 @@ pub async fn analysis_index(
                     });
                 }
             }
-            StockPattern::BullishEngulfing | StockPattern::Piercing => {
+            StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
                 if down_at_least(&prices[0..prices.len() - 1], 3) && current > mean {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
@@ -111,7 +111,7 @@ pub async fn analysis_stock(
                 });
             }
         }
-        StockPattern::BullishEngulfing | StockPattern::Piercing => {
+        StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
             if down_at_least(&prices[0..prices.len() - 1], 3) && current > mean {
                 analyzed_stock = Some(AnalyzedStock {
                     code: stock.code.to_string(),

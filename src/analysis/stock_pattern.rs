@@ -25,6 +25,8 @@ pub enum StockPattern {
     BullishEngulfing,
     /// 刺透形态
     Piercing,
+    /// 向上缺口
+    UpGap,
     /// 未知形态
     UnKnown,
 }
@@ -35,9 +37,10 @@ impl Display for StockPattern {
             StockPattern::LongLowerShadow => f.write_str("长下影线"),
             StockPattern::DojiStar => f.write_str("十字星"),
             StockPattern::Ma5Ma20 => f.write_str("Ma5>Ma20"),
-            StockPattern::UnKnown => f.write_str("Unknown"),
             StockPattern::BullishEngulfing => f.write_str("看涨吞没形态"),
             StockPattern::Piercing => f.write_str("刺透形态"),
+            StockPattern::UpGap => f.write_str("向上缺口"),
+            StockPattern::UnKnown => f.write_str("Unknown"),
         }
     }
 }
@@ -81,6 +84,9 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                     (pre_open.clone() + pre_close.clone()) / Decimal::from_str("2").unwrap();
                 if price.is_up() && price.open < pre_close.clone() && close > &mid_price {
                     return StockPattern::Piercing;
+                }
+                if price.is_up() && price.open.clone() > pre_price.close.clone() {
+                    return StockPattern::UpGap;
                 }
             }
         }
