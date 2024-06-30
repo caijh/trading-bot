@@ -8,9 +8,9 @@ use tokio::spawn;
 use tokio_cron_scheduler::{JobBuilder, JobScheduler};
 use tracing::{error, info};
 
-use crate::analysis::stock_analysis_ctrl::Params;
+use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
-use crate::analysis::stock_analysis_svc::analysis;
+use crate::analysis::stock_analysis_svc::analysis_index;
 use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
 use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
@@ -71,10 +71,10 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 let dao = SERVICES.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
-                    let params = Params {
-                        index_code: index.code.clone(),
+                    let params = IndexAnalysisParams {
+                        code: index.code.clone(),
                     };
-                    let result = analysis(&params).await;
+                    let result = analysis_index(&params).await;
                     match result {
                         Ok(stocks) => {
                             spawn(notification_stocks(stocks, index));

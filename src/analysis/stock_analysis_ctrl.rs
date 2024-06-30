@@ -8,16 +8,29 @@ use web::response::RespBody;
 use crate::analysis::stock_analysis_svc;
 
 pub fn stock_analysis_routers() -> Router {
-    Router::new().route("/", get(analysis))
+    Router::new()
+        .route("/index", get(analysis_index))
+        .route("/stock", get(analysis_stock))
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Params {
-    pub index_code: String,
+pub struct IndexAnalysisParams {
+    pub code: String,
 }
 
-pub async fn analysis(Query(params): Query<Params>) -> impl IntoResponse {
-    let r = stock_analysis_svc::analysis(&params).await;
+#[derive(Serialize, Deserialize)]
+pub struct StockAnalysisParams {
+    pub code: String,
+}
+
+async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoResponse {
+    let r = stock_analysis_svc::analysis_index(&params).await;
+
+    RespBody::from_result(&r).response()
+}
+
+async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoResponse {
+    let r = stock_analysis_svc::analysis_stock(&params).await;
 
     RespBody::from_result(&r).response()
 }
