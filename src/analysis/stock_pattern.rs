@@ -40,7 +40,7 @@ impl Display for StockPattern {
             StockPattern::BullishEngulfing => f.write_str("看涨吞没形态"),
             StockPattern::Piercing => f.write_str("刺透形态"),
             StockPattern::UpGap => f.write_str("向上缺口"),
-            StockPattern::UnKnown => f.write_str("Unknown"),
+            StockPattern::UnKnown => f.write_str("形态未知"),
         }
     }
 }
@@ -76,6 +76,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                 if price.open < pre_close.clone()
                     && price.close > pre_open.clone()
                     && real_body > pre_real_body
+                    && real_body > upper_shadow.clone() * factor_1.clone()
                 {
                     return StockPattern::BullishEngulfing;
                 }
@@ -144,7 +145,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             && ma5_last >= ma20_last
             && ma5_last < ma60_last
             && ma5_volume >= ma20_volume
-            && (real_body > upper_shadow * factor_1.clone())
+            && (real_body > upper_shadow.clone() * factor_1.clone())
             && (ma5 == ma20 || ((ma5_last - ma20_last) / ma20_last < 0.006))
         {
             return StockPattern::Ma5Ma20;

@@ -85,10 +85,26 @@ pub async fn analysis_stock(
     let current = prices.last().unwrap().close.clone();
     let mean = mean(&prices, 120);
     let mut analyzed_stock = Option::None;
-    match pattern {
-        StockPattern::UnKnown => {}
-        StockPattern::LongLowerShadow | StockPattern::DojiStar => {
-            if down_at_least(&prices, 4) && current > mean {
+    if current > mean {
+        // 当前价大于120天均价
+        match pattern {
+            StockPattern::UnKnown => {}
+            StockPattern::LongLowerShadow | StockPattern::DojiStar => {
+                // 长下影、十字星
+                if down_at_least(&prices, 4) {
+                    // 连续下跌4天
+                    analyzed_stock = Some(AnalyzedStock {
+                        code: stock.code.to_string(),
+                        name: stock.name.to_string(),
+                        pattern,
+                        min,
+                        max,
+                        current,
+                    });
+                }
+            }
+            StockPattern::Ma5Ma20 => {
+                // MA5 > MA20
                 analyzed_stock = Some(AnalyzedStock {
                     code: stock.code.to_string(),
                     name: stock.name.to_string(),
@@ -98,29 +114,19 @@ pub async fn analysis_stock(
                     current,
                 });
             }
-        }
-        StockPattern::Ma5Ma20 => {
-            if current > mean {
-                analyzed_stock = Some(AnalyzedStock {
-                    code: stock.code.to_string(),
-                    name: stock.name.to_string(),
-                    pattern,
-                    min,
-                    max,
-                    current,
-                });
-            }
-        }
-        StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
-            if down_at_least(&prices[0..prices.len() - 1], 3) && current > mean {
-                analyzed_stock = Some(AnalyzedStock {
-                    code: stock.code.to_string(),
-                    name: stock.name.to_string(),
-                    pattern,
-                    min,
-                    max,
-                    current,
-                });
+            StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
+                // 看涨吞没形态、刺透形态、向上缺口
+                if down_at_least(&prices[0..prices.len() - 1], 3) {
+                    // 之前连续下跌3天
+                    analyzed_stock = Some(AnalyzedStock {
+                        code: stock.code.to_string(),
+                        name: stock.name.to_string(),
+                        pattern,
+                        min,
+                        max,
+                        current,
+                    });
+                }
             }
         }
     }
