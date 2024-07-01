@@ -40,7 +40,7 @@ impl Display for StockPattern {
             StockPattern::BullishEngulfing => f.write_str("看涨吞没形态"),
             StockPattern::Piercing => f.write_str("刺透形态"),
             StockPattern::UpGap => f.write_str("向上缺口"),
-            StockPattern::UnKnown => f.write_str("形态未知"),
+            StockPattern::UnKnown => f.write_str("未知形态"),
         }
     }
 }
