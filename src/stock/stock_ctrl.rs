@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use axum::routing::get;
@@ -8,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use web::response::RespBody;
 
 use crate::analysis::stock_pattern::get_stock_pattern;
-use crate::exchange::exchange_model::Exchange;
-use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price, sync_stocks};
+use crate::stock::stock_svc;
+use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
 
 pub fn stock_routers() -> Router {
     Router::new()
@@ -34,10 +32,7 @@ struct StockParams {
  * 实现了 `IntoResponse` 的一个类型，通常用于构建HTTP响应。
  */
 async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
-    let exchange = Exchange::from_str(&exchange).unwrap();
-
-    let r = sync_stocks(&exchange).await;
-
+    let r = stock_svc::sync(&exchange).await;
     RespBody::from_result(&r).response()
 }
 
