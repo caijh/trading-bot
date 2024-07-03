@@ -11,13 +11,12 @@ use tracing::{error, info};
 use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc::analysis_index;
-use crate::exchange::exchange_model::Exchange;
 use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
 use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
-use crate::stock::stock_svc::sync_stocks;
+use crate::stock::stock_svc::sync;
 
 pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;
@@ -197,8 +196,8 @@ async fn add_sync_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let _ = sync_stocks(&Exchange::SH("SH".to_string())).await;
-                let _ = sync_stocks(&Exchange::SZ("SZ".to_string())).await;
+                let _ = sync("SH").await;
+                let _ = sync("SZ").await;
             })
         }))
         .build()?;
