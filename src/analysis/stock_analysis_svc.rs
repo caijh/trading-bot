@@ -7,6 +7,7 @@ use crate::analysis::stock_analysis_ctrl::{IndexAnalysisParams, StockAnalysisPar
 use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_calculate::{down_at_least, max, mean, min};
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
+use crate::fund::fund_model::Fund;
 use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_model::Stock;
 use crate::stock::stock_svc::get_stock_daily_price;
@@ -131,4 +132,68 @@ pub async fn analysis_stock(
         }
     }
     Ok(analyzed_stock)
+}
+
+pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
+    let dao = SERVICES.get::<DbService>().dao();
+    let funds = Fund::select_all(dao).await?;
+    let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
+    if funds.is_empty() {
+        return Ok(focus_stocks);
+    }
+
+    for fund in funds {
+        let prices = get_stock_daily_price(&fund.code).await?;
+        let pattern = get_stock_pattern(&prices);
+        let max = max(&prices, 20);
+        let min = min(&prices, 20);
+        let current = prices.last().unwrap().close.clone();
+        let mean = mean(&prices, 120);
+        if current > mean {
+            // 当前价大于120天均价
+            match pattern {
+                StockPattern::UnKnown => {}
+                StockPattern::LongLowerShadow | StockPattern::DojiStar => {
+                    // 长下影、十字星
+                    if down_at_least(&prices, 4) {
+                        // 连续下跌4天
+                        focus_stocks.push(AnalyzedStock {
+                            code: fund.code.to_string(),
+                            name: fund.name.to_string(),
+                            pattern,
+                            min,
+                            max,
+                            current,
+                        });
+                    }
+                }
+                StockPattern::Ma5Ma20 => {
+                    // MA5 > MA20
+                    focus_stocks.push(AnalyzedStock {
+                        code: fund.code.to_string(),
+                        name: fund.name.to_string(),
+                        pattern,
+                        min,
+                        max,
+                        current,
+                    });
+                }
+                StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
+                    // 看涨吞没形态、刺透形态、向上缺口
+                    if down_at_least(&prices[0..prices.len() - 1], 3) {
+                        // 之前连续下跌3天
+                        focus_stocks.push(AnalyzedStock {
+                            code: fund.code.to_string(),
+                            name: fund.name.to_string(),
+                            pattern,
+                            min,
+                            max,
+                            current,
+                        });
+                    }
+                }
+            }
+        }
+    }
+    Ok(focus_stocks)
 }

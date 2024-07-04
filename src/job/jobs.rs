@@ -10,6 +10,7 @@ use tracing::{error, info};
 
 use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
+use crate::analysis::stock_analysis_svc;
 use crate::analysis::stock_analysis_svc::analysis_index;
 use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
 use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
@@ -31,6 +32,7 @@ pub async fn load_jobs() -> Result<()> {
     add_sync_stock_price_job(&scheduler).await?;
 
     add_analysis_stocks_job(&scheduler).await?;
+    add_analysis_funds_job(&scheduler).await?;
 
     Ok(())
 }
@@ -58,7 +60,7 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     let jj = JobBuilder::new()
         .with_timezone(chrono_tz::Asia::Shanghai)
         .with_cron_job_type()
-        .with_schedule("0 0 18 * * Mon-Fri *")
+        .with_schedule("0 0 17 * * Mon-Fri *")
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
@@ -81,6 +83,42 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                         Err(e) => {
                             error!("analysis index {} stocks fail, {}", index.name, e);
                         }
+                    }
+                }
+            })
+        }))
+        .build()?;
+    scheduler.add(jj).await?;
+    Ok(())
+}
+
+async fn add_analysis_funds_job(scheduler: &JobScheduler) -> Result<()> {
+    let jj = JobBuilder::new()
+        .with_timezone(chrono_tz::Asia::Shanghai)
+        .with_cron_job_type()
+        .with_schedule("0 0 18 * * Mon-Fri *")
+        .unwrap()
+        .with_run_async(Box::new(|_uuid, _locked| {
+            Box::pin(async move {
+                let now = Local::now();
+                let holiday_result = is_holiday(&now).await.unwrap();
+                if holiday_result.is_holiday {
+                    return;
+                }
+                let result = stock_analysis_svc::analysis_funds().await;
+                match result {
+                    Ok(stocks) => {
+                        spawn(notification_stocks(
+                            stocks,
+                            StockIndex {
+                                code: "".to_string(),
+                                name: "基金".to_string(),
+                                exchange: "".to_string(),
+                            },
+                        ));
+                    }
+                    Err(e) => {
+                        error!("analysis fund stocks fail, {}", e);
                     }
                 }
             })
