@@ -12,7 +12,10 @@ pub struct AnalyzedStock {
     pub name: String,
     /// 股票的技术分析模式，用于描述股票价格走势的特定模式。
     pub pattern: StockPattern,
+    /// min 20
     pub min: Decimal,
+    /// max 20
     pub max: Decimal,
+    /// current price
     pub current: Decimal,
 }

@@ -13,6 +13,7 @@ use serde_json::Value;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
+use crate::fund::fund_model::Fund;
 use crate::stock::stock_api;
 use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 
@@ -20,6 +21,7 @@ pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
     let exchange = Exchange::from_str(exchange).unwrap();
     delete_stocks(exchange.as_ref()).await?;
     sync_stocks(&exchange).await?;
+    delete_funds(exchange.as_ref()).await?;
     sync_funds(&exchange).await?;
     Ok(())
 }
@@ -30,13 +32,13 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1,8&COMPANY_STATUS=2,4,5,7,8";
             download(url, Path::new("sh_stocks.xls")).await?;
             let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
-            save_stocks(stocks).await?;
+            save_stocks(&stocks).await?;
         }
         Exchange::SZ(exchange) => {
             let url = format!("https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
             Request::download(&url, Path::new("sz_stocks.xlsx")).await?;
             let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx", exchange)?;
-            save_stocks(stocks).await?;
+            save_stocks(&stocks).await?;
         }
     }
     Ok(())
@@ -50,13 +52,15 @@ pub async fn sync_funds(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
                 thread_rng().gen::<f64>()
             );
             let stocks = download_funds(&url, exchange).await?;
-            save_stocks(stocks).await?;
+            save_stocks(&stocks).await?;
+            save_funds(&stocks).await?;
         }
         Exchange::SZ(exchange) => {
             let url = format!("https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1105&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
             Request::download(&url, Path::new("sz_funds.xlsx")).await?;
             let stocks = read_funds_from_sz_excel("sz_funds.xlsx", exchange)?;
-            save_stocks(stocks).await?;
+            save_stocks(&stocks).await?;
+            save_funds(&stocks).await?;
         }
     }
     Ok(())
@@ -201,10 +205,27 @@ pub fn read_funds_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>
 /// ```
 ///
 /// ```
-async fn save_stocks(stocks: Vec<Stock>) -> Result<(), Box<dyn Error>> {
+async fn save_stocks(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
     let db = SERVICES.get::<DbService>().dao();
 
-    Stock::insert_batch(db, &stocks, stocks.len() as u64).await?;
+    Stock::insert_batch(db, stocks, stocks.len() as u64).await?;
+
+    Ok(())
+}
+
+async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
+    let db = SERVICES.get::<DbService>().dao();
+
+    let mut funds = Vec::new();
+    for stock in stocks {
+        funds.push(Fund {
+            code: stock.code.clone(),
+            name: stock.name.clone(),
+            exchange: stock.exchange.clone(),
+        });
+    }
+
+    Fund::insert_batch(db, &funds, funds.len() as u64).await?;
 
     Ok(())
 }
@@ -213,6 +234,14 @@ pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
     let dao = SERVICES.get::<DbService>().dao();
 
     Stock::delete_by_column(dao, "exchange", exchange).await?;
+
+    Ok(())
+}
+
+pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
+    let dao = SERVICES.get::<DbService>().dao();
+
+    Fund::delete_by_column(dao, "exchange", exchange).await?;
 
     Ok(())
 }

@@ -11,6 +11,7 @@ pub fn stock_analysis_routers() -> Router {
     Router::new()
         .route("/index", get(analysis_index))
         .route("/stock", get(analysis_stock))
+        .route("/funds", get(analysis_funds))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -31,6 +32,12 @@ async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoR
 
 async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoResponse {
     let r = stock_analysis_svc::analysis_stock(&params).await;
+
+    RespBody::from_result(&r).response()
+}
+
+async fn analysis_funds() -> impl IntoResponse {
+    let r = stock_analysis_svc::analysis_funds().await;
 
     RespBody::from_result(&r).response()
 }
