@@ -17,8 +17,8 @@ use crate::stock::stock_api;
 use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 
 pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
-    delete_stocks(exchange).await?;
     let exchange = Exchange::from_str(exchange).unwrap();
+    delete_stocks(exchange.as_ref()).await?;
     sync_stocks(&exchange).await?;
     sync_funds(&exchange).await?;
     Ok(())
