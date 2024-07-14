@@ -12,6 +12,8 @@ use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_model::Stock;
 use crate::stock::stock_svc::get_stock_daily_price;
 
+const DOWN_AT_LEAST_DAYS: i32 = 5;
+
 pub async fn analysis_index(
     params: &IndexAnalysisParams,
 ) -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
@@ -29,7 +31,7 @@ pub async fn analysis_index(
         match pattern {
             StockPattern::UnKnown => {}
             StockPattern::LongLowerShadow | StockPattern::DojiStar => {
-                if down_at_least(&prices, 4) && current > mean {
+                if down_at_least(&prices, DOWN_AT_LEAST_DAYS) && current > mean {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
                         name: stock.stock_name.to_string(),
@@ -53,7 +55,9 @@ pub async fn analysis_index(
                 }
             }
             StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
-                if down_at_least(&prices[0..prices.len() - 1], 3) && current > mean {
+                if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1)
+                    && current > mean
+                {
                     focus_stocks.push(AnalyzedStock {
                         code: stock.stock_code.to_string(),
                         name: stock.stock_name.to_string(),
@@ -92,8 +96,8 @@ pub async fn analysis_stock(
             StockPattern::UnKnown => {}
             StockPattern::LongLowerShadow | StockPattern::DojiStar => {
                 // 长下影、十字星
-                if down_at_least(&prices, 4) {
-                    // 连续下跌4天
+                if down_at_least(&prices, DOWN_AT_LEAST_DAYS) {
+                    // 连续下跌
                     analyzed_stock = Some(AnalyzedStock {
                         code: stock.code.to_string(),
                         name: stock.name.to_string(),
@@ -117,7 +121,7 @@ pub async fn analysis_stock(
             }
             StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
                 // 看涨吞没形态、刺透形态、向上缺口
-                if down_at_least(&prices[0..prices.len() - 1], 3) {
+                if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1) {
                     // 之前连续下跌3天
                     analyzed_stock = Some(AnalyzedStock {
                         code: stock.code.to_string(),
@@ -155,8 +159,8 @@ pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
                 StockPattern::UnKnown => {}
                 StockPattern::LongLowerShadow | StockPattern::DojiStar => {
                     // 长下影、十字星
-                    if down_at_least(&prices, 4) {
-                        // 连续下跌4天
+                    if down_at_least(&prices, DOWN_AT_LEAST_DAYS) {
+                        // 连续下跌
                         focus_stocks.push(AnalyzedStock {
                             code: fund.code.to_string(),
                             name: fund.name.to_string(),
@@ -180,7 +184,7 @@ pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
                 }
                 StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
                     // 看涨吞没形态、刺透形态、向上缺口
-                    if down_at_least(&prices[0..prices.len() - 1], 3) {
+                    if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1) {
                         // 之前连续下跌3天
                         focus_stocks.push(AnalyzedStock {
                             code: fund.code.to_string(),

@@ -46,6 +46,10 @@ impl Display for StockPattern {
 }
 
 pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
+    if prices.len() < 2 {
+        return StockPattern::UnKnown;
+    }
+
     let price = prices.last().unwrap();
     let open = &price.open;
     let close = &price.close;
