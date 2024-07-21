@@ -12,7 +12,7 @@ use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc;
 use crate::analysis::stock_analysis_svc::analysis_index;
-use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
+use crate::holiday::holiday_svc::{is_holiday, sync_holidays, today_is_holiday};
 use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
@@ -107,8 +107,7 @@ async fn add_analysis_funds_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let now = Local::now();
-                let holiday_result = is_holiday(&now).await.unwrap();
+                let holiday_result = today_is_holiday().await.unwrap();
                 if holiday_result.is_holiday {
                     return;
                 }
