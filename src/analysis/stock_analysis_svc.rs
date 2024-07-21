@@ -184,7 +184,7 @@ pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
                 }
                 StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
                     // 看涨吞没形态、刺透形态、向上缺口
-                    if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1) {
+                    if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS) {
                         // 之前连续下跌3天
                         focus_stocks.push(AnalyzedStock {
                             code: fund.code.to_string(),
