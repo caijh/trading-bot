@@ -27,6 +27,11 @@ pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Bo
     }
 }
 
+pub async fn today_is_holiday() -> Result<HolidayQueryResult, Box<dyn Error>> {
+    let now = Local::now();
+    is_holiday(&now).await
+}
+
 pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
     let dates = get_holidays().await?;
     let mut holidays = Vec::new();

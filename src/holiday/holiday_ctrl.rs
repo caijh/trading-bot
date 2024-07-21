@@ -19,7 +19,7 @@ pub fn holiday_routers() -> Router {
 /// 这个函数首先获取当前的本地时间，然后用`is_holiday`函数来检查这个日期是否为假日。
 ///
 /// 最后，将结果封装在`RespBody`中，并作为响应返回。
-pub async fn today_is_holiday() -> impl IntoResponse {
+async fn today_is_holiday() -> impl IntoResponse {
     let now = Local::now();
     let r = is_holiday(&now).await;
 
@@ -29,7 +29,7 @@ pub async fn today_is_holiday() -> impl IntoResponse {
 /// 定义一个异步函数sync，返回类型为IntoResponse的实现
 /// 该函数首先调用sync_holidays异步方法获取数据
 /// 然后将结果转换为RespBody，并构建一个响应对象
-pub async fn sync() -> impl IntoResponse {
+async fn sync() -> impl IntoResponse {
     let r = sync_holidays().await;
 
     RespBody::from_result(&r).response()
