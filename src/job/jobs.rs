@@ -23,15 +23,22 @@ pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;
     scheduler.start().await?;
 
+    // 同步节假日
     add_sync_holidays_job(&scheduler).await?;
 
+    // 同步交易所股票
     add_sync_stocks_job(&scheduler).await?;
 
+    // 同步指数股票
     add_sync_index_stocks_job(&scheduler).await?;
 
+    // 同步指数股票价格
     add_sync_stock_price_job(&scheduler).await?;
 
+    // 分析指数股票
     add_analysis_stocks_job(&scheduler).await?;
+
+    // 分析基金
     add_analysis_funds_job(&scheduler).await?;
 
     Ok(())
