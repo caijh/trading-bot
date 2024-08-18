@@ -1,7 +1,7 @@
 use anyhow::Result;
+use application::application::APPLICATION_CONTEXT;
 use chrono::Local;
 use configuration::Configuration;
-use context::SERVICES;
 use database::DbService;
 use notification::{Notification, NotificationConfig};
 use tokio::spawn;
@@ -30,7 +30,7 @@ pub async fn load_jobs() -> Result<()> {
     add_sync_stocks_job(&scheduler).await?;
 
     // 同步指数股票
-    add_sync_index_stocks_job(&scheduler).await?;
+    // add_sync_index_stocks_job(&scheduler).await?;
 
     // 同步指数股票价格
     add_sync_stock_price_job(&scheduler).await?;
@@ -76,7 +76,8 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 if holiday_result.is_holiday {
                     return;
                 }
-                let dao = SERVICES.get::<DbService>().dao();
+                let application_context = APPLICATION_CONTEXT.read().await;
+                let dao = application_context.context.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let params = IndexAnalysisParams {
@@ -179,7 +180,8 @@ async fn add_sync_index_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let dao = SERVICES.get::<DbService>().dao();
+                let application_context = APPLICATION_CONTEXT.read().await;
+                let dao = application_context.context.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let constituents = sync_constituents(&index.code).await.unwrap();

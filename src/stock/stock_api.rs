@@ -1,14 +1,13 @@
-use std::error::Error;
-use std::str::FromStr;
-
+use application::application::APPLICATION_CONTEXT;
+use application::environment::Environment;
 use chrono::{Local, NaiveDateTime};
-use configuration::Configuration;
-use context::SERVICES;
 use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::error::Error;
+use std::str::FromStr;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
@@ -38,11 +37,14 @@ pub struct StockDailyPriceDTO {
 pub async fn get_stock_daily_price(
     stock: &Stock,
 ) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
-    let exchange = Exchange::from_str(stock.exchange.as_str()).unwrap();
-    let config = Configuration::get_config().await;
+    let exchange = Exchange::from_str(stock.exchange.as_str())?;
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.environment.read().await;
     match exchange {
         Exchange::SH(_) => {
-            let url = config.get_string("stock.api.sh.baseurl").unwrap();
+            let url = environment
+                .get_property::<String>("stock.api.sh.baseurl")
+                .unwrap();
             let url = format!(
                 "{}/v1/sh1/dayk/{}?begin=-1000&end=-1&period=day&_={}",
                 url,
@@ -74,7 +76,9 @@ pub async fn get_stock_daily_price(
             Ok(stock_prices)
         }
         Exchange::SZ(_) => {
-            let url = config.get_string("stock.api.sz.baseurl").unwrap();
+            let url = environment
+                .get_property::<String>("stock.api.sz.baseurl")
+                .unwrap();
             let url = format!(
                 "{}/api/market/ssjjhq/getHistoryData?random={}&cycleType=32&marketId=1&code={}",
                 url,
@@ -143,18 +147,21 @@ pub struct StockPriceDTO {
 }
 
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
-    let db = SERVICES.get::<DbService>().dao();
-    let stock = Stock::select_by_code(db, code).await?;
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
+    let stock = Stock::select_by_code(dao, code).await?;
     let stock = match stock {
         Some(s) => s,
         None => return Err("Stock not found".into()),
     };
     let client = Request::client().await;
-    let config = Configuration::get_config().await;
-    let exchange = Exchange::from_str(&stock.exchange).unwrap();
+    let environment = application_context.environment.read().await;
+    let exchange = Exchange::from_str(&stock.exchange)?;
     match exchange {
         Exchange::SH(_exchange) => {
-            let url = config.get_string("stock.api.sh.baseurl").unwrap();
+            let url = environment
+                .get_property::<String>("stock.api.sh.baseurl")
+                .unwrap();
             let response = client
                 .get(format!(
                     "{}/v1/sh1/snap/{}?_={}",
@@ -190,7 +197,9 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             })
         }
         Exchange::SZ(_exchange) => {
-            let url = config.get_string("stock.api.sz.baseurl").unwrap();
+            let url = environment
+                .get_property::<String>("stock.api.sz.baseurl")
+                .unwrap();
             let response = client
                 .get(format!(
                     "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",

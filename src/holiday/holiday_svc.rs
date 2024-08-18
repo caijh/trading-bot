@@ -1,9 +1,8 @@
-use std::error::Error;
-
+use application::application::APPLICATION_CONTEXT;
 use chrono::{DateTime, Datelike, Local};
-use context::SERVICES;
 use database::DbService;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 use crate::holiday::holiday_api::get_holidays;
 use crate::holiday::holiday_model::MarketHoliday;
@@ -19,7 +18,8 @@ pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Bo
     }
 
     let date = date.format("%Y%m%d").to_string();
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let market_holiday = MarketHoliday::select_by_id(dao, date.parse::<u64>().unwrap()).await?;
     match market_holiday {
         Some(_) => Ok(HolidayQueryResult { is_holiday: true }),
@@ -50,7 +50,8 @@ pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
     if ids.is_empty() {
         return Ok(());
     }
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     MarketHoliday::delete_in_column(dao, "id", &ids).await?;
     MarketHoliday::insert_batch(dao, &holidays, holidays.len() as u64).await?;
     Ok(())

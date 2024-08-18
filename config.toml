@@ -1,22 +1,3 @@
-[server]
-port = 8080
-
-[application]
-name = "trading-bot-server"
-
-[registry]
-address = "http://127.0.0.1:8500"
-token = ""
-[service.check]
-address = "http://127.0.0.1:8080/health/check"
-interval = "30s"
-
-[logger]
-enabled = true
-level = "info"
-file = "trading-bot-server.log"
-log_dir = "./logs"
-
 [database]
 host = "127.0.0.1"
 port = 3306
