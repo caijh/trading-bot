@@ -1,7 +1,6 @@
 use application::application::APPLICATION_CONTEXT;
 use application::environment::Environment;
 use chrono::Local;
-use configuration::Configuration;
 use rand::{thread_rng, Rng};
 use serde_json::Value;
 use std::error::Error;

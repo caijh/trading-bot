@@ -1,27 +1,27 @@
-use application::application::RustApplication;
-use application::application_context::{ApplicationContext, ConfigurableApplicationContext};
-use application::application_event::{
-    ApplicationContextInitializedEvent, ApplicationEvent, ApplicationStartedEvent,
-};
+use application::application::{Application, RustApplication};
+use application::application_context::ApplicationContext;
+use application::application_event::{ApplicationEvenType, ApplicationEvent};
 use application::application_listener::ApplicationListener;
 use application::environment::Environment;
-use database::{DbConnection, DbService};
-use std::any::TypeId;
+use database::DbService;
+use database_common::connection::DbConnection;
+use rbatis::rbdc::rt::block_on;
 use std::error::Error;
+use crate::job::jobs::load_jobs;
 
 pub struct ApplicationContextInitializedListener {}
 
 impl ApplicationListener for ApplicationContextInitializedListener {
     fn is_support(&self, event: &dyn ApplicationEvent) -> bool {
-        event.get_type_id() == TypeId::of::<ApplicationContextInitializedEvent>()
+        event.get_event_type() == ApplicationEvenType::ContextInitialized
     }
 
     fn on_application_event(
         &self,
-        _application: &RustApplication,
-        application_context: &ConfigurableApplicationContext,
+        application: &RustApplication,
         _event: &dyn ApplicationEvent,
     ) -> Result<(), Box<dyn Error>> {
+        let application_context = application.get_application_context();
         let environment = application_context.get_environment();
         let db_connection = environment
             .get_property::<DbConnection>("database")
@@ -37,16 +37,16 @@ pub struct ApplicationStartedEventListener {}
 
 impl ApplicationListener for ApplicationStartedEventListener {
     fn is_support(&self, event: &dyn ApplicationEvent) -> bool {
-        event.get_type_id() == TypeId::of::<ApplicationStartedEvent>()
+        event.get_event_type() == ApplicationEvenType::Started
     }
 
     fn on_application_event(
         &self,
         _application: &RustApplication,
-        _application_context: &ConfigurableApplicationContext,
         _event: &dyn ApplicationEvent,
     ) -> Result<(), Box<dyn Error>> {
-        // block_on(load_jobs())?;
+
+        block_on(load_jobs())?;
 
         Ok(())
     }
