@@ -266,14 +266,16 @@ async fn add_sync_holidays_job(scheduler: &JobScheduler) -> Result<()> {
 }
 
 async fn create_scheduler() -> Result<JobScheduler> {
+    #[allow(unused_mut)]
     let mut scheduler = JobScheduler::new().await?;
 
     #[cfg(feature = "signal")]
     scheduler.shutdown_on_ctrl_c();
 
+    #[cfg(feature = "signal")]
     scheduler.set_shutdown_handler(Box::new(|| {
         Box::pin(async move {
-            info!("Shut down done");
+            info!("Scheduler Shutdown done");
         })
     }));
 
