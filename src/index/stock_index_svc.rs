@@ -1,12 +1,10 @@
-use std::error::Error;
-use std::ops::Not;
-
-use context::SERVICES;
-use database::DbService;
-
 use crate::index::stock_index_api;
 use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
 use crate::stock::stock_svc::sync_stock_daily_price;
+use application::application::APPLICATION_CONTEXT;
+use database::DbService;
+use std::error::Error;
+use std::ops::Not;
 
 /// 获取指数的成分股
 ///
@@ -23,7 +21,8 @@ use crate::stock::stock_svc::sync_stock_daily_price;
 /// ```
 pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let stocks = IndexConstituent::select_by_column(dao, "index_code", &index.code).await?;
     Ok(stocks)
 }
@@ -33,13 +32,15 @@ pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box
 
     let stocks = stock_index_api::get_stocks(&index.code, &index.exchange).await?;
 
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let old_constituents =
         IndexConstituent::select_by_column(dao, "index_code", &index.code).await?;
     let old_constituent_codes = old_constituents
         .iter()
         .map(|c| c.stock_code.clone())
         .collect::<Vec<String>>();
+
     let mut constituents_to_add = Vec::new();
     let mut stock_codes = Vec::new();
     for stock in stocks {
@@ -53,12 +54,14 @@ pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box
         }
         stock_codes.push(stock.code);
     }
+
     let mut constituents_to_remove = Vec::new();
     for index_constituent in old_constituents {
         if !stock_codes.contains(&index_constituent.stock_code) {
             constituents_to_remove.push(index_constituent);
         }
     }
+
     if constituents_to_add.is_empty().not() {
         IndexConstituent::insert_batch(dao, &constituents_to_add, constituents_to_add.len() as u64)
             .await?;
@@ -80,7 +83,8 @@ pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box
 }
 
 pub async fn get_stock_index(index: &str) -> Result<StockIndex, Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let index = StockIndex::select_by_code(dao, index).await?;
     match index {
         None => Err("Stock index is no Supported".into()),
@@ -97,7 +101,8 @@ pub async fn sync_constituent_stocks_daily_price(index: &str) -> Result<(), Box<
 }
 
 pub async fn get_all_stock_index() -> Result<Vec<StockIndex>, Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let indexes = StockIndex::select_all(dao).await?;
     Ok(indexes)
 }

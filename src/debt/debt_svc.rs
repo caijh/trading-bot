@@ -1,16 +1,19 @@
-use std::error::Error;
-
+use application::application::APPLICATION_CONTEXT;
+use application::environment::Environment;
 use chrono::{Local, NaiveDateTime};
-use configuration::Configuration;
 use serde_json::Value;
+use std::error::Error;
 use util::request::Request;
 
 use crate::debt::debt_model::DebtPrice;
 
 pub async fn get_debt_price(code: &String) -> Result<DebtPrice, Box<dyn Error>> {
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.environment.read().await;
     let client = Request::client().await;
-    let config = Configuration::get_config().await;
-    let url = config.get_string("stock.api.sh.baseurl").unwrap();
+    let url = environment
+        .get_property::<String>("stock.api.sh.baseurl")
+        .unwrap();
     let response = client
         .get(format!(
             "{}/v1/shb1/snap/{}?_={}",

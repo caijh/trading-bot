@@ -1,15 +1,14 @@
+use application::application::APPLICATION_CONTEXT;
+use calamine::{open_workbook, Reader, Xls, Xlsx};
+use database::DbService;
+use rand::{thread_rng, Rng};
+use rbatis::rbdc::Decimal;
+use serde_json::Value;
 use std::error::Error;
 use std::fs::File;
 use std::io::copy;
 use std::path::Path;
 use std::str::FromStr;
-
-use calamine::{open_workbook, Reader, Xls, Xlsx};
-use context::SERVICES;
-use database::DbService;
-use rand::{thread_rng, Rng};
-use rbatis::rbdc::Decimal;
-use serde_json::Value;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
@@ -18,7 +17,7 @@ use crate::stock::stock_api;
 use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 
 pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
-    let exchange = Exchange::from_str(exchange).unwrap();
+    let exchange = Exchange::from_str(exchange)?;
     delete_stocks(exchange.as_ref()).await?;
     sync_stocks(&exchange).await?;
     delete_funds(exchange.as_ref()).await?;
@@ -31,7 +30,7 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
         Exchange::SH(exchange) => {
             let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1,8&COMPANY_STATUS=2,4,5,7,8";
             download(url, Path::new("sh_stocks.xls")).await?;
-            let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
+            let stocks = read_stocks_from_sh_excel("sh_stocks.xls", exchange)?;
             save_stocks(&stocks).await?;
         }
         Exchange::SZ(exchange) => {
@@ -129,7 +128,7 @@ pub async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub fn read_stocks_from_hz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_stocks_from_sh_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xls: Xls<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();
@@ -206,15 +205,17 @@ pub fn read_funds_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>
 ///
 /// ```
 async fn save_stocks(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
-    let db = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
 
-    Stock::insert_batch(db, stocks, stocks.len() as u64).await?;
+    Stock::insert_batch(dao, stocks, stocks.len() as u64).await?;
 
     Ok(())
 }
 
 async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
-    let db = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
 
     let mut funds = Vec::new();
     for stock in stocks {
@@ -225,13 +226,14 @@ async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
         });
     }
 
-    Fund::insert_batch(db, &funds, funds.len() as u64).await?;
+    Fund::insert_batch(dao, &funds, funds.len() as u64).await?;
 
     Ok(())
 }
 
 pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
 
     Stock::delete_by_column(dao, "exchange", exchange).await?;
 
@@ -239,7 +241,8 @@ pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
 
     Fund::delete_by_column(dao, "exchange", exchange).await?;
 
@@ -247,7 +250,8 @@ pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let stock = Stock::select_by_code(dao, code).await?;
     if stock.is_none() {
         return Err("Stock not found".into());

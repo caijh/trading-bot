@@ -1,7 +1,6 @@
-use std::error::Error;
-
-use context::SERVICES;
+use application::application::APPLICATION_CONTEXT;
 use database::DbService;
+use std::error::Error;
 
 use crate::analysis::stock_analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
 use crate::analysis::stock_analysis_model::AnalyzedStock;
@@ -76,7 +75,8 @@ pub async fn analysis_index(
 pub async fn analysis_stock(
     params: &StockAnalysisParams,
 ) -> Result<Option<AnalyzedStock>, Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let stock = Stock::select_by_code(dao, &params.code).await?;
     if stock.is_none() {
         return Err("Stock not found".into());
@@ -139,7 +139,8 @@ pub async fn analysis_stock(
 }
 
 pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
-    let dao = SERVICES.get::<DbService>().dao();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let dao = application_context.context.get::<DbService>().dao();
     let funds = Fund::select_all(dao).await?;
     let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
     if funds.is_empty() {

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use stock_bot::holiday_api::get_holidays;
+    use trading_bot::holiday::holiday_api::get_holidays;
 
     #[tokio::test]
     async fn test_get_holidays() {

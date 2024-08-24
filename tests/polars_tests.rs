@@ -3,7 +3,8 @@ mod tests {
     use std::io::Cursor;
 
     use polars::io::SerReader;
-    use polars::prelude::{col, IntoLazy, JsonReader, NamedFrom};
+    use polars::prelude::{col, IntoLazy, JsonReader};
+    use trading_bot::analysis::stock_calculate::ma;
 
     #[test]
     fn test_polars() {

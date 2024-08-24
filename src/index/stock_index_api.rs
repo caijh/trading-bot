@@ -1,22 +1,26 @@
-use std::error::Error;
-use std::str::FromStr;
-
+use application::application::APPLICATION_CONTEXT;
+use application::environment::Environment;
 use chrono::Local;
-use configuration::Configuration;
 use rand::{thread_rng, Rng};
 use serde_json::Value;
+use std::error::Error;
+use std::str::FromStr;
+use tracing::info;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_model::Stock;
 
 pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
-    let exchange = Exchange::from_str(exchange).unwrap();
+    let exchange = Exchange::from_str(exchange)?;
     let client = Request::client().await;
     let mut stocks: Vec<Stock> = Vec::new();
+    let application_context = APPLICATION_CONTEXT.read().await;
     match exchange {
         Exchange::SH(exchange) => {
             let url = format!("https://query.sse.com.cn/commonSoaQuery.do?sqlId=DB_SZZSLB_CFGLB&indexCode={}&_={}", index, Local::now().timestamp_millis());
+            info!("url = {}", url);
+
             let mut headers = reqwest::header::HeaderMap::new();
             headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
             headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
@@ -43,8 +47,10 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
             }
         }
         Exchange::SZ(exchange) => {
-            let config = Configuration::get_config().await;
-            let url = config.get_string("stock.api.sz.baseurl").unwrap();
+            let environment = application_context.environment.read().await;
+            let url = environment
+                .get_property::<String>("stock.api.sz.baseurl")
+                .unwrap();
             let mut page_no = 1;
             loop {
                 let url = format!("{}/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1747_zs&PAGENO={}&ZSDM={}&random={}", url, page_no, index, thread_rng().gen::<f64>());

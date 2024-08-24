@@ -1,7 +1,7 @@
 use anyhow::Result;
+use application::application::APPLICATION_CONTEXT;
+use application::environment::Environment;
 use chrono::Local;
-use configuration::Configuration;
-use context::SERVICES;
 use database::DbService;
 use notification::{Notification, NotificationConfig};
 use tokio::spawn;
@@ -76,7 +76,8 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 if holiday_result.is_holiday {
                     return;
                 }
-                let dao = SERVICES.get::<DbService>().dao();
+                let application_context = APPLICATION_CONTEXT.read().await;
+                let dao = application_context.context.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let params = IndexAnalysisParams {
@@ -149,10 +150,12 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
             .as_str(),
         );
     }
-    let config = Configuration::get_config().await;
-    let result = config.get::<NotificationConfig>("notification");
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.environment.read().await;
+    let result = environment.get_property::<NotificationConfig>("notification");
     match result {
-        Ok(notification_config) => {
+        None => {}
+        Some(notification_config) => {
             let url = format!(
                 "{}/send/{}",
                 notification_config.url, notification_config.receiver
@@ -165,9 +168,6 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
                 )
                 .await
         }
-        Err(e) => {
-            tracing::debug!("{:?}", e);
-        }
     }
 }
 
@@ -179,7 +179,8 @@ async fn add_sync_index_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let dao = SERVICES.get::<DbService>().dao();
+                let application_context = APPLICATION_CONTEXT.read().await;
+                let dao = application_context.context.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let constituents = sync_constituents(&index.code).await.unwrap();
@@ -210,10 +211,12 @@ async fn notification_index_stocks(
     for stock in stocks_remove {
         content.push_str(format!("移除 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
-    let config = Configuration::get_config().await;
-    let result = config.get::<NotificationConfig>("notification");
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.environment.read().await;
+    let result = environment.get_property::<NotificationConfig>("notification");
     match result {
-        Ok(notification_config) => {
+        None => {}
+        Some(notification_config) => {
             let url = format!(
                 "{}/send/{}",
                 notification_config.url, notification_config.receiver
@@ -225,9 +228,6 @@ async fn notification_index_stocks(
                     notification_config.receiver.as_str(),
                 )
                 .await
-        }
-        Err(e) => {
-            tracing::debug!("{:?}", e);
         }
     }
 }
