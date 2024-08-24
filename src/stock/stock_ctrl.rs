@@ -36,11 +36,13 @@ async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
     RespBody::from_result(&r).response()
 }
 
+/// 获取股票日线价格
 async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_daily_price(&params.code).await;
     RespBody::from_result(&r).response()
 }
 
+/// 获取股票当前价格
 async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_price(&params.code).await;
     RespBody::from_result(&r).response()
