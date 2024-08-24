@@ -25,7 +25,7 @@ pub struct IndexConstituent {
     pub stock_name: String,
 }
 crud!(IndexConstituent {});
-impl_delete!(IndexConstituent {delete_by_index_code_stock_code(index_code: &str, stock_code: &str) => "`where index_code = #{index_code} and stock_code #{stock_code}`"});
+impl_delete!(IndexConstituent {delete_by_index_code_stock_code(index_code: &str, stock_code: &str) => "`where index_code = #{index_code} and stock_code = #{stock_code}`"});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SyncIndexConstituents {

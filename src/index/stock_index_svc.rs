@@ -1,11 +1,10 @@
+use crate::index::stock_index_api;
+use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
+use crate::stock::stock_svc::sync_stock_daily_price;
 use application::application::APPLICATION_CONTEXT;
 use database::DbService;
 use std::error::Error;
 use std::ops::Not;
-
-use crate::index::stock_index_api;
-use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
-use crate::stock::stock_svc::sync_stock_daily_price;
 
 /// 获取指数的成分股
 ///
@@ -41,6 +40,7 @@ pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box
         .iter()
         .map(|c| c.stock_code.clone())
         .collect::<Vec<String>>();
+
     let mut constituents_to_add = Vec::new();
     let mut stock_codes = Vec::new();
     for stock in stocks {
@@ -54,12 +54,14 @@ pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box
         }
         stock_codes.push(stock.code);
     }
+
     let mut constituents_to_remove = Vec::new();
     for index_constituent in old_constituents {
         if !stock_codes.contains(&index_constituent.stock_code) {
             constituents_to_remove.push(index_constituent);
         }
     }
+
     if constituents_to_add.is_empty().not() {
         IndexConstituent::insert_batch(dao, &constituents_to_add, constituents_to_add.len() as u64)
             .await?;
