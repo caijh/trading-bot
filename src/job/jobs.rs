@@ -1,7 +1,7 @@
 use anyhow::Result;
 use application::application::APPLICATION_CONTEXT;
+use application::environment::Environment;
 use chrono::Local;
-use configuration::Configuration;
 use database::DbService;
 use notification::{Notification, NotificationConfig};
 use tokio::spawn;
@@ -150,10 +150,12 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
             .as_str(),
         );
     }
-    let config = Configuration::get_config().await;
-    let result = config.get::<NotificationConfig>("notification");
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.environment.read().await;
+    let result = environment.get_property::<NotificationConfig>("notification");
     match result {
-        Ok(notification_config) => {
+        None => {}
+        Some(notification_config) => {
             let url = format!(
                 "{}/send/{}",
                 notification_config.url, notification_config.receiver
@@ -165,9 +167,6 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
                     notification_config.receiver.as_str(),
                 )
                 .await
-        }
-        Err(e) => {
-            tracing::debug!("{:?}", e);
         }
     }
 }
@@ -212,10 +211,12 @@ async fn notification_index_stocks(
     for stock in stocks_remove {
         content.push_str(format!("移除 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
-    let config = Configuration::get_config().await;
-    let result = config.get::<NotificationConfig>("notification");
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.environment.read().await;
+    let result = environment.get_property::<NotificationConfig>("notification");
     match result {
-        Ok(notification_config) => {
+        None => {}
+        Some(notification_config) => {
             let url = format!(
                 "{}/send/{}",
                 notification_config.url, notification_config.receiver
@@ -227,9 +228,6 @@ async fn notification_index_stocks(
                     notification_config.receiver.as_str(),
                 )
                 .await
-        }
-        Err(e) => {
-            tracing::debug!("{:?}", e);
         }
     }
 }
