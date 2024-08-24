@@ -266,6 +266,7 @@ async fn add_sync_holidays_job(scheduler: &JobScheduler) -> Result<()> {
 }
 
 async fn create_scheduler() -> Result<JobScheduler> {
+    #[allow(unused_mut)]
     let mut scheduler = JobScheduler::new().await?;
 
     #[cfg(feature = "signal")]
