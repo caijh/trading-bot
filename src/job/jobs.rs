@@ -271,9 +271,10 @@ async fn create_scheduler() -> Result<JobScheduler> {
     #[cfg(feature = "signal")]
     scheduler.shutdown_on_ctrl_c();
 
+    #[cfg(feature = "signal")]
     scheduler.set_shutdown_handler(Box::new(|| {
         Box::pin(async move {
-            info!("Shut down done");
+            info!("Scheduler Shutdown done");
         })
     }));
 
