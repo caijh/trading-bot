@@ -29,6 +29,7 @@ RUN groupadd $APP_USER \
   && mkdir -p ${APP}
 
 COPY --from=builder /rust-docker-web/target/release/trading-bot ${APP}/rust-docker-web
+COPY --from=builder /rust-docker-web/bootstrap.toml ${APP}/bootstrap.toml
 COPY --from=builder /rust-docker-web/config.toml ${APP}/config.toml
 
 RUN chown -R $APP_USER:$APP_USER ${APP}
