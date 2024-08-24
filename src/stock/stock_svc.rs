@@ -17,7 +17,7 @@ use crate::stock::stock_api;
 use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 
 pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
-    let exchange = Exchange::from_str(exchange).unwrap();
+    let exchange = Exchange::from_str(exchange)?;
     delete_stocks(exchange.as_ref()).await?;
     sync_stocks(&exchange).await?;
     delete_funds(exchange.as_ref()).await?;
@@ -30,7 +30,7 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
         Exchange::SH(exchange) => {
             let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1,8&COMPANY_STATUS=2,4,5,7,8";
             download(url, Path::new("sh_stocks.xls")).await?;
-            let stocks = read_stocks_from_hz_excel("sh_stocks.xls", exchange)?;
+            let stocks = read_stocks_from_sh_excel("sh_stocks.xls", exchange)?;
             save_stocks(&stocks).await?;
         }
         Exchange::SZ(exchange) => {
@@ -128,7 +128,7 @@ pub async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub fn read_stocks_from_hz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_stocks_from_sh_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xls: Xls<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();

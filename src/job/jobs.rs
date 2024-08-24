@@ -30,7 +30,7 @@ pub async fn load_jobs() -> Result<()> {
     add_sync_stocks_job(&scheduler).await?;
 
     // 同步指数股票
-    // add_sync_index_stocks_job(&scheduler).await?;
+    add_sync_index_stocks_job(&scheduler).await?;
 
     // 同步指数股票价格
     add_sync_stock_price_job(&scheduler).await?;
