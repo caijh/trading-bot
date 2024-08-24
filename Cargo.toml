@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-application = { path = "../../infra-rs/application-rs" }
+application = { git = "https://caijh@bitbucket.org/bytebinary/application-rs.git" }
+#application = { path = "../../infra-rs/application-rs" }
 # cli
 clap = { version = "4.5.4", features = ["cargo", "derive"] }
 cli = {git = "https://caijh@bitbucket.org/bytebinary/cli-rs.git"}
