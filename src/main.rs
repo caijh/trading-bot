@@ -8,12 +8,18 @@ use trading_bot::listener::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let mut application = RustApplication::default();
+    let application = RustApplication::default();
 
-    application.add_listener(Box::new(ApplicationContextInitializedListener {}));
-    application.add_listener(Box::new(ApplicationStartedEventListener {}));
-    application.add_servlet_context_initializer(Box::new(RoutInitializer {}));
-    application.run()?;
+    application
+        .add_listener(Box::new(ApplicationContextInitializedListener {}))
+        .await;
+    application
+        .add_listener(Box::new(ApplicationStartedEventListener {}))
+        .await;
+    application
+        .add_servlet_context_initializer(Box::new(RoutInitializer {}))
+        .await;
+    application.run().await?;
 
     Ok(())
 }

@@ -1,22 +1,23 @@
+use crate::job::jobs::load_jobs;
 use application::application::{Application, RustApplication};
 use application::application_context::ApplicationContext;
 use application::application_event::{ApplicationEvenType, ApplicationEvent};
 use application::application_listener::ApplicationListener;
 use application::environment::Environment;
+use async_trait::async_trait;
 use database::DbService;
 use database_common::connection::DbConnection;
-use rbatis::rbdc::rt::block_on;
 use std::error::Error;
-use crate::job::jobs::load_jobs;
 
 pub struct ApplicationContextInitializedListener {}
 
+#[async_trait]
 impl ApplicationListener for ApplicationContextInitializedListener {
     fn is_support(&self, event: &dyn ApplicationEvent) -> bool {
         event.get_event_type() == ApplicationEvenType::ContextInitialized
     }
 
-    fn on_application_event(
+    async fn on_application_event(
         &self,
         application: &RustApplication,
         _event: &dyn ApplicationEvent,
@@ -35,18 +36,18 @@ impl ApplicationListener for ApplicationContextInitializedListener {
 
 pub struct ApplicationStartedEventListener {}
 
+#[async_trait]
 impl ApplicationListener for ApplicationStartedEventListener {
     fn is_support(&self, event: &dyn ApplicationEvent) -> bool {
         event.get_event_type() == ApplicationEvenType::Started
     }
 
-    fn on_application_event(
+    async fn on_application_event(
         &self,
         _application: &RustApplication,
         _event: &dyn ApplicationEvent,
     ) -> Result<(), Box<dyn Error>> {
-
-        block_on(load_jobs())?;
+        load_jobs().await?;
 
         Ok(())
     }
