@@ -52,4 +52,5 @@ notification = { git = "https://caijh@bitbucket.org/bytebinary/notification-rs.g
 consulrs = "0.1.0"
 
 [features]
+default = ["signal"]
 signal = ["tokio-cron-scheduler/signal"]
