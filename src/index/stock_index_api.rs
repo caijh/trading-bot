@@ -1,4 +1,5 @@
 use application::application::APPLICATION_CONTEXT;
+use application::context::application_context::ApplicationContext;
 use application::environment::Environment;
 use chrono::Local;
 use rand::{thread_rng, Rng};
@@ -47,7 +48,7 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
             }
         }
         Exchange::SZ(exchange) => {
-            let environment = application_context.environment.read().await;
+            let environment = application_context.get_environment().await;
             let url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
                 .unwrap();

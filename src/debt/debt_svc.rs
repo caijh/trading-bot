@@ -1,4 +1,4 @@
-use application::application::APPLICATION_CONTEXT;
+use application::{application::APPLICATION_CONTEXT, context::application_context::ApplicationContext};
 use application::environment::Environment;
 use chrono::{Local, NaiveDateTime};
 use serde_json::Value;
@@ -9,7 +9,7 @@ use crate::debt::debt_model::DebtPrice;
 
 pub async fn get_debt_price(code: &String) -> Result<DebtPrice, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     let client = Request::client().await;
     let url = environment
         .get_property::<String>("stock.api.sh.baseurl")

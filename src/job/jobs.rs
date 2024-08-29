@@ -1,5 +1,6 @@
 use anyhow::Result;
 use application::application::APPLICATION_CONTEXT;
+use application::context::application_context::ApplicationContext;
 use application::environment::Environment;
 use chrono::Local;
 use database::DbService;
@@ -151,7 +152,7 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
         );
     }
     let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     let result = environment.get_property::<NotificationConfig>("notification");
     match result {
         None => {}
@@ -212,7 +213,7 @@ async fn notification_index_stocks(
         content.push_str(format!("移除 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
     let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     let result = environment.get_property::<NotificationConfig>("notification");
     match result {
         None => {}
