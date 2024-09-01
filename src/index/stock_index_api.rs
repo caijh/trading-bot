@@ -1,6 +1,6 @@
 use application::application::APPLICATION_CONTEXT;
 use application::context::application_context::ApplicationContext;
-use application::environment::Environment;
+use application::env::property_resolver::PropertyResolver;
 use chrono::Local;
 use rand::{thread_rng, Rng};
 use serde_json::Value;

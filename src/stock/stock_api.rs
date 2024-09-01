@@ -1,6 +1,6 @@
 use application::application::APPLICATION_CONTEXT;
 use application::context::application_context::ApplicationContext;
-use application::environment::Environment;
+use application::env::property_resolver::PropertyResolver;
 use chrono::{Local, NaiveDateTime};
 use database::DbService;
 use rand::{thread_rng, Rng};

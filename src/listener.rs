@@ -3,7 +3,7 @@ use application::application::{Application, RustApplication};
 use application::context::application_context::ApplicationContext;
 use application::context::application_event::{ApplicationEvenType, ApplicationEvent};
 use application::context::application_listener::ApplicationListener;
-use application::environment::Environment;
+use application::env::property_resolver::PropertyResolver;
 use async_trait::async_trait;
 use database::DbService;
 use database_common::connection::DbConnection;
