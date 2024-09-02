@@ -1,6 +1,7 @@
 use anyhow::Result;
 use application::application::APPLICATION_CONTEXT;
-use application::environment::Environment;
+use application::context::application_context::ApplicationContext;
+use application::env::property_resolver::PropertyResolver;
 use chrono::Local;
 use database::DbService;
 use notification::{Notification, NotificationConfig};
@@ -151,7 +152,7 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
         );
     }
     let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     let result = environment.get_property::<NotificationConfig>("notification");
     match result {
         None => {}
@@ -212,7 +213,7 @@ async fn notification_index_stocks(
         content.push_str(format!("移除 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
     }
     let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     let result = environment.get_property::<NotificationConfig>("notification");
     match result {
         None => {}
@@ -266,7 +267,6 @@ async fn add_sync_holidays_job(scheduler: &JobScheduler) -> Result<()> {
 }
 
 async fn create_scheduler() -> Result<JobScheduler> {
-    #[allow(unused_mut)]
     let mut scheduler = JobScheduler::new().await?;
 
     #[cfg(feature = "signal")]

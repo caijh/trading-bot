@@ -1,5 +1,6 @@
 use application::application::APPLICATION_CONTEXT;
-use application::environment::Environment;
+use application::context::application_context::ApplicationContext;
+use application::env::property_resolver::PropertyResolver;
 use chrono::{Local, NaiveDateTime};
 use database::DbService;
 use rand::{thread_rng, Rng};
@@ -39,7 +40,7 @@ pub async fn get_stock_daily_price(
 ) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let exchange = Exchange::from_str(stock.exchange.as_str())?;
     let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     match exchange {
         Exchange::SH(_) => {
             let url = environment
@@ -155,7 +156,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
         None => return Err("Stock not found".into()),
     };
     let client = Request::client().await;
-    let environment = application_context.environment.read().await;
+    let environment = application_context.get_environment().await;
     let exchange = Exchange::from_str(&stock.exchange)?;
     match exchange {
         Exchange::SH(_exchange) => {

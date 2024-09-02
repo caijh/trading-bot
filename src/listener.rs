@@ -1,9 +1,9 @@
 use crate::job::jobs::load_jobs;
 use application::application::{Application, RustApplication};
-use application::application_context::ApplicationContext;
-use application::application_event::{ApplicationEvenType, ApplicationEvent};
-use application::application_listener::ApplicationListener;
-use application::environment::Environment;
+use application::context::application_context::ApplicationContext;
+use application::context::application_event::{ApplicationEvenType, ApplicationEvent};
+use application::context::application_listener::ApplicationListener;
+use application::env::property_resolver::PropertyResolver;
 use async_trait::async_trait;
 use database::DbService;
 use database_common::connection::DbConnection;
@@ -23,7 +23,7 @@ impl ApplicationListener for ApplicationContextInitializedListener {
         _event: &dyn ApplicationEvent,
     ) -> Result<(), Box<dyn Error>> {
         let application_context = application.get_application_context();
-        let environment = application_context.get_environment();
+        let environment = application_context.get_environment().await;
         let db_connection = environment
             .get_property::<DbConnection>("database")
             .unwrap();
