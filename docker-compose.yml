@@ -1,8 +1,8 @@
 services:
-    app:
-        image: caijunhui/trading-bot:latest
-        container_name: trading-bot
-        ports:
-            - "18084:8080"
-        env_file:
-            - .env
+  app:
+    image: caijunhui/trading-bot:latest
+    container_name: trading-bot
+    ports:
+      - "18084:8080"
+    env_file:
+      - .env
