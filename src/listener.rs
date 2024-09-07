@@ -28,7 +28,7 @@ impl ApplicationListener for ApplicationContextInitializedListener {
             .get_property::<DbConnection>("database")
             .unwrap();
         let database_service = DbService::create_from_connection(db_connection);
-        application_context.context.set(database_service);
+        application_context.set(database_service);
 
         Ok(())
     }

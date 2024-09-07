@@ -1,4 +1,5 @@
 use application::application::APPLICATION_CONTEXT;
+use application::context::application_context::ApplicationContext;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
 use database::DbService;
 use rand::{thread_rng, Rng};
@@ -9,6 +10,7 @@ use std::fs::File;
 use std::io::copy;
 use std::path::Path;
 use std::str::FromStr;
+use tempfile::tempdir;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
@@ -18,25 +20,28 @@ use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecor
 
 pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
     let exchange = Exchange::from_str(exchange)?;
-    delete_stocks(exchange.as_ref()).await?;
     sync_stocks(&exchange).await?;
-    delete_funds(exchange.as_ref()).await?;
     sync_funds(&exchange).await?;
     Ok(())
 }
 
 pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
+    let dir = tempdir()?;
     match exchange {
         Exchange::SH(exchange) => {
             let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1,8&COMPANY_STATUS=2,4,5,7,8";
-            download(url, Path::new("sh_stocks.xls")).await?;
-            let stocks = read_stocks_from_sh_excel("sh_stocks.xls", exchange)?;
+            let path = dir.path().join("sh_stocks.xls");
+            download(url, path.as_path()).await?;
+            let stocks = read_stocks_from_sh_excel(path.as_path(), exchange)?;
+            delete_stocks(exchange).await?;
             save_stocks(&stocks).await?;
         }
         Exchange::SZ(exchange) => {
             let url = format!("https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
-            Request::download(&url, Path::new("sz_stocks.xlsx")).await?;
-            let stocks = read_stocks_from_sz_excel("sz_stocks.xlsx", exchange)?;
+            let path = dir.path().join("sz_stocks.xlsx");
+            Request::download(&url, path.as_path()).await?;
+            let stocks = read_stocks_from_sz_excel(path.as_path(), exchange)?;
+            delete_stocks(exchange).await?;
             save_stocks(&stocks).await?;
         }
     }
@@ -51,13 +56,17 @@ pub async fn sync_funds(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
                 thread_rng().gen::<f64>()
             );
             let stocks = download_funds(&url, exchange).await?;
+            delete_funds(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
             save_funds(&stocks).await?;
         }
         Exchange::SZ(exchange) => {
             let url = format!("https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1105&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
-            Request::download(&url, Path::new("sz_funds.xlsx")).await?;
-            let stocks = read_funds_from_sz_excel("sz_funds.xlsx", exchange)?;
+            let dir = tempdir()?;
+            let path_buf = dir.path().join("sz_funds.xlsx");
+            Request::download(&url, path_buf.as_path()).await?;
+            let stocks = read_funds_from_sz_excel(path_buf.as_path(), exchange)?;
+            delete_funds(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
             save_funds(&stocks).await?;
         }
@@ -128,7 +137,10 @@ pub async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
     }
 }
 
-pub fn read_stocks_from_sh_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_stocks_from_sh_excel(
+    path: &Path,
+    exchange: &str,
+) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xls: Xls<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();
@@ -149,7 +161,10 @@ pub fn read_stocks_from_sh_excel(path: &str, exchange: &str) -> Result<Vec<Stock
     Ok(stocks)
 }
 
-pub fn read_stocks_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_stocks_from_sz_excel(
+    path: &Path,
+    exchange: &str,
+) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xlsx: Xlsx<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();
@@ -170,7 +185,7 @@ pub fn read_stocks_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock
     Ok(stocks)
 }
 
-pub fn read_funds_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+pub fn read_funds_from_sz_excel(path: &Path, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
     let mut excel_xlsx: Xlsx<_> = open_workbook(path)?;
 
     let mut stocks = Vec::new();
@@ -204,9 +219,9 @@ pub fn read_funds_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>
 /// ```
 ///
 /// ```
-async fn save_stocks(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
+async fn save_stocks(stocks: &[Stock]) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     Stock::insert_batch(dao, stocks, stocks.len() as u64).await?;
 
@@ -215,7 +230,7 @@ async fn save_stocks(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
 
 async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     let mut funds = Vec::new();
     for stock in stocks {
@@ -233,7 +248,7 @@ async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
 
 pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     Stock::delete_by_column(dao, "exchange", exchange).await?;
 
@@ -242,7 +257,7 @@ pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
 
 pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     Fund::delete_by_column(dao, "exchange", exchange).await?;
 
@@ -251,7 +266,7 @@ pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
 
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
     let stock = Stock::select_by_code(dao, code).await?;
     if stock.is_none() {
         return Err("Stock not found".into());
