@@ -50,6 +50,7 @@ tokio-cron-scheduler = { version = "0.10.2", features = ["signal"] }
 anyhow = "1.0.83"
 notification = { git = "https://caijh@bitbucket.org/bytebinary/notification-rs.git" }
 consulrs = "0.1.0"
+tempfile = "3.12.0"
 
 [features]
 default = ["signal"]
