@@ -78,7 +78,7 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                     return;
                 }
                 let application_context = APPLICATION_CONTEXT.read().await;
-                let dao = application_context.context.get::<DbService>().dao();
+                let dao = application_context.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let params = IndexAnalysisParams {
@@ -181,7 +181,7 @@ async fn add_sync_index_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
                 let application_context = APPLICATION_CONTEXT.read().await;
-                let dao = application_context.context.get::<DbService>().dao();
+                let dao = application_context.get::<DbService>().dao();
                 let indexes = StockIndex::select_all(dao).await.unwrap();
                 for index in indexes {
                     let constituents = sync_constituents(&index.code).await.unwrap();

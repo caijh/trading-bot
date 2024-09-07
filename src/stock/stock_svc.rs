@@ -1,4 +1,5 @@
 use application::application::APPLICATION_CONTEXT;
+use application::context::application_context::ApplicationContext;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
 use database::DbService;
 use rand::{thread_rng, Rng};
@@ -206,7 +207,7 @@ pub fn read_funds_from_sz_excel(path: &str, exchange: &str) -> Result<Vec<Stock>
 /// ```
 async fn save_stocks(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     Stock::insert_batch(dao, stocks, stocks.len() as u64).await?;
 
@@ -215,7 +216,7 @@ async fn save_stocks(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
 
 async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     let mut funds = Vec::new();
     for stock in stocks {
@@ -233,7 +234,7 @@ async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
 
 pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     Stock::delete_by_column(dao, "exchange", exchange).await?;
 
@@ -242,7 +243,7 @@ pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
 
 pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
 
     Fund::delete_by_column(dao, "exchange", exchange).await?;
 
@@ -251,7 +252,7 @@ pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
 
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.context.get::<DbService>().dao();
+    let dao = application_context.get::<DbService>().dao();
     let stock = Stock::select_by_code(dao, code).await?;
     if stock.is_none() {
         return Err("Stock not found".into());
