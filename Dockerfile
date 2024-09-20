@@ -21,7 +21,7 @@ RUN apt-get update \
 
 EXPOSE 8080
 
-ENV TZ=Etc/UTC \
+ENV TZ=Asia/Shanghai \
   APP_USER=appuser
 
 RUN groupadd $APP_USER \
