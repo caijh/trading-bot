@@ -7,7 +7,7 @@ use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_model::Stock;
 use crate::stock::stock_svc::get_stock_daily_price;
 use application::application::APPLICATION_CONTEXT;
-use application::context::application_context::ApplicationContext;
+use application::bean::factory::BeanFactory;
 use database::DbService;
 use std::error::Error;
 
@@ -76,7 +76,10 @@ pub async fn analysis_stock(
     params: &StockAnalysisParams,
 ) -> Result<Option<AnalyzedStock>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.get::<DbService>().dao();
+    let dao = application_context
+        .get_bean_factory()
+        .get::<DbService>()
+        .dao();
     let stock = Stock::select_by_code(dao, &params.code).await?;
     if stock.is_none() {
         return Err("Stock not found".into());
@@ -140,7 +143,10 @@ pub async fn analysis_stock(
 
 pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.get::<DbService>().dao();
+    let dao = application_context
+        .get_bean_factory()
+        .get::<DbService>()
+        .dao();
     let funds = Fund::select_all(dao).await?;
     let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
     if funds.is_empty() {

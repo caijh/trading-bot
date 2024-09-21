@@ -9,7 +9,7 @@ edition = "2021"
 application = { git = "https://caijh@bitbucket.org/bytebinary/application-rs.git" }
 #application = { path = "../../infra-rs/application-rs" }
 # cli
-clap = { version = "4.5.4", features = ["cargo", "derive"] }
+clap = { version = "4.5.18", features = ["cargo", "derive"] }
 cli = {git = "https://caijh@bitbucket.org/bytebinary/cli-rs.git"}
 # log
 logger = {git = "https://caijh@bitbucket.org/bytebinary/logger-rs.git"}
@@ -20,34 +20,34 @@ tracing-appender = "0.2.3"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 # database
-rbatis = "4.5.21"
-rbdc-mysql = "4.5.7"
-rbs = "4.5.13"
+rbatis = "4.5.30"
+rbdc-mysql = "4.5.8"
+rbs = "4.5.18"
 database-common = {git = "https://caijh@bitbucket.org/bytebinary/database-common-rs.git"}
 database = {git = "https://caijh@bitbucket.org/bytebinary/database-rs.git"}
 
 # web
-async-trait = "0.1.80"
-axum = "0.7.5"
+async-trait = "0.1.82"
+axum = "0.7.6"
 web = {git = "https://caijh@bitbucket.org/bytebinary/web-rs.git"}
 # util
 util = { git = "https://caijh@bitbucket.org/bytebinary/util-rs.git"}
 
 #
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 state = "0.6.0"
 reqwest = { version = "0.12.7", features = ["cookies", "blocking"] }
-serde = { version = "1.0.198", features = ["derive"] }
-tokio = { version = "1.37.0", features = ["full"] }
-serde_json = "1.0.116"
+serde = { version = "1.0.210", features = ["derive"] }
+tokio = { version = "1.40.0", features = ["full"] }
+serde_json = "1.0.128"
 chrono = "0.4"
 rand = "0.8.5"
 calamine = "0.25.0"
-bigdecimal = "0.4.3"
+bigdecimal = "0.4.5"
 polars = { version = "0.43.1", features = ["json", "lazy"] }
 chrono-tz = "0.10.0"
-tokio-cron-scheduler = { version = "0.11.0", features = ["signal"] }
-anyhow = "1.0.83"
+tokio-cron-scheduler = { version = "0.11.1", features = ["signal"] }
+anyhow = "1.0.89"
 notification = { git = "https://caijh@bitbucket.org/bytebinary/notification-rs.git" }
 consulrs = "0.1.0"
 tempfile = "3.12.0"

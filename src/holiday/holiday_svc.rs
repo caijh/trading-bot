@@ -1,7 +1,7 @@
 use crate::holiday::holiday_api::get_holidays;
 use crate::holiday::holiday_model::MarketHoliday;
 use application::application::APPLICATION_CONTEXT;
-use application::context::application_context::ApplicationContext;
+use application::bean::factory::BeanFactory;
 use chrono::{DateTime, Datelike, Local};
 use database::DbService;
 use serde::{Deserialize, Serialize};
@@ -19,7 +19,10 @@ pub async fn is_holiday(date: &DateTime<Local>) -> Result<HolidayQueryResult, Bo
 
     let date = date.format("%Y%m%d").to_string();
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.get::<DbService>().dao();
+    let dao = application_context
+        .get_bean_factory()
+        .get::<DbService>()
+        .dao();
     let market_holiday = MarketHoliday::select_by_id(dao, date.parse::<u64>().unwrap()).await?;
     match market_holiday {
         Some(_) => Ok(HolidayQueryResult { is_holiday: true }),
@@ -51,7 +54,10 @@ pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.get::<DbService>().dao();
+    let dao = application_context
+        .get_bean_factory()
+        .get::<DbService>()
+        .dao();
     MarketHoliday::delete_in_column(dao, "id", &ids).await?;
     MarketHoliday::insert_batch(dao, &holidays, holidays.len() as u64).await?;
     Ok(())
