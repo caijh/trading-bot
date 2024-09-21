@@ -1,8 +1,8 @@
 use application::application::APPLICATION_CONTEXT;
-use application::context::application_context::ApplicationContext;
 use application::env::property_resolver::PropertyResolver;
 use chrono::Local;
 use rand::{thread_rng, Rng};
+use reqwest::header::HeaderMap;
 use serde_json::Value;
 use std::error::Error;
 use std::str::FromStr;
@@ -22,7 +22,7 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
             let url = format!("https://query.sse.com.cn/commonSoaQuery.do?sqlId=DB_SZZSLB_CFGLB&indexCode={}&_={}", index, Local::now().timestamp_millis());
             info!("url = {}", url);
 
-            let mut headers = reqwest::header::HeaderMap::new();
+            let mut headers = HeaderMap::new();
             headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
             headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
             headers.insert("Referer", "https://www.sse.com.cn/".parse().unwrap());

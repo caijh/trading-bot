@@ -1,6 +1,6 @@
 use crate::job::jobs::load_jobs;
 use application::application::{Application, RustApplication};
-use application::context::application_context::ApplicationContext;
+use application::bean::factory::ConfigurableBeanFactory;
 use application::context::application_event::{ApplicationEvenType, ApplicationEvent};
 use application::context::application_listener::ApplicationListener;
 use application::env::property_resolver::PropertyResolver;
@@ -28,7 +28,7 @@ impl ApplicationListener for ApplicationContextInitializedListener {
             .get_property::<DbConnection>("database")
             .unwrap();
         let database_service = DbService::create_from_connection(db_connection);
-        application_context.set(database_service);
+        application_context.get_bean_factory().set(database_service);
 
         Ok(())
     }

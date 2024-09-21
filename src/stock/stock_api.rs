@@ -1,5 +1,5 @@
 use application::application::APPLICATION_CONTEXT;
-use application::context::application_context::ApplicationContext;
+use application::bean::factory::BeanFactory;
 use application::env::property_resolver::PropertyResolver;
 use chrono::{Local, NaiveDateTime};
 use database::DbService;
@@ -149,7 +149,10 @@ pub struct StockPriceDTO {
 
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context.get::<DbService>().dao();
+    let dao = application_context
+        .get_bean_factory()
+        .get::<DbService>()
+        .dao();
     let stock = Stock::select_by_code(dao, code).await?;
     let stock = match stock {
         Some(s) => s,
