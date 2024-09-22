@@ -6,7 +6,6 @@ use crate::index::stock_index_ctrl::stock_index_routers;
 use crate::stock::stock_ctrl::stock_routers;
 use application::initializer::ServletContextInitializer;
 use axum::Router;
-use web::health::health_routers;
 
 pub struct RoutInitializer {}
 
@@ -14,7 +13,6 @@ impl ServletContextInitializer for RoutInitializer {
     fn initialize(&self, router: Router) -> Router {
         // route
         router
-            .nest("/health", health_routers())
             .nest("/holiday", holiday_routers())
             .nest("/currency", currency_routers())
             .nest("/debt", debt_routers())
