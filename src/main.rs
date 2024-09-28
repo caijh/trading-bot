@@ -1,6 +1,5 @@
+use application_boot::application::{Application, RustApplication};
 use std::error::Error;
-
-use application::application::{Application, RustApplication};
 use trading_bot::initializer::RoutInitializer;
 use trading_bot::listener::{
     ApplicationContextInitializedListener, ApplicationStartedEventListener,

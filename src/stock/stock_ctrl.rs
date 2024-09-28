@@ -1,9 +1,9 @@
+use application_web::response::RespBody;
 use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use serde::{Deserialize, Serialize};
-use web::response::RespBody;
 
 use crate::analysis::stock_pattern::get_stock_pattern;
 use crate::stock::stock_svc;

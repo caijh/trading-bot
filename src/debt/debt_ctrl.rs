@@ -1,9 +1,9 @@
+use application_web::response::RespBody;
 use axum::extract::Query;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use serde::{Deserialize, Serialize};
-use web::response::RespBody;
 
 use crate::debt::debt_svc;
 

@@ -1,5 +1,5 @@
-use application::application::APPLICATION_CONTEXT;
-use application::env::property_resolver::PropertyResolver;
+use application_boot::application::APPLICATION_CONTEXT;
+use application_core::env::property_resolver::PropertyResolver;
 use chrono::Local;
 use rand::{thread_rng, Rng};
 use reqwest::header::HeaderMap;

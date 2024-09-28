@@ -1,8 +1,8 @@
 use crate::index::stock_index_api;
 use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
 use crate::stock::stock_svc::sync_stock_daily_price;
-use application::application::APPLICATION_CONTEXT;
-use application::bean::factory::BeanFactory;
+use application_beans::factory::bean_factory::BeanFactory;
+use application_boot::application::APPLICATION_CONTEXT;
 use database::DbService;
 use std::error::Error;
 use std::ops::Not;

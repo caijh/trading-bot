@@ -4,7 +4,7 @@ use crate::debt::debt_ctrl::debt_routers;
 use crate::holiday::holiday_ctrl::holiday_routers;
 use crate::index::stock_index_ctrl::stock_index_routers;
 use crate::stock::stock_ctrl::stock_routers;
-use application::initializer::ServletContextInitializer;
+use application_boot::initializer::ServletContextInitializer;
 use axum::Router;
 
 pub struct RoutInitializer {}

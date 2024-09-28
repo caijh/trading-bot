@@ -1,7 +1,7 @@
 use anyhow::Result;
-use application::application::APPLICATION_CONTEXT;
-use application::bean::factory::BeanFactory;
-use application::env::property_resolver::PropertyResolver;
+use application_beans::factory::bean_factory::BeanFactory;
+use application_boot::application::APPLICATION_CONTEXT;
+use application_core::env::property_resolver::PropertyResolver;
 use chrono::Local;
 use database::DbService;
 use notification::{Notification, NotificationConfig};

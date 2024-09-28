@@ -1,8 +1,8 @@
+use application_web::response::RespBody;
 use axum::extract::Path;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
-use web::response::RespBody;
 
 use crate::index::stock_index_svc;
 

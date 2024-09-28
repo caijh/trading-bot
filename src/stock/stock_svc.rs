@@ -1,5 +1,5 @@
-use application::application::APPLICATION_CONTEXT;
-use application::bean::factory::BeanFactory;
+use application_beans::factory::bean_factory::BeanFactory;
+use application_boot::application::APPLICATION_CONTEXT;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
 use database::DbService;
 use rand::{thread_rng, Rng};
