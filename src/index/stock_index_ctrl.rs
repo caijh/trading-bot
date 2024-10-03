@@ -1,4 +1,5 @@
 use application_web::response::RespBody;
+use application_web_macros::get;
 use axum::extract::Path;
 use axum::response::IntoResponse;
 use axum::routing::get;
@@ -6,20 +7,21 @@ use axum::Router;
 
 use crate::index::stock_index_svc;
 
-pub fn stock_index_routers() -> Router {
-    Router::new()
-        .route("/:code/sync", get(sync))
-        .route("/:code/stocks", get(get_stocks))
-}
-
+#[get("/index/:code/stocks")]
 pub async fn get_stocks(Path(code): Path<String>) -> impl IntoResponse {
     let r = stock_index_svc::get_constituent_stocks(&code).await;
 
     RespBody::from_result(&r).response()
 }
 
+#[get("/index/sync/:code")]
 pub async fn sync(Path(code): Path<String>) -> impl IntoResponse {
     let r = stock_index_svc::sync_constituents(&code).await;
 
     RespBody::from_result(&r).response()
+}
+
+#[get("/health/check")]
+pub async fn health_check() -> impl IntoResponse {
+    "Ok"
 }

@@ -1,16 +1,11 @@
 use application_web::response::RespBody;
+use application_web_macros::get;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use chrono::Local;
 
 use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
-
-pub fn holiday_routers() -> Router {
-    Router::new()
-        .route("/sync", get(sync))
-        .route("/today", get(today_is_holiday))
-}
 
 /// `today_is_holiday`是一个公共异步函数
 ///
@@ -19,6 +14,7 @@ pub fn holiday_routers() -> Router {
 /// 这个函数首先获取当前的本地时间，然后用`is_holiday`函数来检查这个日期是否为假日。
 ///
 /// 最后，将结果封装在`RespBody`中，并作为响应返回。
+#[get("/holiday/today")]
 async fn today_is_holiday() -> impl IntoResponse {
     let now = Local::now();
     let r = is_holiday(&now).await;
@@ -29,6 +25,7 @@ async fn today_is_holiday() -> impl IntoResponse {
 /// 定义一个异步函数sync，返回类型为IntoResponse的实现
 /// 该函数首先调用sync_holidays异步方法获取数据
 /// 然后将结果转换为RespBody，并构建一个响应对象
+#[get("/holiday/sync")]
 async fn sync() -> impl IntoResponse {
     let r = sync_holidays().await;
 
