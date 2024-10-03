@@ -2,8 +2,6 @@ use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::extract::Query;
 use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
 use serde::{Deserialize, Serialize};
 
 use crate::debt::debt_svc;

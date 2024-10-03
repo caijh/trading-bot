@@ -1,8 +1,6 @@
 use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::response::IntoResponse;
-use axum::routing::get;
-use axum::Router;
 use chrono::Local;
 
 use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
