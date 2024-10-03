@@ -22,7 +22,7 @@ impl ApplicationListener for ApplicationContextInitializedListener {
         application: &RustApplication,
         _event: &dyn ApplicationEvent,
     ) -> Result<(), Box<dyn Error>> {
-        let application_context = application.get_application_context();
+        let application_context = application.get_application_context().await;
         let environment = application_context.get_environment().await;
         let db_connection = environment
             .get_property::<DbConnection>("database")
