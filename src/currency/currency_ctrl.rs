@@ -1,14 +1,12 @@
+use application_web::response::RespBody;
+use application_web_macros::get;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
-use web::response::RespBody;
 
 use crate::currency::currency_svc;
 
-pub fn currency_routers() -> Router {
-    Router::new().route("/rate", get(get_rate))
-}
-
+#[get("/currency/rate")]
 pub async fn get_rate() -> impl IntoResponse {
     let r = currency_svc::get_rate().await;
 

@@ -1,21 +1,14 @@
+use application_web::response::RespBody;
+use application_web_macros::get;
 use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
 use serde::{Deserialize, Serialize};
-use web::response::RespBody;
 
 use crate::analysis::stock_pattern::get_stock_pattern;
 use crate::stock::stock_svc;
 use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
-
-pub fn stock_routers() -> Router {
-    Router::new()
-        .route("/sync/:exchange", get(sync))
-        .route("/daily", get(stock_daily))
-        .route("/price", get(stock_price))
-        .route("/pattern", get(stock_pattern))
-}
 
 #[derive(Serialize, Deserialize)]
 struct StockParams {
@@ -31,23 +24,27 @@ struct StockParams {
  * # 返回值
  * 实现了 `IntoResponse` 的一个类型，通常用于构建HTTP响应。
  */
+#[get("/stock/sync/:exchange")]
 async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
     let r = stock_svc::sync(&exchange).await;
     RespBody::from_result(&r).response()
 }
 
 /// 获取股票日线价格
+#[get("/stock/daily")]
 async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_daily_price(&params.code).await;
     RespBody::from_result(&r).response()
 }
 
 /// 获取股票当前价格
+#[get("/stock/price")]
 async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_price(&params.code).await;
     RespBody::from_result(&r).response()
 }
 
+#[get("/stock/pattern")]
 async fn stock_pattern(Query(params): Query<StockParams>) -> impl IntoResponse {
     let prices = get_stock_daily_price(&params.code).await.unwrap();
 

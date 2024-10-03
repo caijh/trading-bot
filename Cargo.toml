@@ -6,8 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-application = { git = "https://caijh@bitbucket.org/bytebinary/application-rs.git" }
-#application = { path = "../../infra-rs/application-rs" }
+application-beans = { git = "https://github.com/caijh/application-rs.git" }
+application-core = { git = "https://github.com/caijh/application-rs.git" }
+application-context = { git = "https://github.com/caijh/application-rs.git" }
+application-web = { git = "https://github.com/caijh/application-rs.git" }
+application-web-macros = { git = "https://github.com/caijh/application-rs.git" }
+application-web-actuator = { git = "https://github.com/caijh/application-rs.git" }
+application-boot = { git = "https://github.com/caijh/application-rs.git" }
+
 # cli
 clap = { version = "4.5.18", features = ["cargo", "derive"] }
 cli = {git = "https://caijh@bitbucket.org/bytebinary/cli-rs.git"}
@@ -29,7 +35,6 @@ database = {git = "https://caijh@bitbucket.org/bytebinary/database-rs.git"}
 # web
 async-trait = "0.1.82"
 axum = "0.7.6"
-web = {git = "https://caijh@bitbucket.org/bytebinary/web-rs.git"}
 # util
 util = { git = "https://caijh@bitbucket.org/bytebinary/util-rs.git"}
 

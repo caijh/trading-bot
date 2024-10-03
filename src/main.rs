@@ -1,7 +1,5 @@
+use application_boot::application::{Application, RustApplication};
 use std::error::Error;
-
-use application::application::{Application, RustApplication};
-use trading_bot::initializer::RoutInitializer;
 use trading_bot::listener::{
     ApplicationContextInitializedListener, ApplicationStartedEventListener,
 };
@@ -15,9 +13,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await;
     application
         .add_listener(Box::new(ApplicationStartedEventListener {}))
-        .await;
-    application
-        .add_servlet_context_initializer(Box::new(RoutInitializer {}))
         .await;
     application.run().await?;
 
