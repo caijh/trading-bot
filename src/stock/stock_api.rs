@@ -158,6 +158,11 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
         Some(s) => s,
         None => return Err("Stock not found".into()),
     };
+    let code = if let Some(code) = stock.to_code {
+        code
+    } else {
+        code.to_string()
+    };
     let client = Request::client().await;
     let environment = application_context.get_environment().await;
     let exchange = Exchange::from_str(&stock.exchange)?;

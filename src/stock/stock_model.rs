@@ -2,7 +2,7 @@ use std::ops::Not;
 
 use bigdecimal::BigDecimal;
 use rbatis::rbdc::Decimal;
-use rbatis::{crud, impl_select};
+use rbatis::{crud, impl_delete, impl_select};
 use serde::{Deserialize, Serialize};
 
 /**
@@ -21,10 +21,15 @@ pub struct Stock {
     pub name: String,
     /// 交易所代码
     pub exchange: String,
+    /// 股票类型：stock/index
+    pub stock_type: String,
+    /// 将code转成其他code
+    pub to_code: Option<String>,
 }
 
 crud!(Stock {});
 impl_select!(Stock {select_by_code(code: &str) -> Option => "`where code = #{code}`"});
+impl_delete!(Stock {delete_by_exchange(exchange: &str) => "`where exchange = #{exchange}` and stock_type = 'Stock'"});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 /// 表示股票每日价格信息的结构体

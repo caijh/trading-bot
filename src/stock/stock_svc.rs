@@ -103,6 +103,8 @@ pub async fn download_funds(url: &str, exchange: &str) -> Result<Vec<Stock>, Box
                             .unwrap()
                             .to_string(),
                         exchange: exchange.to_string(),
+                        stock_type: "Stock".to_string(),
+                        to_code: None,
                     };
                     funds.push(stock);
                 }
@@ -154,6 +156,8 @@ pub fn read_stocks_from_sh_excel(
                 code: row[0].to_string(),
                 name: row[2].to_string(),
                 exchange: exchange.to_string(),
+                stock_type: "Stock".to_string(),
+                to_code: None,
             });
         }
     }
@@ -178,6 +182,8 @@ pub fn read_stocks_from_sz_excel(
                 code: row[4].to_string(),
                 name: row[5].to_string(),
                 exchange: exchange.to_string(),
+                stock_type: "Stock".to_string(),
+                to_code: None,
             });
         }
     }
@@ -199,6 +205,8 @@ pub fn read_funds_from_sz_excel(path: &Path, exchange: &str) -> Result<Vec<Stock
                 code: row[0].to_string(),
                 name: row[1].to_string(),
                 exchange: exchange.to_string(),
+                stock_type: "Stock".to_string(),
+                to_code: None,
             });
         }
     }
@@ -259,7 +267,7 @@ pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
         .get::<DbService>()
         .dao();
 
-    Stock::delete_by_column(dao, "exchange", exchange).await?;
+    Stock::delete_by_exchange(dao, exchange).await?;
 
     Ok(())
 }
