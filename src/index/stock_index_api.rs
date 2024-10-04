@@ -38,6 +38,8 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
                                 code: s["securityCode"].as_str().unwrap().to_string(),
                                 name: s["securityAbbr"].as_str().unwrap().to_string(),
                                 exchange: exchange.clone(),
+                                stock_type: "Stock".to_string(),
+                                to_code: None,
                             };
                             stocks.push(stock);
                         }
@@ -78,6 +80,8 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
                                         .to_string()
                                         .replace("&nbsp;", " "),
                                     exchange: exchange.clone(),
+                                    stock_type: "Stock".to_string(),
+                                    to_code: None,
                                 };
                                 stocks.push(stock);
                             }

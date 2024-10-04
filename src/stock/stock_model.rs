@@ -21,6 +21,10 @@ pub struct Stock {
     pub name: String,
     /// 交易所代码
     pub exchange: String,
+    /// 股票类型：stock/index
+    pub stock_type: String,
+    /// 将code转成其他code
+    pub to_code: Option<String>,
 }
 
 crud!(Stock {});
