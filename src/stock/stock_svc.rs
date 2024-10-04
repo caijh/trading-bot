@@ -267,7 +267,7 @@ pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
         .get::<DbService>()
         .dao();
 
-    Stock::delete_by_column(dao, "exchange", exchange).await?;
+    Stock::delete_by_exchange(dao, exchange).await?;
 
     Ok(())
 }

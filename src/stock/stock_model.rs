@@ -2,7 +2,7 @@ use std::ops::Not;
 
 use bigdecimal::BigDecimal;
 use rbatis::rbdc::Decimal;
-use rbatis::{crud, impl_select};
+use rbatis::{crud, impl_delete, impl_select};
 use serde::{Deserialize, Serialize};
 
 /**
@@ -29,6 +29,7 @@ pub struct Stock {
 
 crud!(Stock {});
 impl_select!(Stock {select_by_code(code: &str) -> Option => "`where code = #{code}`"});
+impl_delete!(Stock {delete_by_exchange(exchange: &str) => "`where exchange = #{exchange}` and stock_type = 'Stock'"});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 /// 表示股票每日价格信息的结构体
