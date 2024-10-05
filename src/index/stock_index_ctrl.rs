@@ -18,8 +18,3 @@ pub async fn sync(Path(code): Path<String>) -> impl IntoResponse {
 
     RespBody::from_result(&r).response()
 }
-
-#[get("/health/check")]
-pub async fn health_check() -> impl IntoResponse {
-    "Ok"
-}

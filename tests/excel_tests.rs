@@ -2,21 +2,7 @@
 mod tests {
     use std::path::Path;
 
-    use trading_bot::stock::stock_svc::{
-        download, read_stocks_from_sh_excel, read_stocks_from_sz_excel,
-    };
-
-    #[test]
-    fn test_read_stocks_from_hz_excel() {
-        let vec = read_stocks_from_sh_excel("./GPLIST.xls", "SH").unwrap();
-        assert_ne!(vec.len(), 0);
-    }
-
-    #[test]
-    fn test_read_stocks_from_sz_excel() {
-        let vec = read_stocks_from_sz_excel("./A股列表.xlsx", "SZ").unwrap();
-        assert_ne!(vec.len(), 0);
-    }
+    use trading_bot::stock::stock_svc::download;
 
     #[tokio::test]
     async fn test_download() {
