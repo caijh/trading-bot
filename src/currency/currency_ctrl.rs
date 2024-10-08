@@ -8,5 +8,5 @@ use crate::currency::currency_svc;
 pub async fn get_rate() -> impl IntoResponse {
     let r = currency_svc::get_rate().await;
 
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }

@@ -17,7 +17,7 @@ async fn today_is_holiday() -> impl IntoResponse {
     let now = Local::now();
     let r = is_holiday(&now).await;
 
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }
 
 /// 定义一个异步函数sync，返回类型为IntoResponse的实现
@@ -27,5 +27,5 @@ async fn today_is_holiday() -> impl IntoResponse {
 async fn sync() -> impl IntoResponse {
     let r = sync_holidays().await;
 
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }

@@ -25,21 +25,21 @@ struct StockParams {
 #[get("/stock/sync/:exchange")]
 async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
     let r = stock_svc::sync(&exchange).await;
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }
 
 /// 获取股票日线价格
 #[get("/stock/daily")]
 async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_daily_price(&params.code).await;
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }
 
 /// 获取股票当前价格
 #[get("/stock/price")]
 async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_price(&params.code).await;
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }
 
 #[get("/stock/pattern")]
@@ -48,5 +48,5 @@ async fn stock_pattern(Query(params): Query<StockParams>) -> impl IntoResponse {
 
     let pattern = get_stock_pattern(&prices);
 
-    RespBody::from(&pattern).response()
+    RespBody::success(&pattern).response()
 }

@@ -20,19 +20,19 @@ pub struct StockAnalysisParams {
 async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoResponse {
     let r = stock_analysis_svc::analysis_index(&params).await;
 
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }
 
 #[get("/analysis/stock")]
 async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoResponse {
     let r = stock_analysis_svc::analysis_stock(&params).await;
 
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }
 
 #[get("/analysis/funds")]
 async fn analysis_funds() -> impl IntoResponse {
     let r = stock_analysis_svc::analysis_funds().await;
 
-    RespBody::from_result(&r).response()
+    RespBody::result(&r).response()
 }

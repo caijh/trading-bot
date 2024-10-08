@@ -11,7 +11,7 @@ use application_boot::application::APPLICATION_CONTEXT;
 use database::DbService;
 use std::error::Error;
 
-const DOWN_AT_LEAST_DAYS: i32 = 5;
+const DOWN_AT_LEAST_DAYS: i32 = 4;
 
 pub async fn analysis_index(
     params: &IndexAnalysisParams,
