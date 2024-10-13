@@ -2,6 +2,7 @@ use anyhow::Result;
 use application_beans::factory::bean_factory::BeanFactory;
 use application_boot::application::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
+use async_trait::async_trait;
 use chrono::Local;
 use database::DbService;
 use notification::{Notification, NotificationConfig};
@@ -19,6 +20,11 @@ use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
 use crate::stock::stock_svc::sync;
+
+#[async_trait]
+trait Runnable {
+    async fn run(&self);
+}
 
 pub async fn load_jobs() -> Result<()> {
     let scheduler = create_scheduler().await?;
@@ -45,6 +51,18 @@ pub async fn load_jobs() -> Result<()> {
     Ok(())
 }
 
+pub struct SyncStockPriceJob;
+
+#[async_trait]
+impl Runnable for SyncStockPriceJob {
+    async fn run(&self) {
+        let indexes = get_all_stock_index().await.unwrap();
+        for index in indexes {
+            let _ = sync_constituent_stocks_daily_price(&index.code).await;
+        }
+    }
+}
+
 async fn add_sync_stock_price_job(scheduler: &JobScheduler) -> Result<()> {
     let job = JobBuilder::new()
         .with_timezone(chrono_tz::Asia::Shanghai)
@@ -53,15 +71,41 @@ async fn add_sync_stock_price_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let indexes = get_all_stock_index().await.unwrap();
-                for index in indexes {
-                    let _ = sync_constituent_stocks_daily_price(&index.code).await;
-                }
+                let job = SyncStockPriceJob;
+                job.run().await
             })
         }))
         .build()?;
     scheduler.add(job).await?;
     Ok(())
+}
+
+pub struct AnalysisStocksJob;
+
+#[async_trait]
+impl Runnable for AnalysisStocksJob {
+    async fn run(&self) {
+        let application_context = APPLICATION_CONTEXT.read().await;
+        let dao = application_context
+            .get_bean_factory()
+            .get::<DbService>()
+            .dao();
+        let indexes = StockIndex::select_all(dao).await.unwrap();
+        for index in indexes {
+            let params = IndexAnalysisParams {
+                code: index.code.clone(),
+            };
+            let result = analysis_index(&params).await;
+            match result {
+                Ok(stocks) => {
+                    spawn(notification_stocks(stocks, index));
+                }
+                Err(e) => {
+                    error!("analysis index {} stocks fail, {}", index.name, e);
+                }
+            }
+        }
+    }
 }
 
 async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
@@ -77,26 +121,8 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
                 if holiday_result.is_holiday {
                     return;
                 }
-                let application_context = APPLICATION_CONTEXT.read().await;
-                let dao = application_context
-                    .get_bean_factory()
-                    .get::<DbService>()
-                    .dao();
-                let indexes = StockIndex::select_all(dao).await.unwrap();
-                for index in indexes {
-                    let params = IndexAnalysisParams {
-                        code: index.code.clone(),
-                    };
-                    let result = analysis_index(&params).await;
-                    match result {
-                        Ok(stocks) => {
-                            spawn(notification_stocks(stocks, index));
-                        }
-                        Err(e) => {
-                            error!("analysis index {} stocks fail, {}", index.name, e);
-                        }
-                    }
-                }
+                let job = AnalysisStocksJob;
+                job.run().await;
             })
         }))
         .build()?;
@@ -104,6 +130,29 @@ async fn add_analysis_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     Ok(())
 }
 
+pub struct AnalysisFundsJob;
+
+#[async_trait]
+impl Runnable for AnalysisFundsJob {
+    async fn run(&self) {
+        let result = stock_analysis_svc::analysis_funds().await;
+        match result {
+            Ok(stocks) => {
+                spawn(notification_stocks(
+                    stocks,
+                    StockIndex {
+                        code: "".to_string(),
+                        name: "基金".to_string(),
+                        exchange: "".to_string(),
+                    },
+                ));
+            }
+            Err(e) => {
+                error!("analysis fund stocks fail, {}", e);
+            }
+        }
+    }
+}
 async fn add_analysis_funds_job(scheduler: &JobScheduler) -> Result<()> {
     let jj = JobBuilder::new()
         .with_timezone(chrono_tz::Asia::Shanghai)
@@ -116,22 +165,8 @@ async fn add_analysis_funds_job(scheduler: &JobScheduler) -> Result<()> {
                 if holiday_result.is_holiday {
                     return;
                 }
-                let result = stock_analysis_svc::analysis_funds().await;
-                match result {
-                    Ok(stocks) => {
-                        spawn(notification_stocks(
-                            stocks,
-                            StockIndex {
-                                code: "".to_string(),
-                                name: "基金".to_string(),
-                                exchange: "".to_string(),
-                            },
-                        ));
-                    }
-                    Err(e) => {
-                        error!("analysis fund stocks fail, {}", e);
-                    }
-                }
+                let job = AnalysisFundsJob;
+                job.run().await;
             })
         }))
         .build()?;
@@ -175,6 +210,24 @@ async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
     }
 }
 
+pub struct SyncIndexStocksJob;
+
+#[async_trait]
+impl Runnable for SyncIndexStocksJob {
+    async fn run(&self) {
+        let application_context = APPLICATION_CONTEXT.read().await;
+        let dao = application_context
+            .get_bean_factory()
+            .get::<DbService>()
+            .dao();
+        let indexes = StockIndex::select_all(dao).await.unwrap();
+        for index in indexes {
+            let constituents = sync_constituents(&index.code).await.unwrap();
+            spawn(notification_index_stocks(index, constituents));
+        }
+    }
+}
+
 async fn add_sync_index_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     let jj = JobBuilder::new()
         .with_timezone(chrono_tz::Asia::Shanghai)
@@ -183,16 +236,8 @@ async fn add_sync_index_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let application_context = APPLICATION_CONTEXT.read().await;
-                let dao = application_context
-                    .get_bean_factory()
-                    .get::<DbService>()
-                    .dao();
-                let indexes = StockIndex::select_all(dao).await.unwrap();
-                for index in indexes {
-                    let constituents = sync_constituents(&index.code).await.unwrap();
-                    spawn(notification_index_stocks(index, constituents));
-                }
+                let job = SyncIndexStocksJob;
+                job.run().await;
             })
         }))
         .build()?;
@@ -238,6 +283,22 @@ async fn notification_index_stocks(
         }
     }
 }
+pub struct SyncStocksJob {
+    exchange: String,
+}
+
+#[async_trait]
+impl Runnable for SyncStocksJob {
+    async fn run(&self) {
+        let result = sync(&self.exchange).await;
+        match result {
+            Ok(_) => {}
+            Err(e) => {
+                error!("Sync {} stock error {}", &self.exchange, e);
+            }
+        }
+    }
+}
 
 async fn add_sync_stocks_job(scheduler: &JobScheduler) -> Result<()> {
     let jj = JobBuilder::new()
@@ -247,13 +308,35 @@ async fn add_sync_stocks_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let _ = sync("SH").await;
-                let _ = sync("SZ").await;
+                let job = SyncStocksJob {
+                    exchange: "SH".to_string(),
+                };
+                job.run().await;
+
+                let job = SyncStocksJob {
+                    exchange: "SZ".to_string(),
+                };
+                job.run().await;
             })
         }))
         .build()?;
     scheduler.add(jj).await?;
     Ok(())
+}
+
+pub struct SyncHolidayJob;
+
+#[async_trait]
+impl Runnable for SyncHolidayJob {
+    async fn run(&self) {
+        let r = sync_holidays().await;
+        match r {
+            Ok(_) => {}
+            Err(e) => {
+                error!("sync holiday error {}", e)
+            }
+        }
+    }
 }
 
 async fn add_sync_holidays_job(scheduler: &JobScheduler) -> Result<()> {
@@ -264,7 +347,8 @@ async fn add_sync_holidays_job(scheduler: &JobScheduler) -> Result<()> {
         .unwrap()
         .with_run_async(Box::new(|_uuid, _locked| {
             Box::pin(async move {
-                let _ = sync_holidays().await;
+                let job = SyncHolidayJob;
+                job.run().await
             })
         }))
         .build()?;
