@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::stock_analysis_svc;
+use crate::job::jobs::{AnalysisFundsJob, AnalysisStocksJob, Runnable};
 
 #[derive(Serialize, Deserialize)]
 pub struct IndexAnalysisParams {
@@ -23,6 +24,15 @@ async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoR
     RespBody::result(&r).response()
 }
 
+#[get("/analysis/index/all")]
+async fn analysis_index_all() -> impl IntoResponse {
+    let job = AnalysisStocksJob;
+
+    job.run().await;
+
+    RespBody::<()>::success_info("Done")
+}
+
 #[get("/analysis/stock")]
 async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoResponse {
     let r = stock_analysis_svc::analysis_stock(&params).await;
@@ -35,4 +45,13 @@ async fn analysis_funds() -> impl IntoResponse {
     let r = stock_analysis_svc::analysis_funds().await;
 
     RespBody::result(&r).response()
+}
+
+#[get("/analysis/funds/all")]
+async fn analysis_funds_all() -> impl IntoResponse {
+    let job = AnalysisFundsJob;
+
+    job.run().await;
+
+    RespBody::<()>::success_info("Done")
 }
