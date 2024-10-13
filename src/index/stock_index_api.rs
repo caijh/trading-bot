@@ -20,7 +20,7 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
     match exchange {
         Exchange::SH(exchange) => {
             let url = format!("https://query.sse.com.cn/commonSoaQuery.do?sqlId=DB_SZZSLB_CFGLB&indexCode={}&_={}", index, Local::now().timestamp_millis());
-            info!("url = {}", url);
+            info!("Exchange sh query stocks url = {}", url);
 
             let mut headers = HeaderMap::new();
             headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
@@ -57,6 +57,7 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
             let mut page_no = 1;
             loop {
                 let url = format!("{}/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1747_zs&PAGENO={}&ZSDM={}&random={}", url, page_no, index, thread_rng().gen::<f64>());
+                info!("Exchange sz query stocks url = {}", url);
                 let response = client.get(url).send().await;
                 page_no += 1;
                 match response {

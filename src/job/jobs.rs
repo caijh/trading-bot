@@ -22,7 +22,7 @@ use crate::index::stock_index_svc::{
 use crate::stock::stock_svc::sync;
 
 #[async_trait]
-trait Runnable {
+pub trait Runnable {
     async fn run(&self);
 }
 
