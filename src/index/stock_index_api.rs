@@ -18,31 +18,12 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
     let mut stocks: Vec<Stock> = Vec::new();
     let application_context = APPLICATION_CONTEXT.read().await;
     match exchange {
-        Exchange::SH(exchange) => {
-            let url = format!("https://query.sse.com.cn/commonSoaQuery.do?sqlId=DB_SZZSLB_CFGLB&indexCode={}&_={}", index, Local::now().timestamp_millis());
-            info!("Exchange sh query stocks url = {}", url);
-
-            let mut headers = HeaderMap::new();
-            headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
-            headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
-            headers.insert("Referer", "https://www.sse.com.cn/".parse().unwrap());
-            headers.insert("Connection", "keep-alive".parse().unwrap());
-            let response = client.get(url).headers(headers).send().await;
-            match response {
-                Ok(response) => {
-                    let json: Value = response.json().await?;
-                    let result = json.get("result").unwrap().as_array();
-                    if let Some(ss) = result {
-                        for s in ss {
-                            let stock = Stock {
-                                code: s["securityCode"].as_str().unwrap().to_string(),
-                                name: s["securityAbbr"].as_str().unwrap().to_string(),
-                                exchange: exchange.clone(),
-                                stock_type: "Stock".to_string(),
-                                to_code: None,
-                            };
-                            stocks.push(stock);
-                        }
+        Exchange::SH(_exchange) => {
+            let result = get_sh_index_stocks(index).await;
+            match result {
+                Ok(index_stocks) => {
+                    for s in index_stocks {
+                        stocks.push(s);
                     }
                     Ok(stocks)
                 }
@@ -96,5 +77,54 @@ pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<d
 
             Ok(stocks)
         }
+    }
+}
+
+async fn get_sh_index_stocks(index: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+    let url = format!(
+        "https://query.sse.com.cn/commonSoaQuery.do?sqlId=DB_SZZSLB_CFGLB&indexCode={}&_={}",
+        index,
+        Local::now().timestamp_millis()
+    );
+    info!("Exchange sh query stocks url = {}", url);
+
+    let mut headers = HeaderMap::new();
+    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
+    headers.insert("Referer", "https://www.sse.com.cn/".parse().unwrap());
+    headers.insert("Connection", "keep-alive".parse().unwrap());
+    let client = Request::client().await;
+    let response = client.get(url).headers(headers).send().await;
+    let mut stocks: Vec<Stock> = Vec::new();
+    match response {
+        Ok(response) => {
+            let json: Value = response.json().await?;
+            let result = json.get("result").unwrap().as_array();
+            if let Some(ss) = result {
+                for s in ss {
+                    let stock = Stock {
+                        code: s["securityCode"].as_str().unwrap().to_string(),
+                        name: s["securityAbbr"].as_str().unwrap().to_string(),
+                        exchange: "SH".to_string(),
+                        stock_type: "Stock".to_string(),
+                        to_code: None,
+                    };
+                    stocks.push(stock);
+                }
+            }
+            Ok(stocks)
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_get_sh_index_stocks() {
+        let result = get_sh_index_stocks("000016").await;
+        assert!(result.is_ok());
     }
 }
