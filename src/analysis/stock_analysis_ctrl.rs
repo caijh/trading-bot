@@ -1,3 +1,4 @@
+use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::extract::Query;
@@ -5,7 +6,7 @@ use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::stock_analysis_svc;
-use crate::job::jobs::{AnalysisFundsJob, AnalysisStocksJob, Runnable};
+use crate::job::jobs::{AnalysisFundsJob, AnalysisStocksJob};
 
 #[derive(Serialize, Deserialize)]
 pub struct IndexAnalysisParams {

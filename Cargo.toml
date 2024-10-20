@@ -12,6 +12,7 @@ application-context = { git = "https://github.com/caijh/application-rs.git" }
 application-web = { git = "https://github.com/caijh/application-rs.git" }
 application-web-macros = { git = "https://github.com/caijh/application-rs.git" }
 application-web-actuator = { git = "https://github.com/caijh/application-rs.git" }
+application-schedule = { git = "https://github.com/caijh/application-rs.git" }
 application-boot = { git = "https://github.com/caijh/application-rs.git" }
 
 # cli
