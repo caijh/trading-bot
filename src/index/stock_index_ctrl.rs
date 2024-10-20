@@ -1,10 +1,11 @@
+use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::extract::Path;
 use axum::response::IntoResponse;
 
 use crate::index::stock_index_svc;
-use crate::job::jobs::{Runnable, SyncIndexStocksJob};
+use crate::job::jobs::SyncIndexStocksJob;
 
 #[get("/index/:code/stocks")]
 pub async fn get_stocks(Path(code): Path<String>) -> impl IntoResponse {
