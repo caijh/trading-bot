@@ -7,7 +7,7 @@ use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_model::Stock;
 use crate::stock::stock_svc::get_stock_daily_price;
 use application_beans::factory::bean_factory::BeanFactory;
-use application_boot::application::APPLICATION_CONTEXT;
+use application_context::context::application_context::APPLICATION_CONTEXT;
 use database::DbService;
 use std::error::Error;
 

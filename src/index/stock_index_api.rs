@@ -1,4 +1,4 @@
-use application_boot::application::APPLICATION_CONTEXT;
+use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
 use chrono::Local;
 use rand::{thread_rng, Rng};
