@@ -1,4 +1,4 @@
-use application_beans::factory::bean_factory::BeanFactory;
+use application_beans::factory::bean_factory::{BeanFactory, ConfigurableBeanFactory};
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
 use application_core::lang::runnable::Runnable;
@@ -24,6 +24,10 @@ use crate::stock::stock_svc::sync;
 
 pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     let scheduler = Scheduler::new().await?;
+
+    let application_context = APPLICATION_CONTEXT.read().await;
+    application_context.get_bean_factory().set(scheduler);
+    let scheduler= application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
 
     // 同步节假日
