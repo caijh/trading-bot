@@ -1,8 +1,11 @@
+
+use anyhow::Ok;
 use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::extract::Path;
 use axum::response::IntoResponse;
+use tokio::spawn;
 
 use crate::index::stock_index_svc;
 use crate::job::jobs::SyncIndexStocksJob;
@@ -23,9 +26,13 @@ pub async fn sync(Path(code): Path<String>) -> impl IntoResponse {
 
 #[get("/index/sync/all")]
 pub async fn sync_all() -> impl IntoResponse {
-    let job = SyncIndexStocksJob;
+    spawn(async {
+        let job = SyncIndexStocksJob;
 
-    job.run().await;
+        job.run().await;
 
-    RespBody::<()>::success_info("Done")
+        Ok(())
+    });
+
+    RespBody::<()>::success_info("Sync index Stocks in background")
 }

@@ -30,12 +30,6 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     let scheduler = application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
 
-    // 同步指数股票
-    let job = SyncIndexStocksJob;
-    scheduler
-        .add_job(4, "同步指数股票", "0 0 8 * * *", Box::new(job))
-        .await?;
-
     // 同步指数股票价格
     let job = SyncStockPriceJob;
     scheduler
@@ -171,6 +165,7 @@ pub struct SyncIndexStocksJob;
 #[async_trait]
 impl Runnable for SyncIndexStocksJob {
     async fn run(&self) {
+        info!("SyncIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
         let dao = application_context
             .get_bean_factory()
@@ -181,6 +176,8 @@ impl Runnable for SyncIndexStocksJob {
             let constituents = sync_constituents(&index.code).await.unwrap();
             spawn(notification_index_stocks(index, constituents));
         }
+
+        info!("SyncIndexStocksJob end success");
     }
 }
 
