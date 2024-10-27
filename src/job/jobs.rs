@@ -9,7 +9,7 @@ use database::DbService;
 use notification::{Notification, NotificationConfig};
 use std::error::Error;
 use tokio::spawn;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
@@ -29,20 +29,6 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     application_context.get_bean_factory().set(scheduler);
     let scheduler = application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
-
-    // 同步交易所股票
-    let job = SyncStocksJob {
-        exchange: "SH".to_string(),
-    };
-    scheduler
-        .add_job(2, "同步交易所股票", "0 0 7 * * *", Box::new(job))
-        .await?;
-    let job = SyncStocksJob {
-        exchange: "SZ".to_string(),
-    };
-    scheduler
-        .add_job(3, "同步交易所股票", "0 0 7 * * *", Box::new(job))
-        .await?;
 
     // 同步指数股票
     let job = SyncIndexStocksJob;
@@ -237,15 +223,16 @@ async fn notification_index_stocks(
     }
 }
 pub struct SyncStocksJob {
-    exchange: String,
+    pub exchange: String,
 }
 
 #[async_trait]
 impl Runnable for SyncStocksJob {
     async fn run(&self) {
+        info!("SyncStocksJob run ...");
         let result = sync(&self.exchange).await;
         match result {
-            Ok(_) => {}
+            Ok(_) => {info!("SyncStocksJob end success")}
             Err(e) => {
                 error!("Sync {} stock error {}", &self.exchange, e);
             }
