@@ -4,9 +4,10 @@ use application_web_macros::get;
 use axum::extract::Query;
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
+use tokio::spawn;
 
 use crate::analysis::stock_analysis_svc;
-use crate::job::jobs::{AnalysisFundsJob, AnalysisStocksJob};
+use crate::job::jobs::{AnalysisFundsJob, AnalysisIndexStocksJob};
 
 #[derive(Serialize, Deserialize)]
 pub struct IndexAnalysisParams {
@@ -27,11 +28,13 @@ async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoR
 
 #[get("/analysis/index/all")]
 async fn analysis_index_all() -> impl IntoResponse {
-    let job = AnalysisStocksJob;
+    spawn(async {
+        let job = AnalysisIndexStocksJob;
 
-    job.run().await;
+        job.run().await;
+    });
 
-    RespBody::<()>::success_info("Done")
+    RespBody::<()>::success_info("Analysis index Stocks in background")
 }
 
 #[get("/analysis/stock")]
@@ -50,9 +53,11 @@ async fn analysis_funds() -> impl IntoResponse {
 
 #[get("/analysis/funds/all")]
 async fn analysis_funds_all() -> impl IntoResponse {
-    let job = AnalysisFundsJob;
+    spawn(async {
+        let job = AnalysisFundsJob;
 
-    job.run().await;
+        job.run().await;
+    });
 
-    RespBody::<()>::success_info("Done")
+    RespBody::<()>::success_info("Analysis fund Stocks in background")
 }

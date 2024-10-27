@@ -30,49 +30,34 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     let scheduler = application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
 
-    // 同步指数股票价格
-    let job = SyncStockPriceJob;
-    scheduler
-        .add_job(5, "同步指数股票价格", "0 0 16 * * *", Box::new(job))
-        .await?;
-
-    // 分析指数股票
-    let job = AnalysisStocksJob;
-    scheduler
-        .add_job(6, "分析指数股票", "0 0 17 * * Mon-Fri", Box::new(job))
-        .await?;
-
-    // 分析基金
-    let job = AnalysisFundsJob;
-    scheduler
-        .add_job(7, "分析基金", "0 0 18 * * Mon-Fri", Box::new(job))
-        .await?;
-
     Ok(())
 }
 
-pub struct SyncStockPriceJob;
+pub struct SyncAllIndexStockPriceJob;
 
 #[async_trait]
-impl Runnable for SyncStockPriceJob {
+impl Runnable for SyncAllIndexStockPriceJob {
     async fn run(&self) {
+        info!("SyncAllIndexStockPriceJob run ...");
         let indexes = get_all_stock_index().await.unwrap();
         for index in indexes {
             let _ = sync_constituent_stocks_daily_price(&index.code).await;
         }
+        info!("SyncAllIndexStockPriceJob end success");
     }
 }
 
-pub struct AnalysisStocksJob;
+pub struct AnalysisIndexStocksJob;
 
 #[async_trait]
-impl Runnable for AnalysisStocksJob {
+impl Runnable for AnalysisIndexStocksJob {
     async fn run(&self) {
         let now = Local::now();
         let holiday_result = is_holiday(&now).await.unwrap();
         if holiday_result.is_holiday {
             return;
         }
+        info!("AnalysisIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
         let dao = application_context
             .get_bean_factory()
@@ -93,6 +78,7 @@ impl Runnable for AnalysisStocksJob {
                 }
             }
         }
+        info!("AnalysisIndexStocksJob end success");
     }
 }
 
@@ -105,6 +91,7 @@ impl Runnable for AnalysisFundsJob {
         if holiday_result.is_holiday {
             return;
         }
+        info!("AnalysisFunsJob run ...");
         let result = stock_analysis_svc::analysis_funds().await;
         match result {
             Ok(stocks) => {
@@ -116,6 +103,7 @@ impl Runnable for AnalysisFundsJob {
                         exchange: "".to_string(),
                     },
                 ));
+                info!("AnalysisFunsJob end successs");
             }
             Err(e) => {
                 error!("analysis fund stocks fail, {}", e);

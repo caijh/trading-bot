@@ -8,7 +8,7 @@ use axum::response::IntoResponse;
 use tokio::spawn;
 
 use crate::index::stock_index_svc;
-use crate::job::jobs::SyncIndexStocksJob;
+use crate::job::jobs::{SyncIndexStocksJob, SyncAllIndexStockPriceJob};
 
 #[get("/index/:code/stocks")]
 pub async fn get_stocks(Path(code): Path<String>) -> impl IntoResponse {
@@ -35,4 +35,18 @@ pub async fn sync_all() -> impl IntoResponse {
     });
 
     RespBody::<()>::success_info("Sync index Stocks in background")
+}
+
+/// 同步所有指数中股票的价格
+#[get("/index/sync/all/price")]
+pub async fn sync_index_stock_price() -> impl IntoResponse {
+    spawn(async {
+        let job = SyncAllIndexStockPriceJob;
+
+        job.run().await;
+
+        Ok(())
+    });
+
+    RespBody::<()>::success_info("Sync index Stocks prices in background")
 }

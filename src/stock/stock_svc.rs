@@ -5,6 +5,7 @@ use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbdc::Decimal;
 use serde_json::Value;
+use tracing::info;
 use std::error::Error;
 use std::fs::File;
 use std::io::copy;
@@ -285,6 +286,7 @@ pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
 }
 
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
+    info!("get_stock_daily_price code = {}", code);
     let application_context = APPLICATION_CONTEXT.read().await;
     let dao = application_context
         .get_bean_factory()
