@@ -9,7 +9,7 @@ use database::DbService;
 use notification::{Notification, NotificationConfig};
 use std::error::Error;
 use tokio::spawn;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
@@ -27,78 +27,37 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
 
     let application_context = APPLICATION_CONTEXT.read().await;
     application_context.get_bean_factory().set(scheduler);
-    let scheduler= application_context.get_bean_factory().get::<Scheduler>();
+    let scheduler = application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
-
-    // 同步节假日
-    let job = SyncHolidayJob;
-    scheduler
-        .add_job(1, "同步节假日", "0 0 0 6 * *", Box::new(job))
-        .await?;
-
-    // 同步交易所股票
-    let job = SyncStocksJob {
-        exchange: "SH".to_string(),
-    };
-    scheduler
-        .add_job(2, "同步交易所股票", "0 0 7 * * *", Box::new(job))
-        .await?;
-    let job = SyncStocksJob {
-        exchange: "SZ".to_string(),
-    };
-    scheduler
-        .add_job(3, "同步交易所股票", "0 0 7 * * *", Box::new(job))
-        .await?;
-
-    // 同步指数股票
-    let job = SyncIndexStocksJob;
-    scheduler
-        .add_job(4, "同步指数股票", "0 0 8 * * *", Box::new(job))
-        .await?;
-
-    // 同步指数股票价格
-    let job = SyncStockPriceJob;
-    scheduler
-        .add_job(5, "同步指数股票价格", "0 0 16 * * *", Box::new(job))
-        .await?;
-
-    // 分析指数股票
-    let job = AnalysisStocksJob;
-    scheduler
-        .add_job(6, "分析指数股票", "0 0 17 * * Mon-Fri", Box::new(job))
-        .await?;
-
-    // 分析基金
-    let job = AnalysisFundsJob;
-    scheduler
-        .add_job(7, "分析基金", "0 0 18 * * Mon-Fri", Box::new(job))
-        .await?;
 
     Ok(())
 }
 
-pub struct SyncStockPriceJob;
+pub struct SyncAllIndexStockPriceJob;
 
 #[async_trait]
-impl Runnable for SyncStockPriceJob {
+impl Runnable for SyncAllIndexStockPriceJob {
     async fn run(&self) {
+        info!("SyncAllIndexStockPriceJob run ...");
         let indexes = get_all_stock_index().await.unwrap();
         for index in indexes {
             let _ = sync_constituent_stocks_daily_price(&index.code).await;
         }
+        info!("SyncAllIndexStockPriceJob end success");
     }
 }
 
-pub struct AnalysisStocksJob;
+pub struct AnalysisIndexStocksJob;
 
 #[async_trait]
-impl Runnable for AnalysisStocksJob {
+impl Runnable for AnalysisIndexStocksJob {
     async fn run(&self) {
         let now = Local::now();
         let holiday_result = is_holiday(&now).await.unwrap();
         if holiday_result.is_holiday {
             return;
         }
+        info!("AnalysisIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
         let dao = application_context
             .get_bean_factory()
@@ -119,6 +78,7 @@ impl Runnable for AnalysisStocksJob {
                 }
             }
         }
+        info!("AnalysisIndexStocksJob end success");
     }
 }
 
@@ -131,6 +91,7 @@ impl Runnable for AnalysisFundsJob {
         if holiday_result.is_holiday {
             return;
         }
+        info!("AnalysisFunsJob run ...");
         let result = stock_analysis_svc::analysis_funds().await;
         match result {
             Ok(stocks) => {
@@ -142,6 +103,7 @@ impl Runnable for AnalysisFundsJob {
                         exchange: "".to_string(),
                     },
                 ));
+                info!("AnalysisFunsJob end successs");
             }
             Err(e) => {
                 error!("analysis fund stocks fail, {}", e);
@@ -191,6 +153,7 @@ pub struct SyncIndexStocksJob;
 #[async_trait]
 impl Runnable for SyncIndexStocksJob {
     async fn run(&self) {
+        info!("SyncIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
         let dao = application_context
             .get_bean_factory()
@@ -201,6 +164,8 @@ impl Runnable for SyncIndexStocksJob {
             let constituents = sync_constituents(&index.code).await.unwrap();
             spawn(notification_index_stocks(index, constituents));
         }
+
+        info!("SyncIndexStocksJob end success");
     }
 }
 
@@ -243,15 +208,16 @@ async fn notification_index_stocks(
     }
 }
 pub struct SyncStocksJob {
-    exchange: String,
+    pub exchange: String,
 }
 
 #[async_trait]
 impl Runnable for SyncStocksJob {
     async fn run(&self) {
+        info!("SyncStocksJob run ...");
         let result = sync(&self.exchange).await;
         match result {
-            Ok(_) => {}
+            Ok(_) => {info!("SyncStocksJob end success")}
             Err(e) => {
                 error!("Sync {} stock error {}", &self.exchange, e);
             }

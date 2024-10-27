@@ -1,12 +1,14 @@
+use crate::analysis::stock_pattern::get_stock_pattern;
+use crate::job::jobs::SyncStocksJob;
+use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
+use anyhow::Ok;
+use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
-
-use crate::analysis::stock_pattern::get_stock_pattern;
-use crate::stock::stock_svc;
-use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
+use tokio::spawn;
 
 #[derive(Serialize, Deserialize)]
 struct StockParams {
@@ -24,8 +26,13 @@ struct StockParams {
  */
 #[get("/stock/sync/:exchange")]
 async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
-    let r = stock_svc::sync(&exchange).await;
-    RespBody::result(&r).response()
+    spawn(async {
+        let job = SyncStocksJob { exchange };
+        job.run().await;
+        Ok(())
+    });
+
+    RespBody::<()>::success_info("Sync Stocks in backgroud")
 }
 
 /// 获取股票日线价格
