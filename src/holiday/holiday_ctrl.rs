@@ -1,9 +1,11 @@
+use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
 use axum::response::IntoResponse;
 use chrono::Local;
 
-use crate::holiday::holiday_svc::{is_holiday, sync_holidays};
+use crate::holiday::holiday_svc::is_holiday;
+use crate::job::jobs::SyncHolidayJob;
 
 /// `today_is_holiday`是一个公共异步函数
 ///
@@ -25,7 +27,8 @@ async fn today_is_holiday() -> impl IntoResponse {
 /// 然后将结果转换为RespBody，并构建一个响应对象
 #[get("/holiday/sync")]
 async fn sync() -> impl IntoResponse {
-    let r = sync_holidays().await;
+    let job = SyncHolidayJob;
+    job.run().await;
 
-    RespBody::result(&r).response()
+    RespBody::<()>::success_info("Sync Done")
 }

@@ -27,14 +27,8 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
 
     let application_context = APPLICATION_CONTEXT.read().await;
     application_context.get_bean_factory().set(scheduler);
-    let scheduler= application_context.get_bean_factory().get::<Scheduler>();
+    let scheduler = application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
-
-    // 同步节假日
-    let job = SyncHolidayJob;
-    scheduler
-        .add_job(1, "同步节假日", "0 0 0 6 * *", Box::new(job))
-        .await?;
 
     // 同步交易所股票
     let job = SyncStocksJob {
