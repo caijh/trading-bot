@@ -1,10 +1,12 @@
 use application_beans::factory::bean_factory::BeanFactory;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
-use chrono::{Local, NaiveDateTime};
+use chrono::{Local, NaiveDateTime, Timelike};
 use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
+use redis::Commands;
+use redis_io::Redis;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::error::Error;
@@ -33,6 +35,26 @@ pub struct StockDailyPriceDTO {
     pub zd: String,
     pub zdf: String,
     pub hs: String,
+}
+
+pub async fn get_stock_daily_price_cache(stock: &Stock) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>>{
+    let client = Redis::get_client();
+    let mut con = client.get_connection()?;
+    let key = "Stock:".to_string() + &stock.code;
+    let value = con.get::<&str, Option<String>>(&key)?;
+    match value {
+        None => {
+            let prices = get_stock_daily_price(stock).await?;
+            let today = Local::now().date_naive();
+            let seconds = today.and_hms_milli_opt(23, 59, 59, 999).unwrap().second() - Local::now().second();
+            con.set_ex::<&str, String, String>(&key, serde_json::to_string(&prices).unwrap(), seconds as u64)?;
+            Ok(prices)
+        }
+        Some(value) => {
+            let prices: Vec<StockDailyPriceDTO> = serde_json::from_str(&value).unwrap();
+            Ok(prices)
+        }
+    }
 }
 
 pub async fn get_stock_daily_price(

@@ -7,6 +7,7 @@ use application_core::env::property_resolver::PropertyResolver;
 use async_trait::async_trait;
 use database::DbService;
 use database_common::connection::DbConnection;
+use redis_io::{Redis, RedisConfig};
 use std::error::Error;
 
 pub struct ApplicationContextInitializedListener {}
@@ -30,6 +31,10 @@ impl ApplicationListener for ApplicationContextInitializedListener {
         let database_service = DbService::create_from_connection(db_connection);
         application_context.get_bean_factory().set(database_service);
 
+        let redis_config = environment.get_property::<RedisConfig>("redis");
+        if redis_config.is_some() {
+            Redis::init(&redis_config.unwrap())
+        }
         Ok(())
     }
 }

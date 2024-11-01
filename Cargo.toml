@@ -33,6 +33,10 @@ rbs = "4.5.18"
 database-common = {git = "https://caijh@bitbucket.org/bytebinary/database-common-rs.git"}
 database = {git = "https://caijh@bitbucket.org/bytebinary/database-rs.git"}
 
+# redis
+redis = { version = "0.24.0", features = ["tls-rustls"] }
+redis-io = { git = "https://caijh@bitbucket.org/bytebinary/redis-io-rs.git" }
+
 # web
 async-trait = "0.1.82"
 axum = "0.7.6"
