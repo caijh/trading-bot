@@ -32,7 +32,7 @@ async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
         Ok(())
     });
 
-    RespBody::<()>::success_info("Sync Stocks in backgroud")
+    RespBody::<()>::success_info("Sync Stocks in background")
 }
 
 /// 获取股票日线价格
