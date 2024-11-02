@@ -75,7 +75,7 @@ pub struct StockDailyPriceSyncRecord {
 }
 
 crud!(StockDailyPriceSyncRecord {});
-impl_select!(StockDailyPriceSyncRecord {select_by_code_date(code: &str, date: u64) -> Option => "`where code = #{code} and date = #{date}`"});
+impl_select!(StockDailyPriceSyncRecord {select_by_code(code: &str) -> Option => "`where code = #{code}`"});
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockPrice {
