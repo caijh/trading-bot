@@ -10,6 +10,7 @@ use application_beans::factory::bean_factory::BeanFactory;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use database::DbService;
 use std::error::Error;
+use tracing::info;
 
 const DOWN_AT_LEAST_DAYS: i32 = 4;
 
@@ -21,51 +22,60 @@ pub async fn analysis_index(
     let stocks = get_constituent_stocks(&index.code).await?;
     let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
     for stock in stocks {
-        let prices = get_stock_daily_price(&stock.stock_code).await?;
-        let pattern = get_stock_pattern(&prices);
-        let max = max(&prices, 20);
-        let min = min(&prices, 20);
-        let current = prices.last().unwrap().close.clone();
-        let mean = mean(&prices, 120);
-        match pattern {
-            StockPattern::UnKnown => {}
-            StockPattern::LongLowerShadow | StockPattern::DojiStar => {
-                if down_at_least(&prices, DOWN_AT_LEAST_DAYS) && current > mean {
-                    focus_stocks.push(AnalyzedStock {
-                        code: stock.stock_code.to_string(),
-                        name: stock.stock_name.to_string(),
-                        pattern,
-                        min,
-                        max,
-                        current,
-                    });
+        let prices = get_stock_daily_price(&stock.stock_code).await;
+        match prices {
+            Ok(prices) => {
+                let pattern = get_stock_pattern(&prices);
+                let max = max(&prices, 20);
+                let min = min(&prices, 20);
+                let current = prices.last().unwrap().close.clone();
+                let mean = mean(&prices, 120);
+                match pattern {
+                    StockPattern::UnKnown => {}
+                    StockPattern::LongLowerShadow | StockPattern::DojiStar => {
+                        if down_at_least(&prices, DOWN_AT_LEAST_DAYS) && current > mean {
+                            focus_stocks.push(AnalyzedStock {
+                                code: stock.stock_code.to_string(),
+                                name: stock.stock_name.to_string(),
+                                pattern,
+                                min,
+                                max,
+                                current,
+                            });
+                        }
+                    }
+                    StockPattern::Ma5Ma20 => {
+                        if current > mean {
+                            focus_stocks.push(AnalyzedStock {
+                                code: stock.stock_code.to_string(),
+                                name: stock.stock_name.to_string(),
+                                pattern,
+                                min,
+                                max,
+                                current,
+                            });
+                        }
+                    }
+                    StockPattern::BullishEngulfing
+                    | StockPattern::Piercing
+                    | StockPattern::UpGap => {
+                        if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1)
+                            && current > mean
+                        {
+                            focus_stocks.push(AnalyzedStock {
+                                code: stock.stock_code.to_string(),
+                                name: stock.stock_name.to_string(),
+                                pattern,
+                                min,
+                                max,
+                                current,
+                            });
+                        }
+                    }
                 }
             }
-            StockPattern::Ma5Ma20 => {
-                if current > mean {
-                    focus_stocks.push(AnalyzedStock {
-                        code: stock.stock_code.to_string(),
-                        name: stock.stock_name.to_string(),
-                        pattern,
-                        min,
-                        max,
-                        current,
-                    });
-                }
-            }
-            StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
-                if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1)
-                    && current > mean
-                {
-                    focus_stocks.push(AnalyzedStock {
-                        code: stock.stock_code.to_string(),
-                        name: stock.stock_name.to_string(),
-                        pattern,
-                        min,
-                        max,
-                        current,
-                    });
-                }
+            Err(e) => {
+                info!("fail to get stock daily price {:?}", e);
             }
         }
     }
