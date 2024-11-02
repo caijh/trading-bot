@@ -4,7 +4,6 @@ use application_core::env::property_resolver::PropertyResolver;
 use application_core::lang::runnable::Runnable;
 use application_schedule::scheduler::Scheduler;
 use async_trait::async_trait;
-use chrono::Local;
 use database::DbService;
 use notification::{Notification, NotificationConfig};
 use std::error::Error;
@@ -15,7 +14,7 @@ use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc;
 use crate::analysis::stock_analysis_svc::analysis_index;
-use crate::holiday::holiday_svc::{is_holiday, sync_holidays, today_is_holiday};
+use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
@@ -52,11 +51,6 @@ pub struct AnalysisIndexStocksJob;
 #[async_trait]
 impl Runnable for AnalysisIndexStocksJob {
     async fn run(&self) {
-        let now = Local::now();
-        let holiday_result = is_holiday(&now).await.unwrap();
-        if holiday_result.is_holiday {
-            return;
-        }
         info!("AnalysisIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
         let dao = application_context
@@ -87,11 +81,7 @@ pub struct AnalysisFundsJob;
 #[async_trait]
 impl Runnable for AnalysisFundsJob {
     async fn run(&self) {
-        let holiday_result = today_is_holiday().await.unwrap();
-        if holiday_result.is_holiday {
-            return;
-        }
-        info!("AnalysisFunsJob run ...");
+        info!("AnalysisFundsJob run ...");
         let result = stock_analysis_svc::analysis_funds().await;
         match result {
             Ok(stocks) => {
@@ -217,7 +207,9 @@ impl Runnable for SyncStocksJob {
         info!("SyncStocksJob run ...");
         let result = sync(&self.exchange).await;
         match result {
-            Ok(_) => {info!("SyncStocksJob end success")}
+            Ok(_) => {
+                info!("SyncStocksJob end success")
+            }
             Err(e) => {
                 error!("Sync {} stock error {}", &self.exchange, e);
             }
