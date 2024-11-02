@@ -47,7 +47,7 @@ pub async fn get_stock_daily_price_cache(
     match value {
         None => {
             let prices = get_stock_daily_price(stock).await?;
-            let today = Local::now().naive_local();
+            let today = Local::now().date_naive();
             let seconds = today
                 .and_hms_milli_opt(23, 59, 59, 999)
                 .unwrap()
