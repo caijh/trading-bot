@@ -34,7 +34,7 @@ pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>
 pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
 
-    let stocks = stock_index_api::get_stocks(&index.code, &index.exchange).await?;
+    let stocks = stock_index_api::get_stocks(&index.code).await?;
 
     let application_context = APPLICATION_CONTEXT.read().await;
     let dao = application_context
