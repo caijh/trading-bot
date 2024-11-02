@@ -1,122 +1,66 @@
-use application_context::context::application_context::APPLICATION_CONTEXT;
-use application_core::env::property_resolver::PropertyResolver;
-use chrono::Local;
-use rand::{thread_rng, Rng};
-use reqwest::header::HeaderMap;
-use serde_json::Value;
+use calamine::{open_workbook, Reader, Xls};
 use std::error::Error;
-use std::str::FromStr;
+use std::fs::File;
+use std::io::copy;
+use std::path::Path;
+use tempfile::tempdir;
 use tracing::info;
-use util::request::Request;
 
-use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_model::Stock;
 
-pub async fn get_stocks(index: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
-    let exchange = Exchange::from_str(exchange)?;
-    let client = Request::client().await;
-    let mut stocks: Vec<Stock> = Vec::new();
-    let application_context = APPLICATION_CONTEXT.read().await;
-    match exchange {
-        Exchange::SH(_exchange) => {
-            let result = get_sh_index_stocks(index).await;
-            match result {
-                Ok(index_stocks) => {
-                    for s in index_stocks {
-                        stocks.push(s);
-                    }
-                    Ok(stocks)
-                }
-                Err(e) => Err(e.into()),
-            }
-        }
-        Exchange::SZ(exchange) => {
-            let environment = application_context.get_environment().await;
-            let url = environment
-                .get_property::<String>("stock.api.sz.baseurl")
-                .unwrap();
-            let mut page_no = 1;
-            loop {
-                let url = format!("{}/api/report/ShowReport/data?SHOWTYPE=JSON&CATALOGID=1747_zs&PAGENO={}&ZSDM={}&random={}", url, page_no, index, thread_rng().gen::<f64>());
-                info!("Exchange sz query stocks url = {}", url);
-                let response = client.get(url).send().await;
-                page_no += 1;
-                match response {
-                    Ok(response) => {
-                        let json: Value = response.json().await?;
-                        let data = json.get(0).unwrap();
-                        let result = data.get("data").unwrap().as_array();
-                        if result.is_none() {
-                            break;
-                        }
-                        if let Some(ss) = result {
-                            if ss.is_empty() {
-                                break;
-                            }
-                            for s in ss {
-                                let stock = Stock {
-                                    code: s["zqdm"].as_str().unwrap().to_string(),
-                                    name: s["zqjc"]
-                                        .as_str()
-                                        .unwrap()
-                                        .to_string()
-                                        .replace("&nbsp;", " "),
-                                    exchange: exchange.clone(),
-                                    stock_type: "Stock".to_string(),
-                                    to_code: None,
-                                };
-                                stocks.push(stock);
-                            }
-                        }
-                    }
-                    Err(_) => {
-                        break;
-                    }
-                }
-            }
-
-            Ok(stocks)
-        }
-    }
+pub async fn get_stocks(index: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
+    let url = format!(
+        "https://csi-web-dev.oss-cn-shanghai-finance-1-pub.aliyuncs.com/static/html/csindex/public/uploads/file/autofile/cons/{}cons.xls",
+        index,
+    );
+    info!("Query Index Stocks from url = {}", url);
+    let dir = tempdir()?;
+    let path = dir.path().join(format!("{}cons.xls", index));
+    download(&url, &path).await?;
+    let stocks = read_index_stocks_from_excel(&path).await?;
+    Ok(stocks)
 }
 
-async fn get_sh_index_stocks(index: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
-    let url = format!(
-        "https://query.sse.com.cn/commonSoaQuery.do?sqlId=DB_SZZSLB_CFGLB&indexCode={}&_={}",
-        index,
-        Local::now().timestamp_millis()
-    );
-    info!("Exchange sh query stocks url = {}", url);
-
-    let mut headers = HeaderMap::new();
-    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
-    headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
-    headers.insert("Referer", "https://www.sse.com.cn/".parse().unwrap());
-    headers.insert("Connection", "keep-alive".parse().unwrap());
-    let client = Request::client().await;
-    let response = client.get(url).headers(headers).send().await;
-    let mut stocks: Vec<Stock> = Vec::new();
+async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
+    let client = reqwest::Client::builder().build().unwrap();
+    let response = client.get(url).send().await;
     match response {
         Ok(response) => {
-            let json: Value = response.json().await?;
-            let result = json.get("result").unwrap().as_array();
-            if let Some(ss) = result {
-                for s in ss {
-                    let stock = Stock {
-                        code: s["securityCode"].as_str().unwrap().to_string(),
-                        name: s["securityAbbr"].as_str().unwrap().to_string(),
-                        exchange: "SH".to_string(),
-                        stock_type: "Stock".to_string(),
-                        to_code: None,
-                    };
-                    stocks.push(stock);
-                }
-            }
-            Ok(stocks)
+            let bytes = response.bytes().await?;
+            let mut file = File::create(path)?;
+            copy(&mut bytes.as_ref(), &mut file)?;
+            Ok(())
         }
         Err(e) => Err(e.into()),
     }
 }
+pub async  fn read_index_stocks_from_excel(
+    path: &Path,
+) -> Result<Vec<Stock>, Box<dyn Error>> {
+    let mut excel_xlsx: Xls<_> = open_workbook(path)?;
+
+    let mut stocks = Vec::new();
+    if let Some(result) = excel_xlsx.worksheet_range_at(0) {
+        if let Ok(range) = result {
+            for (i, row) in range.rows().into_iter().enumerate() {
+                if i == 0 {
+                    continue;
+                }
+                let exchange = if row[7] == "深圳证券交易所" { "SZ"} else {"SH"};
+                stocks.push(Stock {
+                    code: row[4].to_string(),
+                    name: row[5].to_string(),
+                    exchange: exchange.to_string(),
+                    stock_type: "Stock".to_string(),
+                    to_code: None,
+                });
+            }
+        }
+    }
+
+    Ok(stocks)
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -124,7 +68,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_sh_index_stocks() {
-        let result = get_sh_index_stocks("000016").await;
+        let result = get_stocks("000016").await;
         assert!(result.is_ok());
     }
 }
