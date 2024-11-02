@@ -5,13 +5,13 @@ use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbdc::Decimal;
 use serde_json::Value;
-use tracing::info;
 use std::error::Error;
 use std::fs::File;
 use std::io::copy;
 use std::path::Path;
 use std::str::FromStr;
 use tempfile::tempdir;
+use tracing::info;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
@@ -305,8 +305,10 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     let mut daily_prices: Vec<StockDailyPrice> =
         StockDailyPrice::select_by_column(dao, "code", code).await?;
     let mut updated: bool = false;
-    let sync_record = StockDailyPriceSyncRecord::select_by_code(dao,code).await?;
-    if sync_record.is_none() {
+    let sync_record = StockDailyPriceSyncRecord::select_by_code(dao, code).await?;
+    if let Some(sync_record) = sync_record {
+        updated = sync_record.date == date && sync_record.updated;
+    } else {
         StockDailyPriceSyncRecord::insert(
             dao,
             &StockDailyPriceSyncRecord {
@@ -316,7 +318,6 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
             },
         )
         .await?;
-        updated = false;
     }
     if !updated {
         let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
@@ -351,7 +352,7 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
                 date,
                 updated: true,
             },
-            "code"
+            "code",
         )
         .await?;
     }
