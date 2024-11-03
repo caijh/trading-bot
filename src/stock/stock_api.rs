@@ -1,8 +1,6 @@
-use application_beans::factory::bean_factory::BeanFactory;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
 use chrono::{Local, NaiveDateTime, NaiveTime, TimeZone};
-use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
 use redis::Commands;
@@ -15,6 +13,7 @@ use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_model::Stock;
+use crate::stock::stock_svc::get_stock;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDTO {
@@ -184,12 +183,7 @@ pub struct StockPriceDTO {
 }
 
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
-    let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let stock = Stock::select_by_code(dao, code).await?;
+    let stock = get_stock(code).await?;
     let stock = match stock {
         Some(s) => s,
         None => return Err("Stock not found".into()),
@@ -200,6 +194,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
         code.to_string()
     };
     let client = Request::client().await;
+    let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
     let exchange = Exchange::from_str(&stock.exchange)?;
     match exchange {
