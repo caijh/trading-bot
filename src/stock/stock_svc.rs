@@ -1,4 +1,5 @@
 use application_beans::factory::bean_factory::BeanFactory;
+use application_cache::CacheManager;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
 use database::DbService;
@@ -385,4 +386,26 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
     };
 
     Ok(price)
+}
+
+pub async fn get_stock(code: &str) -> Result<Option<Stock>, Box<dyn Error>> {
+    let stock = CacheManager::get(code).await;
+    if stock.is_none() {
+        let application_context = APPLICATION_CONTEXT.read().await;
+        let dao = application_context
+            .get_bean_factory()
+            .get::<DbService>()
+            .dao();
+        let stock = Stock::select_by_code(dao, code).await?;
+        match stock {
+            None => Ok(None),
+            Some(stock) => {
+                CacheManager::set(code, &serde_json::to_string(&stock).unwrap()).await;
+                Ok(Some(stock))
+            }
+        }
+    } else {
+        let stock = serde_json::from_str(&stock.unwrap()).unwrap();
+        Ok(Some(stock))
+    }
 }
