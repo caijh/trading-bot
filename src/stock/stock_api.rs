@@ -1,7 +1,7 @@
 use application_beans::factory::bean_factory::BeanFactory;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
-use chrono::{Local, NaiveDateTime};
+use chrono::{Local, NaiveDateTime, NaiveTime, TimeZone};
 use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
@@ -47,13 +47,16 @@ pub async fn get_stock_daily_price_cache(
     match value {
         None => {
             let prices = get_stock_daily_price(stock).await?;
-            let today = Local::now().date_naive();
-            let seconds = today
-                .and_hms_milli_opt(23, 59, 59, 999)
-                .unwrap()
-                .and_utc()
-                .timestamp()
-                - Local::now().timestamp();
+            // Get the current time
+            let now = Local::now();
+            // Create a datetime for today at 23:59:59
+            let end_of_day = now
+                .date_naive()
+                .and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
+            let end_of_day = Local.from_local_datetime(&end_of_day).unwrap();
+            // Calculate the difference in seconds
+            let duration = end_of_day - now;
+            let seconds = duration.num_seconds();
             con.set_ex::<&str, String, String>(
                 &key,
                 serde_json::to_string(&prices).unwrap(),
