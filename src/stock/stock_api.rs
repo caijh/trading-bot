@@ -1,6 +1,6 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
-use chrono::{Local, NaiveDateTime, NaiveTime, TimeZone};
+use chrono::{Local, NaiveDateTime, NaiveTime, TimeDelta, TimeZone};
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
 use redis::Commands;
@@ -46,15 +46,8 @@ pub async fn get_stock_daily_price_cache(
     match value {
         None => {
             let prices = get_stock_daily_price(stock).await?;
-            // Get the current time
-            let now = Local::now();
-            // Create a datetime for today at 23:59:59
-            let end_of_day = now
-                .date_naive()
-                .and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
-            let end_of_day = Local.from_local_datetime(&end_of_day).unwrap();
             // Calculate the difference in seconds
-            let duration = end_of_day - now;
+            let duration: chrono::TimeDelta = calculate_stock_expire_timedelta(stock);
             let seconds = duration.num_seconds();
             con.set_ex::<&str, String, String>(
                 &key,
@@ -67,6 +60,32 @@ pub async fn get_stock_daily_price_cache(
             let prices: Vec<StockDailyPriceDTO> = serde_json::from_str(&value).unwrap();
             Ok(prices)
         }
+    }
+}
+
+fn calculate_stock_expire_timedelta(stock: &Stock) -> TimeDelta {
+    // Get the current time
+    let now = Local::now();
+    if stock.exchange == "SH" || stock.exchange == "SZ" {
+        let close_time = now
+            .date_naive()
+            .and_time(NaiveTime::from_hms_opt(15, 0, 0).unwrap());
+        let close_time = Local.from_local_datetime(&close_time).unwrap();
+        if now > close_time {
+            let expire_time = now
+                .date_naive()
+                .and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
+            let expire_time = Local.from_local_datetime(&expire_time).unwrap();
+            return expire_time - now;
+        } else {
+            return close_time - now;
+        }
+    } else {
+        let expire_time = now
+            .date_naive()
+            .and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
+        let expire_time = Local.from_local_datetime(&expire_time).unwrap();
+        return expire_time - now;
     }
 }
 
