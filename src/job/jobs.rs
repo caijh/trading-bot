@@ -65,7 +65,7 @@ impl Runnable for AnalysisIndexStocksJob {
             let result = analysis_index(&params).await;
             match result {
                 Ok(stocks) => {
-                    spawn(notification_stocks(stocks, index));
+                    spawn(notification_index_stocks_price(index, stocks));
                 }
                 Err(e) => {
                     error!("analysis index {} stocks fail, {}", index.name, e);
@@ -85,7 +85,7 @@ impl Runnable for AnalysisFundsJob {
         let result = stock_analysis_svc::analysis_funds().await;
         match result {
             Ok(stocks) => {
-                spawn(notification_stocks(
+                spawn(notification_stocks_price(
                     stocks,
                     StockIndex {
                         code: "".to_string(),
@@ -102,7 +102,28 @@ impl Runnable for AnalysisFundsJob {
     }
 }
 
-async fn notification_stocks(stocks: Vec<AnalyzedStock>, index: StockIndex) {
+
+async fn notification_index_stocks_price(index: StockIndex, stocks: Vec<AnalyzedStock>) {
+    if stocks.is_empty() {
+        return ;
+    }
+
+    // send max 5 stocks notification per request
+    let mut stocks_to_send: Vec<AnalyzedStock> = Vec::new();
+    for stock in stocks {        
+        stocks_to_send.push(stock);
+        if stocks_to_send.len() == 5 {
+            let _ = notification_stocks_price(stocks_to_send.clone(), index.clone()).await;
+            stocks_to_send.clear();
+        }
+    }
+    if !stocks_to_send.is_empty() {
+        notification_stocks_price(stocks_to_send.clone(), index).await;
+    }
+}
+
+
+async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex) {
     if stocks.is_empty() {
         return;
     }
@@ -152,14 +173,14 @@ impl Runnable for SyncIndexStocksJob {
         let indexes = StockIndex::select_all(dao).await.unwrap();
         for index in indexes {
             let constituents = sync_constituents(&index.code).await.unwrap();
-            spawn(notification_index_stocks(index, constituents));
+            spawn(notification_index_stocks_changed(index, constituents));
         }
 
         info!("SyncIndexStocksJob end success");
     }
 }
 
-async fn notification_index_stocks(
+async fn notification_index_stocks_changed(
     index: StockIndex,
     sync_index_constituents: SyncIndexConstituents,
 ) {
