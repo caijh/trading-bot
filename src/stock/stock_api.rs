@@ -7,6 +7,7 @@ use redis::Commands;
 use redis_io::Redis;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::info;
 use std::error::Error;
 use std::str::FromStr;
 use util::request::Request;
@@ -57,6 +58,7 @@ pub async fn get_stock_daily_price_cache(
             Ok(prices)
         }
         Some(value) => {
+            info!("Get stock daily price from cache");
             let prices: Vec<StockDailyPriceDTO> = serde_json::from_str(&value).unwrap();
             Ok(prices)
         }
