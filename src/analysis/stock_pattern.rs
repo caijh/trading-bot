@@ -27,6 +27,7 @@ pub enum StockPattern {
     Piercing,
     /// 向上缺口
     UpGap,
+    UpMA120,
     /// 未知形态
     UnKnown,
 }
@@ -40,6 +41,7 @@ impl Display for StockPattern {
             StockPattern::BullishEngulfing => f.write_str("看涨吞没形态"),
             StockPattern::Piercing => f.write_str("刺透形态"),
             StockPattern::UpGap => f.write_str("向上缺口"),
+            StockPattern::UpMA120 => f.write_str("120均线"),
             StockPattern::UnKnown => f.write_str("未知形态"),
         }
     }
@@ -66,6 +68,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             return StockPattern::LongLowerShadow;
         }
 
+        // 十字星
         let p: Decimal = open.clone() / close.clone();
         if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
             return StockPattern::DojiStar;
@@ -82,6 +85,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                     && real_body > pre_real_body
                     && real_body > upper_shadow.clone() * factor_1.clone()
                 {
+                    // 看涨吞没
                     return StockPattern::BullishEngulfing;
                 }
 
@@ -92,10 +96,12 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                     && close > &mid_price
                     && close < pre_open
                 {
+                    // 刺透
                     return StockPattern::Piercing;
                 }
 
                 if price.is_up() && price.open.clone() > pre_price.open.clone() {
+                    // 向上缺口 
                     return StockPattern::UpGap;
                 }
             }
@@ -127,10 +133,13 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         let ma5 = ma(&close_df["close"], 5);
         let ma20 = ma(&close_df["close"], 20);
         let ma60 = ma(&close_df["close"], 60);
+        let ma120 = ma(&close_df["close"], 120);
         let pre_ma5 = ma5.get(ma5.len() - 2).unwrap();
         let ma5_last = ma5.last().unwrap();
         let ma20_last = ma20.last().unwrap();
         let ma60_last = ma60.last().unwrap();
+        let ma120_last = ma120.last().unwrap();
+        let ma120_last_pre = ma120.get(ma120.len() - 2).unwrap();
 
         // check volume
         let volume_df = df
@@ -153,6 +162,15 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             && (ma5 == ma20 || ((ma5_last - ma20_last) / ma20_last < 0.006))
         {
             return StockPattern::Ma5Ma20;
+        }
+
+        
+        let pre_price = prices.get(prices.len() - 2).unwrap();
+        if price.is_up() 
+            && price.close > Decimal::from_f32(ma120_last.clone()).unwrap()
+            && pre_price.close < Decimal::from_f32(ma120_last_pre.clone()).unwrap()
+        {
+            return StockPattern::UpMA120;
         }
     }
 
