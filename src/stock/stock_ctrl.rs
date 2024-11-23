@@ -9,6 +9,7 @@ use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use tokio::spawn;
+use tracing::info;
 
 #[derive(Serialize, Deserialize)]
 struct StockParams {
@@ -45,6 +46,7 @@ async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
 /// 获取股票当前价格
 #[get("/stock/price")]
 async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
+    info!("Query stock price, code = {}", params.code);
     let r = get_stock_price(&params.code).await;
     RespBody::result(&r).response()
 }

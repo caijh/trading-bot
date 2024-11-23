@@ -72,6 +72,16 @@ pub async fn analysis_index(
                             });
                         }
                     }
+                    StockPattern::UpMA120 => {
+                        focus_stocks.push(AnalyzedStock {
+                            code: stock.stock_code.to_string(),
+                            name: stock.stock_name.to_string(),
+                            pattern,
+                            min,
+                            max,
+                            current,
+                        });
+                    }   
                 }
             }
             Err(e) => {
@@ -146,6 +156,16 @@ pub async fn analysis_stock(
                     });
                 }
             }
+            StockPattern::UpMA120 => {
+                analyzed_stock = Some(AnalyzedStock {
+                        code: stock.code.to_string(),
+                        name: stock.name.to_string(),
+                        pattern,
+                        min,
+                        max,
+                        current,
+                    });
+            }
         }
     }
     Ok(analyzed_stock)
@@ -212,6 +232,16 @@ pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
                             current,
                         });
                     }
+                }
+                StockPattern::UpMA120 => {
+                    focus_stocks.push(AnalyzedStock {
+                        code: fund.code.to_string(),
+                        name: fund.name.to_string(),
+                        pattern,
+                        min,
+                        max,
+                        current,
+                    });
                 }
             }
         }
