@@ -81,11 +81,14 @@ pub async fn analysis_index(
                             max,
                             current,
                         });
-                    }   
+                    }
                 }
             }
             Err(e) => {
-                info!("fail to get stock daily price {:?}", e);
+                info!(
+                    "Get stock {} daily price fail, error = {:?}",
+                    stock.stock_name, e
+                );
             }
         }
     }
@@ -158,13 +161,13 @@ pub async fn analysis_stock(
             }
             StockPattern::UpMA120 => {
                 analyzed_stock = Some(AnalyzedStock {
-                        code: stock.code.to_string(),
-                        name: stock.name.to_string(),
-                        pattern,
-                        min,
-                        max,
-                        current,
-                    });
+                    code: stock.code.to_string(),
+                    name: stock.name.to_string(),
+                    pattern,
+                    min,
+                    max,
+                    current,
+                });
             }
         }
     }
