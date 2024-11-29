@@ -1,15 +1,15 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
-use chrono::{Local, NaiveDateTime, NaiveTime, TimeDelta, TimeZone};
+use chrono::{Local, NaiveDateTime};
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
 use redis::Commands;
 use redis_io::Redis;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::info;
 use std::error::Error;
 use std::str::FromStr;
+use tracing::info;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
@@ -47,47 +47,14 @@ pub async fn get_stock_daily_price_cache(
     match value {
         None => {
             let prices = get_stock_daily_price(stock).await?;
-            // Calculate the difference in seconds
-            let duration: chrono::TimeDelta = calculate_stock_expire_timedelta(stock);
-            let seconds = duration.num_seconds();
-            con.set_ex::<&str, String, String>(
-                &key,
-                serde_json::to_string(&prices).unwrap(),
-                seconds as u64,
-            )?;
+            con.set_ex::<&str, String, String>(&key, serde_json::to_string(&prices).unwrap(), 120)?;
             Ok(prices)
         }
         Some(value) => {
-            info!("Get stock daily price from cache");
+            info!("Get stock daily price from cache, code = {}", stock.code);
             let prices: Vec<StockDailyPriceDTO> = serde_json::from_str(&value).unwrap();
             Ok(prices)
         }
-    }
-}
-
-fn calculate_stock_expire_timedelta(stock: &Stock) -> TimeDelta {
-    // Get the current time
-    let now = Local::now();
-    if stock.exchange == "SH" || stock.exchange == "SZ" {
-        let close_time = now
-            .date_naive()
-            .and_time(NaiveTime::from_hms_opt(15, 0, 0).unwrap());
-        let close_time = Local.from_local_datetime(&close_time).unwrap();
-        if now > close_time {
-            let expire_time = now
-                .date_naive()
-                .and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
-            let expire_time = Local.from_local_datetime(&expire_time).unwrap();
-            return expire_time - now;
-        } else {
-            return close_time - now;
-        }
-    } else {
-        let expire_time = now
-            .date_naive()
-            .and_time(NaiveTime::from_hms_opt(23, 59, 59).unwrap());
-        let expire_time = Local.from_local_datetime(&expire_time).unwrap();
-        return expire_time - now;
     }
 }
 
@@ -98,7 +65,11 @@ pub async fn get_stock_daily_price(
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
     match exchange {
-        Exchange::SH(_) => {
+        Exchange::SH(exchange_name) => {
+            info!(
+                "Get stock daily price from {}, code = {}",
+                exchange_name, stock.code
+            );
             let url = environment
                 .get_property::<String>("stock.api.sh.baseurl")
                 .unwrap();
@@ -132,7 +103,11 @@ pub async fn get_stock_daily_price(
             }
             Ok(stock_prices)
         }
-        Exchange::SZ(_) => {
+        Exchange::SZ(exchange_name) => {
+            info!(
+                "Get stock daily price from {}, code = {}",
+                exchange_name, stock.code
+            );
             let url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
                 .unwrap();

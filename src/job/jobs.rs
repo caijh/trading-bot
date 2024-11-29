@@ -102,15 +102,14 @@ impl Runnable for AnalysisFundsJob {
     }
 }
 
-
 async fn notification_index_stocks_price(index: StockIndex, stocks: Vec<AnalyzedStock>) {
     if stocks.is_empty() {
-        return ;
+        return;
     }
 
     // send max 5 stocks notification per request
     let mut stocks_to_send: Vec<AnalyzedStock> = Vec::new();
-    for stock in stocks {        
+    for stock in stocks {
         stocks_to_send.push(stock);
         if stocks_to_send.len() == 5 {
             let _ = notification_stocks_price(stocks_to_send.clone(), index.clone()).await;
@@ -121,7 +120,6 @@ async fn notification_index_stocks_price(index: StockIndex, stocks: Vec<Analyzed
         notification_stocks_price(stocks_to_send.clone(), index).await;
     }
 }
-
 
 async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex) {
     if stocks.is_empty() {
