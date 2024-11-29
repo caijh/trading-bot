@@ -323,6 +323,7 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     if !updated {
         let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
         let mut prices = Vec::new();
+        let mut price_dates = Vec::new();
         for dto in stock_api::get_stock_daily_price_cache(&stock).await? {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
@@ -338,7 +339,9 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
                 zd: None,
                 zde: None,
             };
-            if !dates.contains(&daily_price.date) {
+            let d = daily_price.date;
+            price_dates.push(d);
+            if !dates.contains(&d) {
                 prices.push(daily_price.clone());
                 daily_prices.push(daily_price);
             }
@@ -346,16 +349,18 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
         if !prices.is_empty() {
             StockDailyPrice::insert_batch(dao, &prices, prices.len() as u64).await?;
         }
-        StockDailyPriceSyncRecord::update_by_column(
-            dao,
-            &StockDailyPriceSyncRecord {
-                code: code.to_string(),
-                date,
-                updated: true,
-            },
-            "code",
-        )
-        .await?;
+        if price_dates.contains(&date) {
+            StockDailyPriceSyncRecord::update_by_column(
+                dao,
+                &StockDailyPriceSyncRecord {
+                    code: code.to_string(),
+                    date,
+                    updated: true,
+                },
+                "code",
+            )
+            .await?;
+        }
     }
 
     Ok(daily_prices)
