@@ -51,7 +51,7 @@ pub async fn get_stock_daily_price_cache(
             Ok(prices)
         }
         Some(value) => {
-            info!("Get stock daily price from cache");
+            info!("Get stock daily price from cache, code = {}", stock.code);
             let prices: Vec<StockDailyPriceDTO> = serde_json::from_str(&value).unwrap();
             Ok(prices)
         }
@@ -65,7 +65,11 @@ pub async fn get_stock_daily_price(
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
     match exchange {
-        Exchange::SH(_) => {
+        Exchange::SH(exchange_name) => {
+            info!(
+                "Get stock daily price from {}, code = {}",
+                exchange_name, stock.code
+            );
             let url = environment
                 .get_property::<String>("stock.api.sh.baseurl")
                 .unwrap();
@@ -99,7 +103,11 @@ pub async fn get_stock_daily_price(
             }
             Ok(stock_prices)
         }
-        Exchange::SZ(_) => {
+        Exchange::SZ(exchange_name) => {
+            info!(
+                "Get stock daily price from {}, code = {}",
+                exchange_name, stock.code
+            );
             let url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
                 .unwrap();

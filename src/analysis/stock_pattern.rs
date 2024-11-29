@@ -101,7 +101,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                 }
 
                 if price.is_up() && price.open.clone() > pre_price.open.clone() {
-                    // 向上缺口 
+                    // 向上缺口
                     return StockPattern::UpGap;
                 }
             }
@@ -164,11 +164,10 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             return StockPattern::Ma5Ma20;
         }
 
-        
         let pre_price = prices.get(prices.len() - 2).unwrap();
-        if price.is_up() 
-            && price.close > Decimal::from_f32(ma120_last.clone()).unwrap()
-            && pre_price.close < Decimal::from_f32(ma120_last_pre.clone()).unwrap()
+        if price.is_up()
+            && price.close > Decimal::from_f32(*ma120_last).unwrap()
+            && pre_price.close < Decimal::from_f32(*ma120_last_pre).unwrap()
         {
             return StockPattern::UpMA120;
         }

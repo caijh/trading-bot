@@ -1,6 +1,6 @@
 use crate::analysis::stock_analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
 use crate::analysis::stock_analysis_model::AnalyzedStock;
-use crate::analysis::stock_calculate::{down_at_least, first_max_min, mean };
+use crate::analysis::stock_calculate::{down_at_least, first_max_min, mean};
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
 use crate::fund::fund_model::Fund;
 use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
@@ -113,7 +113,7 @@ pub async fn analysis_stock(
     let (max, min) = first_max_min(&prices);
     let current = prices.last().unwrap().close.clone();
     let mean = mean(&prices, 120);
-    let mut analyzed_stock = Option::None;
+    let mut analyzed_stock = None;
     if current > mean {
         // 当前价大于120天均价
         match pattern {

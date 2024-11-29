@@ -9,7 +9,7 @@ pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
     (0..prices.len())
         .map(|x| -> f32 {
             if x < n {
-                prices.slice(0, x + 1).mean().unwrap() as f32
+                prices.slice(0, n).mean().unwrap() as f32
             } else {
                 prices.slice((x - (n - 1)) as i64, n).mean().unwrap() as f32
             }
@@ -70,7 +70,7 @@ pub fn first_max_min(prices: &[StockDailyPrice]) -> (Decimal, Decimal) {
         let j = len - 1 - i;
         if prices[j].close > max {
             max = prices[j].close.clone();
-            if j > 0 && prices[j-1].close < max {
+            if j > 0 && prices[j - 1].close < max {
                 break;
             }
         }
@@ -79,7 +79,7 @@ pub fn first_max_min(prices: &[StockDailyPrice]) -> (Decimal, Decimal) {
         let j = len - 1 - i;
         if prices[j].close < min {
             min = prices[j].close.clone();
-            if j > 0 && prices[j-1].close > min {
+            if j > 0 && prices[j - 1].close > min {
                 break;
             }
         }
