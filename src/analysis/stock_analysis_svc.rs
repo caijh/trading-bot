@@ -1,6 +1,6 @@
 use crate::analysis::stock_analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
 use crate::analysis::stock_analysis_model::AnalyzedStock;
-use crate::analysis::stock_calculate::{down_at_least, max, mean, min};
+use crate::analysis::stock_calculate::{down_at_least, first_max_min, mean };
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
 use crate::fund::fund_model::Fund;
 use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
@@ -26,8 +26,7 @@ pub async fn analysis_index(
         match prices {
             Ok(prices) => {
                 let pattern = get_stock_pattern(&prices);
-                let max = max(&prices, 20);
-                let min = min(&prices, 20);
+                let (max, min) = first_max_min(&prices);
                 let current = prices.last().unwrap().close.clone();
                 let mean = mean(&prices, 120);
                 match pattern {
@@ -111,8 +110,7 @@ pub async fn analysis_stock(
     let stock = stock.unwrap();
     let prices = get_stock_daily_price(&stock.code).await?;
     let pattern = get_stock_pattern(&prices);
-    let max = max(&prices, 20);
-    let min = min(&prices, 20);
+    let (max, min) = first_max_min(&prices);
     let current = prices.last().unwrap().close.clone();
     let mean = mean(&prices, 120);
     let mut analyzed_stock = Option::None;
@@ -189,8 +187,7 @@ pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
     for fund in funds {
         let prices = get_stock_daily_price(&fund.code).await?;
         let pattern = get_stock_pattern(&prices);
-        let max = max(&prices, 20);
-        let min = min(&prices, 20);
+        let (max, min) = first_max_min(&prices);
         let current = prices.last().unwrap().close.clone();
         let mean = mean(&prices, 120);
         if current > mean {
