@@ -85,13 +85,13 @@ impl Runnable for AnalysisFundsJob {
         let result = stock_analysis_svc::analysis_funds().await;
         match result {
             Ok(stocks) => {
-                spawn(notification_stocks_price(
-                    stocks,
+                spawn(notification_index_stocks_price(
                     StockIndex {
                         code: "".to_string(),
                         name: "基金".to_string(),
                         exchange: "".to_string(),
                     },
+                    stocks,
                 ));
                 info!("AnalysisFundsJob end success");
             }
