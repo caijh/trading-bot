@@ -93,7 +93,7 @@ impl Runnable for AnalysisFundsJob {
                         exchange: "".to_string(),
                     },
                 ));
-                info!("AnalysisFunsJob end successs");
+                info!("AnalysisFundsJob end success");
             }
             Err(e) => {
                 error!("analysis fund stocks fail, {}", e);
@@ -130,7 +130,7 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
     for stock in stocks {
         content.push_str(
             format!(
-                "{:<5} {} {}, C: {}, MIN20: {}, MAX20: {}\n",
+                "{:<5} {} {}, C: {}, MIN: {}, MAX: {}\n",
                 stock.name, stock.code, stock.pattern, stock.current, stock.min, stock.max,
             )
             .as_str(),
@@ -245,7 +245,7 @@ impl Runnable for SyncHolidayJob {
         match r {
             Ok(_) => {}
             Err(e) => {
-                error!("sync holiday error {}", e)
+                error!("Sync holiday error {}", e)
             }
         }
     }
