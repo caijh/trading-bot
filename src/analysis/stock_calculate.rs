@@ -1,7 +1,10 @@
-use std::str::FromStr;
-
+use polars::datatypes::DataType;
+use polars::io::SerReader;
+use polars::prelude::{col, IntoLazy, JsonReader};
 use polars::series::Series;
 use rbatis::rbdc::Decimal;
+use std::io::Cursor;
+use std::str::FromStr;
 
 use crate::stock::stock_model::StockDailyPrice;
 
@@ -63,29 +66,57 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
 ///
 /// return the first max and min
 pub fn first_max_min(prices: &[StockDailyPrice]) -> (Decimal, Decimal) {
-    let mut max = prices.last().unwrap().close.clone();
-    let mut min = prices.last().unwrap().close.clone();
+    let json = serde_json::to_string(prices).unwrap();
+    let polars = JsonReader::new(Cursor::new(json)).finish();
+    let df = polars.unwrap();
+    let close_df = df
+        .clone()
+        .lazy()
+        .select([col("close").cast(DataType::Float32)])
+        .collect()
+        .unwrap();
+    let ma5 = ma(&close_df["close"], 5);
+    let max = find_first_max(&ma5);
+    let min = find_first_min(&ma5);
+    (max, min)
+}
+
+pub fn find_first_max(prices: &[f32]) -> Decimal {
+    let mut max = prices.last().unwrap();
     let len = prices.len();
     for i in 0..len {
         let j = len - 1 - i;
-        if prices[j].close > max {
-            max = prices[j].close.clone();
-            if j > 0 && prices[j - 1].close < max {
-                break;
+        let price = &prices[j];
+        if price > max {
+            max = price;
+            if j > 0 {
+                let pre_price = &prices[j - 1];
+                if pre_price < max {
+                    break;
+                }
             }
         }
     }
+    Decimal::from_f32(*max).unwrap()
+}
+
+pub fn find_first_min(prices: &[f32]) -> Decimal {
+    let mut min = prices.last().unwrap();
+    let len = prices.len();
     for i in 0..len {
         let j = len - 1 - i;
-        if prices[j].close < min {
-            min = prices[j].close.clone();
-            if j > 0 && prices[j - 1].close > min {
-                break;
+        let price = &prices[j];
+        if price < min {
+            min = price;
+            if j > 0 {
+                let pre_price = &prices[j - 1];
+                if pre_price > min {
+                    break;
+                }
             }
         }
     }
-
-    (max, min)
+    Decimal::from_f32(*min).unwrap()
 }
 
 pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
