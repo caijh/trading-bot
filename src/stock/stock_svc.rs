@@ -2,9 +2,13 @@ use application_beans::factory::bean_factory::BeanFactory;
 use application_cache::CacheManager;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
+use chrono::{Local, Timelike};
 use database::DbService;
 use rand::{thread_rng, Rng};
 use rbatis::rbdc::Decimal;
+use rbatis::RBatis;
+use redis::Commands;
+use redis_io::Redis;
 use serde_json::Value;
 use std::error::Error;
 use std::fs::File;
@@ -30,20 +34,61 @@ pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
 pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
     let dir = tempdir()?;
     match exchange {
-        Exchange::SH(exchange) => {
+        Exchange::SH => {
             let url = "http://query.sse.com.cn/sseQuery/commonExcelDd.do?sqlId=COMMON_SSE_CP_GPJCTPZ_GPLB_GP_L&type=inParams&CSRC_CODE=&STOCK_CODE=&REG_PROVINCE=&STOCK_TYPE=1,8&COMPANY_STATUS=2,4,5,7,8";
             let path = dir.path().join("sh_stocks.xls");
             download(url, path.as_path()).await?;
-            let stocks = read_stocks_from_sh_excel(path.as_path(), exchange)?;
-            delete_stocks(exchange).await?;
+            let stocks = read_stocks_from_sh_excel(path.as_path(), exchange.as_ref())?;
+            delete_stocks(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
         }
-        Exchange::SZ(exchange) => {
+        Exchange::SZ => {
             let url = format!("https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1110&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
             let path = dir.path().join("sz_stocks.xlsx");
             Request::download(&url, path.as_path()).await?;
-            let stocks = read_stocks_from_sz_excel(path.as_path(), exchange)?;
-            delete_stocks(exchange).await?;
+            let stocks = read_stocks_from_sz_excel(path.as_path(), exchange.as_ref())?;
+            delete_stocks(exchange.as_ref()).await?;
+            save_stocks(&stocks).await?;
+        }
+        Exchange::HK => {
+            let url = format!(
+                "https://www.hsi.com.hk/data/schi/rt/index-series/hsi/constituents.do?{}",
+                thread_rng().gen_range(1000..9999)
+            );
+            let response = Request::get_response(&url).await?;
+            let data: Value = response.json().await?;
+            let index_series_list = data.get("indexSeriesList").unwrap().as_array().unwrap();
+            let index_series = index_series_list.first().unwrap().as_object().unwrap();
+            let index_list = index_series.get("indexList").unwrap().as_array().unwrap();
+            let index_stocks = index_list
+                .first()
+                .unwrap()
+                .get("constituentContent")
+                .unwrap()
+                .as_array()
+                .unwrap();
+            let mut stocks = Vec::new();
+            for index_stock in index_stocks {
+                let stock = Stock {
+                    code: index_stock
+                        .get("code")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    name: index_stock
+                        .get("constituentName")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    exchange: "HK".to_string(),
+                    stock_type: "Stock".to_string(),
+                    to_code: None,
+                };
+                stocks.push(stock);
+            }
+            delete_stocks(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
         }
     }
@@ -52,26 +97,27 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
 
 pub async fn sync_funds(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
     match exchange {
-        Exchange::SH(exchange) => {
+        Exchange::SH => {
             let url = format!(
                 "https://query.sse.com.cn/commonSoaQuery.do?sqlId=FUND_LIST&fundType=00&_={}",
                 thread_rng().gen::<f64>()
             );
-            let stocks = download_funds(&url, exchange).await?;
+            let stocks = download_funds(&url, exchange.as_ref()).await?;
             delete_funds(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
             save_funds(&stocks).await?;
         }
-        Exchange::SZ(exchange) => {
+        Exchange::SZ => {
             let url = format!("https://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1105&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
             let dir = tempdir()?;
             let path_buf = dir.path().join("sz_funds.xlsx");
             Request::download(&url, path_buf.as_path()).await?;
-            let stocks = read_funds_from_sz_excel(path_buf.as_path(), exchange)?;
+            let stocks = read_funds_from_sz_excel(path_buf.as_path(), exchange.as_ref())?;
             delete_funds(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
             save_funds(&stocks).await?;
         }
+        Exchange::HK => {}
     }
     Ok(())
 }
@@ -286,6 +332,27 @@ pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub async fn get_stock_daily_price_from_cache(
+    dao: &RBatis,
+    stock: &Stock,
+) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
+    let client = Redis::get_client();
+    let mut con = client.get_connection()?;
+    let key = "Stock:".to_string() + &stock.code;
+    let value = con.get::<&str, Option<String>>(&key)?;
+    match value {
+        None => {
+            let prices = StockDailyPrice::select_by_column(dao, "code", &stock.code).await?;
+            Ok(prices)
+        }
+        Some(value) => {
+            info!("Get stock daily price from cache, code = {}", stock.code);
+            let prices: Vec<StockDailyPrice> = serde_json::from_str(&value).unwrap();
+            Ok(prices)
+        }
+    }
+}
+
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
     info!("Get stock daily price, code = {}", code);
     let application_context = APPLICATION_CONTEXT.read().await;
@@ -298,13 +365,13 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
         return Err("Stock not found".into());
     }
     let stock = stock.unwrap();
-    let date = chrono::Local::now()
+    let date = Local::now()
         .format("%Y%m%d")
         .to_string()
         .parse::<u64>()
         .unwrap();
     let mut daily_prices: Vec<StockDailyPrice> =
-        StockDailyPrice::select_by_column(dao, "code", code).await?;
+        get_stock_daily_price_from_cache(dao, &stock).await?;
     let mut updated: bool = false;
     let sync_record = StockDailyPriceSyncRecord::select_by_code(dao, code).await?;
     if let Some(sync_record) = sync_record {
@@ -322,9 +389,10 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     }
     if !updated {
         let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
-        let mut prices = Vec::new();
+        let mut new_prices = Vec::new();
         let mut price_dates = Vec::new();
-        for dto in stock_api::get_stock_daily_price_cache(&stock).await? {
+        let prices_dto = stock_api::get_stock_daily_price(&stock).await?;
+        for dto in prices_dto {
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
                 date: dto.d.parse::<u64>().unwrap(),
@@ -342,12 +410,12 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
             let d = daily_price.date;
             price_dates.push(d);
             if !dates.contains(&d) {
-                prices.push(daily_price.clone());
+                new_prices.push(daily_price.clone());
                 daily_prices.push(daily_price);
             }
         }
-        if !prices.is_empty() {
-            StockDailyPrice::insert_batch(dao, &prices, prices.len() as u64).await?;
+        if !new_prices.is_empty() {
+            StockDailyPrice::insert_batch(dao, &new_prices, new_prices.len() as u64).await?;
         }
         if price_dates.contains(&date) {
             StockDailyPriceSyncRecord::update_by_column(
@@ -360,6 +428,15 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
                 "code",
             )
             .await?;
+            let client = Redis::get_client();
+            let mut con = client.get_connection()?;
+            let key = "Stock:".to_string() + &stock.code;
+            let seconds = 3600 * 24 - Local::now().num_seconds_from_midnight();
+            con.set_ex::<&str, String, String>(
+                &key,
+                serde_json::to_string(&daily_prices).unwrap(),
+                seconds as u64,
+            )?;
         }
     }
 
@@ -384,7 +461,11 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
         amount: Some(Decimal::new(&price_dto.cje).unwrap()),
         ud: Some(Decimal::new(&price_dto.ud).unwrap()),
         volume: Some(Decimal::new(&price_dto.v).unwrap()),
-        yc: None,
+        yc: if price_dto.yc.is_empty() {
+            None
+        } else {
+            Some(Decimal::new(&price_dto.yc).unwrap())
+        },
         zf: None,
         zs: None,
         time: price_dto.t.clone(),
