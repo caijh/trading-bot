@@ -5,15 +5,19 @@ use std::str::FromStr;
 /// 枚举中的每个变体都包含一个String类型，用于存放交易所的名称或代码
 pub enum Exchange {
     /// 表示上海交易所，SH代表上海，后面跟着交易所的名称或代码
-    SH(String),
+    SH,
     /// 表示深圳交易所，SZ代表深圳，后面跟着交易所的名称或代码
-    SZ(String),
+    SZ,
+    /// 港交所
+    HK,
 }
 
 impl AsRef<str> for Exchange {
     fn as_ref(&self) -> &str {
         match self {
-            Exchange::SH(s) | Exchange::SZ(s) => s.as_ref(),
+            Exchange::SH => "SH",
+            Exchange::SZ => "SZ",
+            Exchange::HK => "HK",
         }
     }
 }
@@ -23,8 +27,9 @@ impl FromStr for Exchange {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_uppercase().as_str() {
-            "SH" => Ok(Exchange::SH("SH".to_string())),
-            "SZ" => Ok(Exchange::SZ("SZ".to_string())),
+            "SH" => Ok(Exchange::SH),
+            "SZ" => Ok(Exchange::SZ),
+            "HK" => Ok(Exchange::HK),
             _ => Err("Error Exchange value, SH（上海证券交易所） or SZ（深圳证券交易所）".into()),
         }
     }

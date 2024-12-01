@@ -1,10 +1,8 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
-use chrono::{Local, NaiveDateTime};
+use chrono::{DateTime, Local, NaiveDateTime};
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
-use redis::Commands;
-use redis_io::Redis;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::error::Error;
@@ -37,38 +35,19 @@ pub struct StockDailyPriceDTO {
     pub hs: String,
 }
 
-pub async fn get_stock_daily_price_cache(
-    stock: &Stock,
-) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
-    let client = Redis::get_client();
-    let mut con = client.get_connection()?;
-    let key = "Stock:".to_string() + &stock.code;
-    let value = con.get::<&str, Option<String>>(&key)?;
-    match value {
-        None => {
-            let prices = get_stock_daily_price(stock).await?;
-            con.set_ex::<&str, String, String>(&key, serde_json::to_string(&prices).unwrap(), 120)?;
-            Ok(prices)
-        }
-        Some(value) => {
-            info!("Get stock daily price from cache, code = {}", stock.code);
-            let prices: Vec<StockDailyPriceDTO> = serde_json::from_str(&value).unwrap();
-            Ok(prices)
-        }
-    }
-}
-
 pub async fn get_stock_daily_price(
     stock: &Stock,
 ) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let exchange = Exchange::from_str(stock.exchange.as_str())?;
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
+    let mut stock_prices = Vec::new();
     match exchange {
-        Exchange::SH(exchange_name) => {
+        Exchange::SH => {
             info!(
                 "Get stock daily price from {}, code = {}",
-                exchange_name, stock.code
+                exchange.as_ref(),
+                stock.code
             );
             let url = environment
                 .get_property::<String>("stock.api.sh.baseurl")
@@ -82,7 +61,6 @@ pub async fn get_stock_daily_price(
             let response = Request::get_response(&url).await?;
             let json: Value = response.json().await?;
             let kline = json.get("kline").unwrap().as_array();
-            let mut stock_prices = Vec::new();
             if let Some(kline) = kline {
                 for k in kline {
                     let k = k.as_array().unwrap();
@@ -103,10 +81,11 @@ pub async fn get_stock_daily_price(
             }
             Ok(stock_prices)
         }
-        Exchange::SZ(exchange_name) => {
+        Exchange::SZ => {
             info!(
                 "Get stock daily price from {}, code = {}",
-                exchange_name, stock.code
+                exchange.as_ref(),
+                stock.code
             );
             let url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
@@ -125,7 +104,7 @@ pub async fn get_stock_daily_price(
                 .get("picupdata")
                 .unwrap()
                 .as_array();
-            let mut stock_prices = Vec::new();
+
             if let Some(kline) = kline {
                 for k in kline {
                     let k = k.as_array().unwrap();
@@ -144,6 +123,66 @@ pub async fn get_stock_daily_price(
                         zdf: k.get(6).unwrap().as_str().unwrap().to_string(),
                         v: k.get(7).unwrap().to_string(),
                         e: k.get(8).unwrap().to_string(),
+                        hs: "".to_string(),
+                    };
+                    stock_prices.push(price);
+                }
+            }
+            Ok(stock_prices)
+        }
+        Exchange::HK => {
+            info!(
+                "Get stock daily price from {}, code = {}",
+                exchange.as_ref(),
+                stock.code
+            );
+            let url = environment
+                .get_property::<String>("stock.api.hk.baseurl")
+                .unwrap();
+            let token = environment
+                .get_property::<String>("stock.api.hk.token")
+                .unwrap();
+            let timestramp = Local::now().timestamp_millis();
+            let code = format!("{:0>4}.HK", stock.code);
+            let url = format!(
+                "{}/hkexwidget/data/getchartdata2?hchart=1&span=6&int=5&ric={}&token={}&qid={}&callback=jQuery_{}&_={}",
+                url,
+                code,
+                token,
+                timestramp,
+                timestramp,
+                timestramp,
+            );
+            let response = Request::get_response(&url).await?;
+            let text = response.text().await?;
+            let json = remove_jquery_wrapping_fn_call(&text);
+            let kline = json
+                .get("data")
+                .unwrap()
+                .get("datalist")
+                .unwrap()
+                .as_array();
+
+            if let Some(kline) = kline {
+                for k in kline {
+                    let k = k.as_array().unwrap();
+                    let o = k.get(1).unwrap().as_str().unwrap().to_string();
+                    if o.is_empty() {
+                        break;
+                    }
+
+                    let dt: DateTime<chrono::Utc> =
+                        DateTime::from_timestamp(k.first().unwrap().as_i64().unwrap(), 0).unwrap();
+                    let price = StockDailyPriceDTO {
+                        d: dt.format("%Y%m%d").to_string(),
+                        o,
+                        c: k.get(4).unwrap().as_str().unwrap().to_string(),
+                        l: k.get(3).unwrap().as_str().unwrap().to_string(),
+                        h: k.get(2).unwrap().as_str().unwrap().to_string(),
+                        zd: "".to_string(),
+                        zdf: "".to_string(),
+                        v: k.get(5).unwrap().to_string(),
+                        e: k.get(6).unwrap().to_string(),
                         hs: "".to_string(),
                     };
                     stock_prices.push(price);
@@ -194,7 +233,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
     let environment = application_context.get_environment().await;
     let exchange = Exchange::from_str(&stock.exchange)?;
     match exchange {
-        Exchange::SH(_exchange) => {
+        Exchange::SH => {
             let url = environment
                 .get_property::<String>("stock.api.sh.baseurl")
                 .unwrap();
@@ -232,7 +271,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                     .to_string(),
             })
         }
-        Exchange::SZ(_exchange) => {
+        Exchange::SZ => {
             let url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
                 .unwrap();
@@ -260,5 +299,57 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 t: data["marketTime"].as_str().unwrap().to_string(),
             })
         }
+        Exchange::HK => {
+            let url = environment
+                .get_property::<String>("stock.api.hk.baseurl")
+                .unwrap();
+            let token = environment
+                .get_property::<String>("stock.api.hk.token")
+                .unwrap();
+            let timestamp = Local::now().timestamp_millis();
+            let response = client
+                .get(format!(
+                    "{}/hkexwidget/data/getequityquote?sym={}&token={}&lang=chi&qid={}&callback=jQuery_{}&_={}",
+                    url,
+                    code,
+                    token,
+                    timestamp,
+                    timestamp,
+                    timestamp,
+                ))
+                .send()
+                .await?;
+            let text = response.text().await?;
+            let json = remove_jquery_wrapping_fn_call(&text);
+            let data = json.get("data").unwrap();
+            let data = data.get("quote").unwrap();
+            Ok(StockPriceDTO {
+                h: data["hi"].as_str().unwrap().to_string(),
+                l: data["lo"].as_str().unwrap().to_string(),
+                o: data["op"].as_str().unwrap().to_string(),
+                pc: data["pc"].as_str().unwrap().to_string(),
+                p: data["bd"].as_str().unwrap().to_string(),
+                cje: data["am"].as_str().unwrap().to_string(),
+                ud: data["nc"].as_str().unwrap().to_string(),
+                v: data["vo"].as_str().unwrap().to_string(),
+                yc: data["hc"].as_str().unwrap().to_string(),
+                t: data["update_time"].as_str().unwrap().to_string(),
+            })
+        }
+    }
+}
+
+fn remove_jquery_wrapping_fn_call(data: &str) -> Value {
+    // Remove the wrapping function call
+    if let Some(start_idx) = data.find('(') {
+        if let Some(end_idx) = data.rfind(')') {
+            let json_str = &data[start_idx + 1..end_idx]; // Extract JSON string
+                                                          // Parse the JSON string
+            serde_json::from_str::<Value>(json_str).unwrap()
+        } else {
+            serde_json::from_str::<Value>(data).unwrap()
+        }
+    } else {
+        serde_json::from_str::<Value>(data).unwrap()
     }
 }

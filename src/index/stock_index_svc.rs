@@ -1,3 +1,4 @@
+use crate::exchange::exchange_model::Exchange;
 use crate::index::stock_index_api;
 use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
 use crate::stock::stock_svc::sync_stock_daily_price;
@@ -6,6 +7,7 @@ use application_context::context::application_context::APPLICATION_CONTEXT;
 use database::DbService;
 use std::error::Error;
 use std::ops::Not;
+use std::str::FromStr;
 
 /// 获取指数的成分股
 ///
@@ -33,8 +35,8 @@ pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>
 
 pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
-
-    let stocks = stock_index_api::get_stocks(&index.code).await?;
+    let exchange = Exchange::from_str(&index.exchange)?;
+    let stocks = stock_index_api::get_stocks(&exchange, &index.code).await?;
 
     let application_context = APPLICATION_CONTEXT.read().await;
     let dao = application_context
