@@ -1,3 +1,5 @@
+use crate::stock::stock_model::StockDailyPrice;
+use bigdecimal::RoundingMode;
 use polars::datatypes::DataType;
 use polars::io::SerReader;
 use polars::prelude::{col, IntoLazy, JsonReader};
@@ -5,8 +7,6 @@ use polars::series::Series;
 use rbatis::rbdc::Decimal;
 use std::io::Cursor;
 use std::str::FromStr;
-
-use crate::stock::stock_model::StockDailyPrice;
 
 pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
     (0..prices.len())
@@ -97,7 +97,10 @@ pub fn find_first_max(prices: &[f32]) -> Decimal {
             }
         }
     }
-    Decimal::from_f32(*max).unwrap()
+    let decimal = Decimal::from_f32(*max)
+        .unwrap()
+        .with_scale_round(2, RoundingMode::Up);
+    Decimal::from(decimal)
 }
 
 pub fn find_first_min(prices: &[f32]) -> Decimal {
@@ -116,7 +119,10 @@ pub fn find_first_min(prices: &[f32]) -> Decimal {
             }
         }
     }
-    Decimal::from_f32(*min).unwrap()
+    let decimal = Decimal::from_f32(*min)
+        .unwrap()
+        .with_scale_round(2, RoundingMode::Up);
+    Decimal::from(decimal)
 }
 
 pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
