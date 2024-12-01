@@ -21,6 +21,7 @@ use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
 use crate::fund::fund_model::Fund;
+use crate::holiday::holiday_svc::today_is_holiday;
 use crate::stock::stock_api;
 use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
 
@@ -417,7 +418,7 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
         if !new_prices.is_empty() {
             StockDailyPrice::insert_batch(dao, &new_prices, new_prices.len() as u64).await?;
         }
-        if price_dates.contains(&date) {
+        if price_dates.contains(&date) || today_is_holiday().await?.is_holiday {
             StockDailyPriceSyncRecord::update_by_column(
                 dao,
                 &StockDailyPriceSyncRecord {
