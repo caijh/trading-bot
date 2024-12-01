@@ -1,6 +1,6 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
-use chrono::{DateTime, Local, NaiveDateTime};
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use rand::{thread_rng, Rng};
 use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
@@ -162,27 +162,27 @@ pub async fn get_stock_daily_price(
                 .get("datalist")
                 .unwrap()
                 .as_array();
-
             if let Some(kline) = kline {
                 for k in kline {
                     let k = k.as_array().unwrap();
-                    let o = k.get(1).unwrap().as_str().unwrap().to_string();
-                    if o.is_empty() {
-                        break;
+                    let o = k.get(1).unwrap();
+                    if o.is_null() {
+                        continue;
                     }
-
-                    let dt: DateTime<chrono::Utc> =
-                        DateTime::from_timestamp(k.first().unwrap().as_i64().unwrap(), 0).unwrap();
+                    let o = o.as_number().unwrap().to_string();
+                    let dt: DateTime<Utc> =
+                        DateTime::from_timestamp_millis(k.first().unwrap().as_i64().unwrap())
+                            .unwrap();
                     let price = StockDailyPriceDTO {
                         d: dt.format("%Y%m%d").to_string(),
                         o,
-                        c: k.get(4).unwrap().as_str().unwrap().to_string(),
-                        l: k.get(3).unwrap().as_str().unwrap().to_string(),
-                        h: k.get(2).unwrap().as_str().unwrap().to_string(),
+                        c: k.get(4).unwrap().as_number().unwrap().to_string(),
+                        l: k.get(3).unwrap().as_number().unwrap().to_string(),
+                        h: k.get(2).unwrap().as_number().unwrap().to_string(),
                         zd: "".to_string(),
                         zdf: "".to_string(),
-                        v: k.get(5).unwrap().to_string(),
-                        e: k.get(6).unwrap().to_string(),
+                        v: k.get(5).unwrap().as_number().unwrap().to_string(),
+                        e: k.get(6).unwrap().as_number().unwrap().to_string(),
                         hs: "".to_string(),
                     };
                     stock_prices.push(price);

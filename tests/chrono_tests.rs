@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use chrono::NaiveDateTime;
+    use chrono::{DateTime, NaiveDateTime};
 
     #[test]
     fn test_datetime_parse() {
@@ -9,8 +9,18 @@ mod tests {
         let datetime = date.to_string() + time;
         let datetime = NaiveDateTime::parse_from_str(datetime.as_str(), "%Y%m%d%H%M%S");
         match datetime {
-            Ok(dt) => assert_eq!("2024-02-25 15:00:00", dt.format("%Y-%m-%d %H:%M:%S").to_string()),
+            Ok(dt) => assert_eq!(
+                "2024-02-25 15:00:00",
+                dt.format("%Y-%m-%d %H:%M:%S").to_string()
+            ),
             Err(err) => panic!("Problem parsing the datetime: {:?}", err),
         };
+    }
+
+    #[test]
+    fn test_format_timestamp() {
+        let dt: DateTime<chrono::Utc> = DateTime::from_timestamp_millis(1732809600000).unwrap();
+        let d = dt.format("%Y%m%d").to_string();
+        assert_eq!(d, "20241128");
     }
 }
