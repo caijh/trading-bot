@@ -15,7 +15,7 @@ use crate::analysis::stock_analysis_model::AnalyzedStock;
 use crate::analysis::stock_analysis_svc;
 use crate::analysis::stock_analysis_svc::analysis_index;
 use crate::holiday::holiday_svc::sync_holidays;
-use crate::index::stock_index_model::{StockIndex, SyncIndexConstituents};
+use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
 use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
@@ -184,17 +184,46 @@ async fn notification_index_stocks_changed(
 ) {
     let stocks_add = sync_index_constituents.added;
     let stocks_remove = sync_index_constituents.removed;
-    if stocks_add.is_empty() && stocks_remove.is_empty() {
+    let mut stocks_to_send = Vec::new();
+    for stock in stocks_add {
+        stocks_to_send.push(stock);
+        if stocks_to_send.len() == 10 {
+            let _ =
+                do_notification_index_stocks_changed(&index, stocks_to_send.clone(), true).await;
+            stocks_to_send.clear();
+        }
+    }
+    if !stocks_to_send.is_empty() {
+        do_notification_index_stocks_changed(&index, stocks_to_send.clone(), true).await;
+    }
+    for stock in stocks_remove {
+        stocks_to_send.push(stock);
+        if stocks_to_send.len() == 10 {
+            let _ =
+                do_notification_index_stocks_changed(&index, stocks_to_send.clone(), false).await;
+            stocks_to_send.clear();
+        }
+    }
+    if !stocks_to_send.is_empty() {
+        do_notification_index_stocks_changed(&index, stocks_to_send.clone(), false).await;
+    }
+}
+
+async fn do_notification_index_stocks_changed(
+    index: &StockIndex,
+    index_constituents: Vec<IndexConstituent>,
+    add: bool,
+) {
+    if index_constituents.is_empty() {
         return;
     }
 
     let title = "指数成分股关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
-    for stock in stocks_add {
-        content.push_str(format!("增加 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
-    }
-    for stock in stocks_remove {
-        content.push_str(format!("移除 {:<5} {}\n", stock.stock_name, stock.stock_code).as_str());
+    let label = if add { "增加" } else { "移除" };
+    for stock in index_constituents {
+        content
+            .push_str(format!("{} {:<5} {}\n", label, stock.stock_name, stock.stock_code).as_str());
     }
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
@@ -216,6 +245,7 @@ async fn notification_index_stocks_changed(
         }
     }
 }
+
 pub struct SyncStocksJob {
     pub exchange: String,
 }
