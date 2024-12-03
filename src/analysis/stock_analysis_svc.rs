@@ -32,7 +32,7 @@ pub async fn analysis_index(
                 match pattern {
                     StockPattern::UnKnown => {}
                     StockPattern::LongLowerShadow | StockPattern::DojiStar => {
-                        if down_at_least(&prices, DOWN_AT_LEAST_DAYS) && current > mean {
+                        if down_at_least(&prices, DOWN_AT_LEAST_DAYS) {
                             focus_stocks.push(AnalyzedStock {
                                 code: stock.stock_code.to_string(),
                                 name: stock.stock_name.to_string(),

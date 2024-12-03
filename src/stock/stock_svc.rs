@@ -343,6 +343,7 @@ pub async fn get_stock_daily_price_from_cache(
     let value = con.get::<&str, Option<String>>(&key)?;
     match value {
         None => {
+            // 从数据库获取
             let prices = StockDailyPrice::select_by_column(dao, "code", &stock.code).await?;
             Ok(prices)
         }
