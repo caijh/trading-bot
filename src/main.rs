@@ -4,7 +4,7 @@ use trading_bot::listener::{
     ApplicationContextInitializedListener, ApplicationStartedEventListener,
 };
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
 async fn main() -> Result<(), Box<dyn Error>> {
     let application = RustApplication::default();
 
