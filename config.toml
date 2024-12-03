@@ -18,7 +18,6 @@ baseurl = "https://yunhq.sse.com.cn:32042"
 baseurl = "https://www.szse.cn"
 [stock.api.hk]
 baseurl = "https://www1.hkex.com.hk"
-token = "evLtsLsBNAUVTPxtGqVeG6h%2betXCs94mcwvDcEoww7XqGvI5vcyLAI3EAIjME7Gk"
 
 [notification]
 url = "https://message.joinspace.pp.ua"

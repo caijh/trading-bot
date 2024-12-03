@@ -20,6 +20,7 @@ use crate::index::stock_index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
 use crate::stock::stock_svc::sync;
+use crate::token::token_svc;
 
 pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     let scheduler = Scheduler::new().await?;
@@ -28,6 +29,15 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     application_context.get_bean_factory().set(scheduler);
     let scheduler = application_context.get_bean_factory().get::<Scheduler>();
     scheduler.start().await?;
+
+    let _ = scheduler
+        .add_job(
+            1,
+            "同步HKEX的AccessToken",
+            "0 0 9,12,15 * * *",
+            Box::new(SyncHKEXTokenJob),
+        )
+        .await;
 
     Ok(())
 }
@@ -276,6 +286,22 @@ impl Runnable for SyncHolidayJob {
             Ok(_) => {}
             Err(e) => {
                 error!("Sync holiday error {}", e)
+            }
+        }
+    }
+}
+
+pub struct SyncHKEXTokenJob;
+#[async_trait]
+impl Runnable for SyncHKEXTokenJob {
+    async fn run(&self) {
+        let r = token_svc::reset_hkex_token().await;
+        match r {
+            Ok(_) => {
+                info!("Sync HKEX token success");
+            }
+            Err(e) => {
+                error!("Sync HKEX token error {}", e)
             }
         }
     }

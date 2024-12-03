@@ -13,6 +13,7 @@ use util::request::Request;
 use crate::exchange::exchange_model::Exchange;
 use crate::stock::stock_model::Stock;
 use crate::stock::stock_svc::get_stock;
+use crate::token::token_svc;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDTO {
@@ -139,9 +140,7 @@ pub async fn get_stock_daily_price(
             let url = environment
                 .get_property::<String>("stock.api.hk.baseurl")
                 .unwrap();
-            let token = environment
-                .get_property::<String>("stock.api.hk.token")
-                .unwrap();
+            let token = token_svc::get_hkex_token().await;
             let timestramp = Local::now().timestamp_millis();
             let code = format!("{:0>4}.HK", stock.code);
             let url = format!(
@@ -303,9 +302,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             let url = environment
                 .get_property::<String>("stock.api.hk.baseurl")
                 .unwrap();
-            let token = environment
-                .get_property::<String>("stock.api.hk.token")
-                .unwrap();
+            let token = token_svc::get_hkex_token().await;
             let timestamp = Local::now().timestamp_millis();
             let response = client
                 .get(format!(
