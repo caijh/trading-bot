@@ -20,24 +20,20 @@ pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
         .collect()
 }
 
+/// whether the price is down at least n days
+///
+/// loop through the array from the end to the beginning
+/// if a price is smaller than the previous price, count + 1
+/// break the loop if the previous price is larger than the current price
+///
+/// return the count
 pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
-    let len = prices.len();
-    let mut cur = len - 1;
-    let mut count = 0;
-    loop {
-        let p1 = prices.get(cur).unwrap();
-        let p2 = prices.get(cur - 1).unwrap();
-        if p1.close < p2.close {
-            count += 1;
-        } else {
-            break;
-        }
-        if count > n {
-            break;
-        }
-        cur -= 1;
-    }
-    count > n
+    prices
+        .windows(2)
+        .rev()
+        .take_while(|w| w[0].close < w[1].close)
+        .count() as i32
+        > n
 }
 
 pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
