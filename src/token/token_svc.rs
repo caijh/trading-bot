@@ -6,7 +6,7 @@ use tracing::info;
 use util::request::Request;
 
 lazy_static! {
-    static ref HKEX_TOKEN: Arc<RwLock<String>> = { Arc::new(RwLock::new("".to_string())) };
+    static ref HKEX_TOKEN: Arc<RwLock<String>> = Arc::new(RwLock::new("".to_string()));
 }
 pub async fn get_hkex_token_from_website() -> Result<String, Box<dyn Error>> {
     let res = Request::get_content("https://www.hkex.com.hk/Market-Data/Securities-Prices/Equities/Equities-Quote?sym=700&sc_lang=zh-HK").await?;
