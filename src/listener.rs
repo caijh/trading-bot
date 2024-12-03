@@ -1,4 +1,5 @@
 use crate::job::jobs::load_jobs;
+use crate::token::token_svc;
 use application_beans::factory::bean_factory::ConfigurableBeanFactory;
 use application_boot::application::{Application, RustApplication};
 use application_boot::application_listener::ApplicationListener;
@@ -52,6 +53,8 @@ impl ApplicationListener for ApplicationStartedEventListener {
         _application: &RustApplication,
         _event: &dyn ApplicationEvent,
     ) -> Result<(), Box<dyn Error>> {
+        token_svc::reset_hkex_token().await?;
+
         load_jobs().await?;
 
         Ok(())
