@@ -55,7 +55,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
     let price = prices.last().unwrap();
     let open = &price.open;
     let close = &price.close;
-    let factor_1 = BigDecimal::from_str("1.5").unwrap();
+    let factor_1 = BigDecimal::from_str("4").unwrap();
     let factor_2 = BigDecimal::from_str("2").unwrap();
     let real_body = price.get_real_body();
     let lower_shadow = price.get_lower_shadow();
