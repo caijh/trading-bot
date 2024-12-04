@@ -12,7 +12,7 @@ use database::DbService;
 use std::error::Error;
 use tracing::info;
 
-const DOWN_AT_LEAST_DAYS: i32 = 4;
+const DOWN_AT_LEAST_DAYS: i32 = 3;
 
 pub async fn analysis_index(
     params: &IndexAnalysisParams,
@@ -32,7 +32,7 @@ pub async fn analysis_index(
                 match pattern {
                     StockPattern::UnKnown => {}
                     StockPattern::LongLowerShadow | StockPattern::DojiStar => {
-                        if down_at_least(&prices, DOWN_AT_LEAST_DAYS) {
+                        if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS) {
                             focus_stocks.push(AnalyzedStock {
                                 code: stock.stock_code.to_string(),
                                 name: stock.stock_name.to_string(),
@@ -58,9 +58,7 @@ pub async fn analysis_index(
                     StockPattern::BullishEngulfing
                     | StockPattern::Piercing
                     | StockPattern::UpGap => {
-                        if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1)
-                            && current > mean
-                        {
+                        if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS) {
                             focus_stocks.push(AnalyzedStock {
                                 code: stock.stock_code.to_string(),
                                 name: stock.stock_name.to_string(),
