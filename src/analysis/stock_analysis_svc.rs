@@ -32,7 +32,7 @@ pub async fn analysis_index(
                 match pattern {
                     StockPattern::UnKnown => {}
                     StockPattern::LongLowerShadow | StockPattern::DojiStar => {
-                        if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS) {
+                        if down_at_least(&prices, DOWN_AT_LEAST_DAYS) {
                             focus_stocks.push(AnalyzedStock {
                                 code: stock.stock_code.to_string(),
                                 name: stock.stock_name.to_string(),
@@ -143,7 +143,7 @@ pub async fn analysis_stock(
             }
             StockPattern::BullishEngulfing | StockPattern::Piercing | StockPattern::UpGap => {
                 // 看涨吞没形态、刺透形态、向上缺口
-                if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS - 1) {
+                if down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS) {
                     // 之前连续下跌3天
                     analyzed_stock = Some(AnalyzedStock {
                         code: stock.code.to_string(),
