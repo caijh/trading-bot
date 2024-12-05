@@ -1,4 +1,4 @@
-use crate::stock::stock_model::StockDailyPrice;
+use crate::stock::stock_model::{KLine, StockDailyPrice};
 use bigdecimal::RoundingMode;
 use polars::datatypes::DataType;
 use polars::io::SerReader;
@@ -34,7 +34,7 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
     loop {
         let p1 = prices.get(cur).unwrap();
         let p2 = prices.get(cur - 1).unwrap();
-        if p1.close < p2.close {
+        if p1.get_middle_price() <= p2.get_middle_price() {
             count += 1;
         } else {
             break;

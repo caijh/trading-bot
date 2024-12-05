@@ -103,6 +103,8 @@ pub trait KLine {
     fn get_real_body(&self) -> BigDecimal;
     fn get_lower_shadow(&self) -> BigDecimal;
     fn get_upper_shadow(&self) -> BigDecimal;
+
+    fn get_middle_price(&self) -> BigDecimal;
 }
 
 impl KLine for StockDailyPrice {
@@ -132,5 +134,10 @@ impl KLine for StockDailyPrice {
         } else {
             (self.high.clone() - self.open.clone()).abs()
         }
+    }
+
+    fn get_middle_price(&self) -> BigDecimal {
+        let r = (self.open.clone() + self.close.clone()) / Decimal::from(2);
+        r.abs()
     }
 }
