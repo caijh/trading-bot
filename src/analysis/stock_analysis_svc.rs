@@ -17,7 +17,7 @@ const DOWN_AT_LEAST_DAYS: i32 = 3;
 pub async fn analysis_index(
     params: &IndexAnalysisParams,
 ) -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
-    let index = &params.code;
+    let index = &params.code.clone().unwrap();
     let index = get_stock_index(index).await?;
     let stocks = get_constituent_stocks(&index.code).await?;
     let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
@@ -170,7 +170,7 @@ pub async fn analysis_stock(
     Ok(analyzed_stock)
 }
 
-pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
+pub async fn analysis_funds(code: Option<String>) -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
     let dao = application_context
         .get_bean_factory()
@@ -181,6 +181,12 @@ pub async fn analysis_funds() -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
     if funds.is_empty() {
         return Ok(focus_stocks);
     }
+
+    // filter funds by code if provided
+    let funds= match code {
+        None => funds,
+        Some(code) => funds.into_iter().filter(|f| f.code == code).collect(),
+    };
 
     for fund in funds {
         let prices = get_stock_daily_price(&fund.code).await?;
