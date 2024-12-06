@@ -56,7 +56,9 @@ impl Runnable for SyncAllIndexStockPriceJob {
     }
 }
 
-pub struct AnalysisIndexStocksJob;
+pub struct AnalysisIndexStocksJob {
+    pub code: Option<String>
+}
 
 #[async_trait]
 impl Runnable for AnalysisIndexStocksJob {
@@ -68,9 +70,17 @@ impl Runnable for AnalysisIndexStocksJob {
             .get::<DbService>()
             .dao();
         let indexes = StockIndex::select_all(dao).await.unwrap();
+        // filter indexes by code
+        let indexes = match &self.code {
+            Some(code) => indexes
+                .into_iter()
+                .filter(|index| &index.code == code)
+                .collect(),
+            None => indexes,
+        };
         for index in indexes {
             let params = IndexAnalysisParams {
-                code: index.code.clone(),
+                code: Some(index.code.clone()),
             };
             let result = analysis_index(&params).await;
             match result {
@@ -86,13 +96,16 @@ impl Runnable for AnalysisIndexStocksJob {
     }
 }
 
-pub struct AnalysisFundsJob;
+pub struct AnalysisFundsJob {
+    pub code: Option<String>
+}
 
 #[async_trait]
 impl Runnable for AnalysisFundsJob {
     async fn run(&self) {
         info!("AnalysisFundsJob run ...");
-        let result = stock_analysis_svc::analysis_funds().await;
+        let code = self.code.clone();
+        let result = stock_analysis_svc::analysis_funds(code).await;
         match result {
             Ok(stocks) => {
                 spawn(notification_index_stocks_price(

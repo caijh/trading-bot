@@ -11,7 +11,12 @@ use crate::job::jobs::{AnalysisFundsJob, AnalysisIndexStocksJob};
 
 #[derive(Serialize, Deserialize)]
 pub struct IndexAnalysisParams {
-    pub code: String,
+    pub code: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FundsAnalysisParams {
+    pub code: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -30,23 +35,30 @@ pub struct StockAnalysisParams {
 /// 返回一个实现了`IntoResponse`的类型，用于生成HTTP响应。
 #[get("/analysis/index")]
 async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoResponse {
-    let r = stock_analysis_svc::analysis_index(&params).await;
-
-    RespBody::result(&r).response()
-}
-
-/// 在后台分析所有指数中的股票
-///
-/// 该函数通过异步任务启动一个分析股票指数的作业，而不阻塞主线程
-#[get("/analysis/index/all")]
-async fn analysis_index_all() -> impl IntoResponse {
+    let code  = params.code.clone();
     spawn(async {
-        let job = AnalysisIndexStocksJob;
+        let job = AnalysisIndexStocksJob { code };
 
         job.run().await;
     });
 
     RespBody::<()>::success_info("Analysis index Stocks in background")
+}
+
+/// 获取基金分析结果
+///
+/// # Returns
+/// * `impl IntoResponse` - 返回一个实现了`IntoResponse` trait的响应对象，包含基金分析数据
+#[get("/analysis/funds")]
+async fn analysis_funds(Query(params): Query<FundsAnalysisParams>) -> impl IntoResponse {
+    let code = params.code.clone();
+    spawn(async {
+        let job = AnalysisFundsJob {code};
+
+        job.run().await;
+    });
+
+    RespBody::<()>::success_info("Analysis fund Stocks in background")
 }
 
 /// 调用股票分析服务进行处理，并返回分析结果。
@@ -64,31 +76,4 @@ async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoR
     let r = stock_analysis_svc::analysis_stock(&params).await;
 
     RespBody::result(&r).response()
-}
-
-/// 获取基金分析结果
-///
-/// # Returns
-/// * `impl IntoResponse` - 返回一个实现了`IntoResponse` trait的响应对象，包含基金分析数据
-#[get("/analysis/funds")]
-async fn analysis_funds() -> impl IntoResponse {
-    let r = stock_analysis_svc::analysis_funds().await;
-
-    RespBody::result(&r).response()
-}
-
-/// 在后台执行基金分析任务
-///
-/// 本函数通过异步方式启动一个基金分析任务，该任务在后台运行，不影响当前请求的响应
-/// 主要用途是当用户请求全面的基金分析时，立即返回响应信息，避免用户等待长时间的分析过程完成
-#[get("/analysis/funds/all")]
-async fn analysis_funds_all() -> impl IntoResponse {
-    // 异步执行基金分析任务
-    spawn(async {
-        let job = AnalysisFundsJob;
-
-        job.run().await;
-    });
-
-    RespBody::<()>::success_info("Analysis fund Stocks in background")
 }
