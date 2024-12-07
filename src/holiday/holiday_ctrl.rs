@@ -7,9 +7,7 @@ use chrono::Local;
 use crate::holiday::holiday_svc::is_holiday;
 use crate::job::jobs::SyncHolidayJob;
 
-/// `today_is_holiday`是一个公共异步函数
-///
-/// 此函数检查今天是否为假日。如果今天是假日，返回`true`；否则，返回`false`.
+/// 检查今天是否为假日。如果今天是假日，返回`true`；否则，返回`false`.
 ///
 /// 这个函数首先获取当前的本地时间，然后用`is_holiday`函数来检查这个日期是否为假日。
 ///
@@ -28,6 +26,7 @@ async fn today_is_holiday() -> impl IntoResponse {
 #[get("/holiday/sync")]
 async fn sync() -> impl IntoResponse {
     let job = SyncHolidayJob;
+
     job.run().await;
 
     RespBody::<()>::success_info("Sync Done")

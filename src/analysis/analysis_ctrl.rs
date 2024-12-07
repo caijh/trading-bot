@@ -6,7 +6,7 @@ use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use tokio::spawn;
 
-use crate::analysis::stock_analysis_svc;
+use crate::analysis::analysis_svc;
 use crate::job::jobs::{AnalysisFundsJob, AnalysisIndexStocksJob};
 
 #[derive(Serialize, Deserialize)]
@@ -35,7 +35,7 @@ pub struct StockAnalysisParams {
 /// 返回一个实现了`IntoResponse`的类型，用于生成HTTP响应。
 #[get("/analysis/index")]
 async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoResponse {
-    let code  = params.code.clone();
+    let code = params.code.clone();
     spawn(async {
         let job = AnalysisIndexStocksJob { code };
 
@@ -53,7 +53,7 @@ async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoR
 async fn analysis_funds(Query(params): Query<FundsAnalysisParams>) -> impl IntoResponse {
     let code = params.code.clone();
     spawn(async {
-        let job = AnalysisFundsJob {code};
+        let job = AnalysisFundsJob { code };
 
         job.run().await;
     });
@@ -73,7 +73,7 @@ async fn analysis_funds(Query(params): Query<FundsAnalysisParams>) -> impl IntoR
 /// 如果分析过程中遇到错误，将返回一个表示错误的HTTP响应。
 #[get("/analysis/stock")]
 async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoResponse {
-    let r = stock_analysis_svc::analysis_stock(&params).await;
+    let r = analysis_svc::analysis_stock(&params).await;
 
     RespBody::result(&r).response()
 }

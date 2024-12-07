@@ -1,14 +1,11 @@
-use crate::analysis::stock_analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
-use crate::analysis::stock_analysis_model::AnalyzedStock;
+use crate::analysis::analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
+use crate::analysis::analysis_model::AnalyzedStock;
 use crate::analysis::stock_calculate::{down_at_least, first_max_min, mean};
 use crate::analysis::stock_pattern::{get_stock_pattern, StockPattern};
-use crate::fund::fund_model::Fund;
-use crate::index::stock_index_svc::{get_constituent_stocks, get_stock_index};
-use crate::stock::stock_model::Stock;
+use crate::fund::fund_svc;
+use crate::index::index_svc::{get_constituent_stocks, get_stock_index};
+use crate::stock::stock_svc;
 use crate::stock::stock_svc::get_stock_daily_price;
-use application_beans::factory::bean_factory::BeanFactory;
-use application_context::context::application_context::APPLICATION_CONTEXT;
-use database::DbService;
 use std::error::Error;
 use tracing::info;
 
@@ -95,17 +92,7 @@ pub async fn analysis_index(
 pub async fn analysis_stock(
     params: &StockAnalysisParams,
 ) -> Result<Option<AnalyzedStock>, Box<dyn Error>> {
-    let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let stock = Stock::select_by_code(dao, &params.code).await?;
-    if stock.is_none() {
-        return Err("Stock not found".into());
-    }
-
-    let stock = stock.unwrap();
+    let stock = stock_svc::get_stock(&params.code).await?;
     let prices = get_stock_daily_price(&stock.code).await?;
     let pattern = get_stock_pattern(&prices);
     let (max, min) = first_max_min(&prices);
@@ -171,19 +158,14 @@ pub async fn analysis_stock(
 }
 
 pub async fn analysis_funds(code: Option<String>) -> Result<Vec<AnalyzedStock>, Box<dyn Error>> {
-    let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let funds = Fund::select_all(dao).await?;
+    let funds = fund_svc::find_all().await?;
     let mut focus_stocks: Vec<AnalyzedStock> = Vec::new();
     if funds.is_empty() {
         return Ok(focus_stocks);
     }
 
     // filter funds by code if provided
-    let funds= match code {
+    let funds = match code {
         None => funds,
         Some(code) => funds.into_iter().filter(|f| f.code == code).collect(),
     };

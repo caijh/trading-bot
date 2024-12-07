@@ -2,16 +2,17 @@ use sea_orm::entity::prelude::*;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, DeriveRelation, EnumIter};
 use serde::{Deserialize, Serialize};
 
-/// 休市日期
-#[derive(Serialize, Deserialize, DeriveEntityModel, Debug, Clone)]
-#[sea_orm(table_name = "market_holiday")]
+#[derive(Serialize, Deserialize, Clone, Debug, DeriveEntityModel)]
+#[sea_orm(table_name = "stock_index")]
+/// 指数
 pub struct Model {
-    /// id 为日期, 格式为 yyyyMMdd
+    /// 指数代码
     #[sea_orm(primary_key)]
-    pub id: u64,
-    pub year: u16,
-    pub month: u8,
-    pub day: u8,
+    pub code: String,
+    /// 指数名称
+    pub name: String,
+    /// 交易所
+    pub exchange: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

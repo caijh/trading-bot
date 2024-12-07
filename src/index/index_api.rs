@@ -1,5 +1,5 @@
 use crate::exchange::exchange_model::Exchange;
-use crate::stock::stock_model::Stock;
+use crate::stock::stock_model::Model as Stock;
 use calamine::{open_workbook, Reader, Xls};
 use rand::Rng;
 use serde_json::Value;
@@ -31,6 +31,7 @@ pub async fn get_stocks(exchange: &Exchange, index: &str) -> Result<Vec<Stock>, 
                 index,
                 rand::thread_rng().gen_range(1000..9999)
             );
+            info!("Query Index Stocks from url = {}", url);
             let response = Request::get_response(&url).await?;
             let data: Value = response.json().await?;
             let index_series_list = data.get("indexSeriesList").unwrap().as_array().unwrap();

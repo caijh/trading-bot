@@ -3,15 +3,14 @@ use std::fmt::Formatter;
 use std::io::Cursor;
 use std::str::FromStr;
 
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, FromPrimitive};
 use polars::datatypes::DataType;
 use polars::io::SerReader;
 use polars::prelude::{col, IntoLazy, JsonReader};
-use rbatis::rbdc::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::analysis::stock_calculate::ma;
-use crate::stock::stock_model::{KLine, StockDailyPrice};
+use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum StockPattern {
@@ -69,8 +68,8 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
         }
 
         // 十字星
-        let p: Decimal = open.clone() / close.clone();
-        if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
+        let p: BigDecimal = open.clone() / close.clone();
+        if p > BigDecimal::from_str("0.999").unwrap() && lower_shadow > upper_shadow {
             return StockPattern::DojiStar;
         }
 
@@ -90,7 +89,7 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
                 }
 
                 let mid_price =
-                    (pre_open.clone() + pre_close.clone()) / Decimal::from_str("2").unwrap();
+                    (pre_open.clone() + pre_close.clone()) / BigDecimal::from_str("2").unwrap();
                 if price.is_up()
                     && price.open < pre_close.clone()
                     && close > &mid_price
@@ -114,8 +113,8 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
             return StockPattern::LongLowerShadow;
         }
 
-        let p: Decimal = close.clone() / open.clone();
-        if p > Decimal::new("0.999").unwrap() && lower_shadow > upper_shadow {
+        let p: BigDecimal = close.clone() / open.clone();
+        if p > BigDecimal::from_str("0.999").unwrap() && lower_shadow > upper_shadow {
             return StockPattern::DojiStar;
         }
     }
@@ -166,8 +165,8 @@ pub fn get_stock_pattern(prices: &[StockDailyPrice]) -> StockPattern {
 
         let pre_price = prices.get(prices.len() - 2).unwrap();
         if price.is_up()
-            && price.close > Decimal::from_f32(*ma120_last).unwrap()
-            && pre_price.close < Decimal::from_f32(*ma120_last_pre).unwrap()
+            && price.close > BigDecimal::from_f32(*ma120_last).unwrap()
+            && pre_price.close < BigDecimal::from_f32(*ma120_last_pre).unwrap()
         {
             return StockPattern::UpMA120;
         }

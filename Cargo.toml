@@ -28,11 +28,9 @@ tracing = "0.1.40"
 #tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 # database
-rbatis = "4.5.30"
-rbdc-mysql = "4.5.8"
-rbs = "4.5.18"
-database-common = {git = "https://caijh@bitbucket.org/bytebinary/database-common-rs.git"}
-database = {git = "https://caijh@bitbucket.org/bytebinary/database-rs.git"}
+database-common = { git = "https://github.com/caijh/application-rs.git" }
+database-mysql-seaorm = { git = "https://github.com/caijh/application-rs.git" }
+sea-orm = { version = "1.0.1", features = ["sqlx-mysql", "runtime-tokio-rustls", "macros", "with-bigdecimal", "with-uuid", "with-json", "with-chrono", "with-time"] }
 
 # redis
 redis = { version = "0.24.0", features = ["tls-native-tls"] }
@@ -57,12 +55,10 @@ bigdecimal = "0.4.5"
 polars = { version = "0.43.1", features = ["json", "lazy"] }
 chrono-tz = "0.10.0"
 tokio-cron-scheduler = { version = "0.13.0", features = ["signal"] }
-anyhow = "1.0.89"
 notification = { git = "https://caijh@bitbucket.org/bytebinary/notification-rs.git" }
 tempfile = "3.12.0"
 uuid = { version = "1.10.0", features = ["std", "v4"] }
 regex = "1.11.1"
-log = "0.4.22"
 lazy_static = "1.5.0"
 
 [features]
