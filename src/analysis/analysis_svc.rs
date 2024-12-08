@@ -39,6 +39,11 @@ pub async fn analysis_stock(
 ) -> Result<Option<AnalyzedStock>, Box<dyn Error>> {
     let stock = stock_svc::get_stock(&params.code).await?;
     let prices = get_stock_daily_price(&stock.code).await?;
+
+    if prices.len() < 2 {
+        return Ok(None);
+    }
+
     let json = serde_json::to_string(&prices).unwrap();
     let polars = JsonReader::new(Cursor::new(json)).finish();
     let df = polars?;
