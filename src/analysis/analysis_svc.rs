@@ -10,6 +10,7 @@ use polars::io::SerReader;
 use polars::prelude::JsonReader;
 use std::error::Error;
 use std::io::Cursor;
+use std::ops::Not;
 use tracing::info;
 
 pub async fn analysis_index(
@@ -25,7 +26,9 @@ pub async fn analysis_index(
         };
         let r = analysis_stock(&params).await?;
         if let Some(item) = r {
-            focus_stocks.push(item);
+            if item.pattern.is_empty().not() {
+                focus_stocks.push(item);
+            }
         }
     }
     Ok(focus_stocks)
@@ -48,14 +51,10 @@ pub async fn analysis_stock(
             match_patterns.push(pattern.name());
         }
     }
-    let mut analyzed_stock = None;
-    if match_patterns.is_empty() {
-        return Ok(analyzed_stock);
-    }
 
     let (max, min) = first_max_min(&df);
     let current = prices.last().unwrap().close.clone();
-    analyzed_stock = Some(AnalyzedStock {
+    let analyzed_stock = Some(AnalyzedStock {
         code: stock.code.to_string(),
         name: stock.name.to_string(),
         current,
@@ -84,8 +83,10 @@ pub async fn analysis_funds(code: Option<String>) -> Result<Vec<AnalyzedStock>, 
             code: fund.code.clone(),
         };
         let r = analysis_stock(&params).await?;
-        if r.is_some() {
-            focus_stocks.push(r.unwrap());
+        if let Some(item) = r {
+            if item.pattern.is_empty().not() {
+                focus_stocks.push(item);
+            }
         }
     }
     Ok(focus_stocks)
