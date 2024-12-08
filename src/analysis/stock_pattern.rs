@@ -101,6 +101,9 @@ pub struct PiercingPattern {}
 
 impl StockPattern for PiercingPattern {
     fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
+        if prices.len() < 2 {
+            return false;
+        }
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let mid_price = pre_price.get_middle_price();
