@@ -349,7 +349,7 @@ pub async fn get_stock_daily_price_from_cache(
             // 从数据库获取
             let prices = stock_price_model::Entity::find()
                 .filter(stock_price_model::Column::Code.eq(&stock.code))
-                .order_by_desc(stock_price_model::Column::Date)
+                .order_by_asc(stock_price_model::Column::Date)
                 .all(&dao.connection)
                 .await?;
             Ok(prices)

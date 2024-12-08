@@ -1,10 +1,9 @@
 use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
 use bigdecimal::{BigDecimal, FromPrimitive, RoundingMode};
 use polars::datatypes::DataType;
-use polars::io::SerReader;
-use polars::prelude::{col, IntoLazy, JsonReader};
+use polars::frame::DataFrame;
+use polars::prelude::{col, IntoLazy};
 use polars::series::Series;
-use std::io::Cursor;
 use std::str::FromStr;
 
 pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
@@ -71,11 +70,8 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
 /// or smaller than the current min
 ///
 /// return the first max and min
-pub fn first_max_min(prices: &[StockDailyPrice]) -> (BigDecimal, BigDecimal) {
-    let json = serde_json::to_string(prices).unwrap();
-    let polars = JsonReader::new(Cursor::new(json)).finish();
-    let df = polars.unwrap();
-    let close_df = df
+pub fn first_max_min(prices: &DataFrame) -> (BigDecimal, BigDecimal) {
+    let close_df = prices
         .clone()
         .lazy()
         .select([col("close").cast(DataType::Float32)])

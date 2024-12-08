@@ -1,7 +1,6 @@
 use sea_orm::entity::prelude::*;
 use sea_orm::{ActiveModelBehavior, DeriveEntityModel, DeriveRelation, EnumIter};
 use serde::{Deserialize, Serialize};
-use std::ops::Not;
 
 #[derive(Debug, Serialize, Deserialize, Clone, DeriveEntityModel)]
 #[sea_orm(table_name = "stock_daily_price")]
@@ -52,35 +51,38 @@ pub trait KLine {
 
 impl KLine for Model {
     fn is_up(&self) -> bool {
-        self.open < self.close
+        self.close >= self.open
     }
 
     fn is_down(&self) -> bool {
-        self.open > self.close
+        self.close < self.open
     }
 
     fn get_real_body(&self) -> BigDecimal {
-        (self.open.clone() - self.close.clone()).abs()
+        if self.is_up() {
+            self.close.clone() - self.open.clone()
+        } else {
+            self.open.clone() - self.close.clone()
+        }
     }
 
     fn get_lower_shadow(&self) -> BigDecimal {
-        if self.is_down().not() {
-            (self.low.clone() - self.open.clone()).abs()
+        if self.is_up() {
+            self.open.clone() - self.low.clone()
         } else {
-            (self.low.clone() - self.close.clone()).abs()
+            self.close.clone() - self.low.clone()
         }
     }
 
     fn get_upper_shadow(&self) -> BigDecimal {
-        if self.is_down().not() {
-            (self.high.clone() - self.close.clone()).abs()
+        if self.is_up() {
+            self.high.clone() - self.close.clone()
         } else {
-            (self.high.clone() - self.open.clone()).abs()
+            self.high.clone() - self.open.clone()
         }
     }
 
     fn get_middle_price(&self) -> BigDecimal {
-        let r = (self.open.clone() + self.close.clone()) / BigDecimal::from(2);
-        r
+        (self.open.clone() + self.close.clone()) / BigDecimal::from(2)
     }
 }

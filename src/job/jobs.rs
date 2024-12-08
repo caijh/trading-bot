@@ -155,10 +155,11 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
     let title = "股票关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks {
+        let patterns = stock.pattern.join(",");
         content.push_str(
             format!(
-                "{:<5} {} {}, C: {}, MIN: {}, MAX: {}\n",
-                stock.name, stock.code, stock.pattern, stock.current, stock.min, stock.max,
+                "{:<5} {} C: {} MIN: {} MAX: {} {}\n",
+                stock.name, stock.code, stock.current, stock.min, stock.max, patterns
             )
             .as_str(),
         );

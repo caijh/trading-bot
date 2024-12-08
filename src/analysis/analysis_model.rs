@@ -1,4 +1,3 @@
-use crate::analysis::stock_pattern::StockPattern;
 use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 
@@ -9,12 +8,12 @@ pub struct AnalyzedStock {
     pub code: String,
     /// 股票名称。
     pub name: String,
+    /// current price
+    pub current: BigDecimal,
     /// min recent
     pub min: BigDecimal,
     /// max recent
     pub max: BigDecimal,
-    /// current price
-    pub current: BigDecimal,
     /// 股票的技术分析模式，用于描述股票价格走势的特定模式。
-    pub pattern: StockPattern,
+    pub pattern: Vec<String>,
 }

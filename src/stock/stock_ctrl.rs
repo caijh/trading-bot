@@ -1,4 +1,5 @@
-use crate::analysis::stock_pattern::get_stock_pattern;
+use crate::analysis::analysis_ctrl::StockAnalysisParams;
+use crate::analysis::analysis_svc;
 use crate::job::jobs::SyncStocksJob;
 use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
 use application_core::lang::runnable::Runnable;
@@ -51,9 +52,7 @@ async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
 
 #[get("/stock/pattern")]
 async fn stock_pattern(Query(params): Query<StockParams>) -> impl IntoResponse {
-    let prices = get_stock_daily_price(&params.code).await.unwrap();
+    let r = analysis_svc::analysis_stock(&StockAnalysisParams { code: params.code }).await;
 
-    let pattern = get_stock_pattern(&prices);
-
-    RespBody::success(&pattern).response()
+    RespBody::result(&r).response()
 }
