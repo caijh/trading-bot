@@ -1,7 +1,5 @@
-use rbatis::rbdc::Decimal;
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
-
-use crate::analysis::stock_pattern::StockPattern;
 
 /// AnalyzedStock 结构体代表一只经过分析的股票，包含股票的基本信息和技术分析模式。
 #[derive(Serialize, Deserialize, Clone)]
@@ -10,12 +8,12 @@ pub struct AnalyzedStock {
     pub code: String,
     /// 股票名称。
     pub name: String,
-    /// 股票的技术分析模式，用于描述股票价格走势的特定模式。
-    pub pattern: StockPattern,
-    /// min recent
-    pub min: Decimal,
-    /// max recent
-    pub max: Decimal,
     /// current price
-    pub current: Decimal,
+    pub current: BigDecimal,
+    /// min recent
+    pub min: BigDecimal,
+    /// max recent
+    pub max: BigDecimal,
+    /// 股票的技术分析模式，用于描述股票价格走势的特定模式。
+    pub pattern: Vec<String>,
 }

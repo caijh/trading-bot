@@ -1,10 +1,12 @@
 use crate::exchange::exchange_model::Exchange;
-use crate::index::stock_index_api;
-use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
+use crate::index::index_constituent_model::SyncIndexConstituents;
+use crate::index::{index_api, index_constituent_model, index_model};
 use crate::stock::stock_svc::sync_stock_daily_price;
 use application_beans::factory::bean_factory::BeanFactory;
 use application_context::context::application_context::APPLICATION_CONTEXT;
-use database::DbService;
+use database_mysql_seaorm::Dao;
+use sea_orm::{ColumnTrait, ModelTrait, Set, TryIntoModel};
+use sea_orm::{EntityTrait, QueryFilter};
 use std::error::Error;
 use std::ops::Not;
 use std::str::FromStr;
@@ -22,43 +24,46 @@ use std::str::FromStr;
 /// ```
 ///
 /// ```
-pub async fn get_constituent_stocks(index: &str) -> Result<Vec<IndexConstituent>, Box<dyn Error>> {
+pub async fn get_constituent_stocks(
+    index: &str,
+) -> Result<Vec<index_constituent_model::Model>, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let stocks = IndexConstituent::select_by_column(dao, "index_code", &index.code).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    let stocks = index_constituent_model::Entity::find()
+        .filter(index_constituent_model::Column::IndexCode.eq(&index.code))
+        .all(&dao.connection)
+        .await?;
     Ok(stocks)
 }
 
 pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
     let exchange = Exchange::from_str(&index.exchange)?;
-    let stocks = stock_index_api::get_stocks(&exchange, &index.code).await?;
+    let stocks = index_api::get_stocks(&exchange, &index.code).await?;
 
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let old_constituents =
-        IndexConstituent::select_by_column(dao, "index_code", &index.code).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    let old_constituents = index_constituent_model::Entity::find()
+        .filter(index_constituent_model::Column::IndexCode.eq(&index.code))
+        .all(&dao.connection)
+        .await?;
     let old_constituent_codes = old_constituents
         .iter()
         .map(|c| c.stock_code.clone())
         .collect::<Vec<String>>();
 
     let mut constituents_to_add = Vec::new();
+    let mut constituents_added = Vec::new();
     let mut stock_codes = Vec::new();
     for stock in stocks {
         if !old_constituent_codes.contains(&stock.code) {
-            let constituent = IndexConstituent {
-                index_code: index.code.to_string(),
-                stock_code: stock.code.to_string(),
-                stock_name: stock.name.to_string(),
+            let constituent = index_constituent_model::ActiveModel {
+                index_code: Set(index.code.to_string()),
+                stock_code: Set(stock.code.to_string()),
+                stock_name: Set(stock.name.to_string()),
             };
+            constituents_added.push(constituent.clone().try_into_model()?);
             constituents_to_add.push(constituent);
         }
         stock_codes.push(stock.code);
@@ -72,32 +77,27 @@ pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box
     }
 
     if constituents_to_add.is_empty().not() {
-        IndexConstituent::insert_batch(dao, &constituents_to_add, constituents_to_add.len() as u64)
+        index_constituent_model::Entity::insert_many(constituents_to_add)
+            .exec(&dao.connection)
             .await?;
     }
     if constituents_to_remove.is_empty().not() {
         for index_constituent in constituents_to_remove.clone() {
-            IndexConstituent::delete_by_index_code_stock_code(
-                dao,
-                &index_constituent.index_code,
-                &index_constituent.stock_code,
-            )
-            .await?;
+            index_constituent.delete(&dao.connection).await?;
         }
     }
     Ok(SyncIndexConstituents {
-        added: constituents_to_add,
+        added: constituents_added,
         removed: constituents_to_remove,
     })
 }
 
-pub async fn get_stock_index(index: &str) -> Result<StockIndex, Box<dyn Error>> {
+pub async fn get_stock_index(index: &str) -> Result<index_model::Model, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let index = StockIndex::select_by_code(dao, index).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    let index = index_model::Entity::find_by_id(index)
+        .one(&dao.connection)
+        .await?;
     match index {
         None => Err("Stock index is no Supported".into()),
         Some(index) => Ok(index),
@@ -112,12 +112,9 @@ pub async fn sync_constituent_stocks_daily_price(index: &str) -> Result<(), Box<
     Ok(())
 }
 
-pub async fn get_all_stock_index() -> Result<Vec<StockIndex>, Box<dyn Error>> {
+pub async fn get_all_stock_index() -> Result<Vec<index_model::Model>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let indexes = StockIndex::select_all(dao).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    let indexes = index_model::Entity::find().all(&dao.connection).await?;
     Ok(indexes)
 }

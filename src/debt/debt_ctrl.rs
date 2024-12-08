@@ -11,7 +11,7 @@ struct DebtParams {
     code: String,
 }
 
-/// 获取债务价格信息
+/// 获取债券价格信息
 ///
 /// 该函数通过HTTP GET请求获取国债逆回购价格信息，请求路径为"/debt/price"
 /// 使用`Query`提取请求参数，参数类型为`DebtParams`

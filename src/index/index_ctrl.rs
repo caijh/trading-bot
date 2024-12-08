@@ -1,5 +1,3 @@
-
-use anyhow::Ok;
 use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
@@ -7,31 +5,28 @@ use axum::extract::Path;
 use axum::response::IntoResponse;
 use tokio::spawn;
 
-use crate::index::stock_index_svc;
-use crate::job::jobs::{SyncIndexStocksJob, SyncAllIndexStockPriceJob};
+use crate::index::index_svc;
+use crate::job::jobs::{SyncAllIndexStockPriceJob, SyncIndexStocksJob};
 
 #[get("/index/:code/stocks")]
 pub async fn get_stocks(Path(code): Path<String>) -> impl IntoResponse {
-    let r = stock_index_svc::get_constituent_stocks(&code).await;
+    let r = index_svc::get_constituent_stocks(&code).await;
 
     RespBody::result(&r).response()
 }
 
 #[get("/index/sync/:code")]
 pub async fn sync(Path(code): Path<String>) -> impl IntoResponse {
-    let r = stock_index_svc::sync_constituents(&code).await;
+    let r = index_svc::sync_constituents(&code).await;
 
     RespBody::result(&r).response()
 }
 
-#[get("/index/sync/all")]
+#[get("/index/sync")]
 pub async fn sync_all() -> impl IntoResponse {
     spawn(async {
         let job = SyncIndexStocksJob;
-
         job.run().await;
-
-        Ok(())
     });
 
     RespBody::<()>::success_info("Sync index Stocks in background")
@@ -44,8 +39,6 @@ pub async fn sync_index_stock_price() -> impl IntoResponse {
         let job = SyncAllIndexStockPriceJob;
 
         job.run().await;
-
-        Ok(())
     });
 
     RespBody::<()>::success_info("Sync index Stocks prices in background")

@@ -2,7 +2,6 @@ use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use rand::{thread_rng, Rng};
-use rbatis::rbatis_codegen::ops::AsProxy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::error::Error;
@@ -11,7 +10,7 @@ use tracing::info;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
-use crate::stock::stock_model::Stock;
+use crate::stock::stock_model;
 use crate::stock::stock_svc::get_stock;
 use crate::token::token_svc;
 
@@ -37,7 +36,7 @@ pub struct StockDailyPriceDTO {
 }
 
 pub async fn get_stock_daily_price(
-    stock: &Stock,
+    stock: &stock_model::Model,
 ) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let exchange = Exchange::from_str(stock.exchange.as_str())?;
     let application_context = APPLICATION_CONTEXT.read().await;
@@ -218,10 +217,6 @@ pub struct StockPriceDTO {
 
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
     let stock = get_stock(code).await?;
-    let stock = match stock {
-        Some(s) => s,
-        None => return Err("Stock not found".into()),
-    };
     let code = if let Some(code) = stock.to_code {
         code
     } else {
@@ -255,7 +250,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 time
             };
             Ok(StockPriceDTO {
-                h: snap.get(3).unwrap().to_string().string(),
+                h: snap.get(3).unwrap().to_string(),
                 l: snap.get(4).unwrap().to_string(),
                 o: snap.get(2).unwrap().to_string(),
                 pc: snap.get(7).unwrap().to_string(),

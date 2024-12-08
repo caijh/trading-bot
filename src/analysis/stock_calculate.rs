@@ -1,11 +1,9 @@
-use crate::stock::stock_model::{KLine, StockDailyPrice};
-use bigdecimal::RoundingMode;
+use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
+use bigdecimal::{BigDecimal, FromPrimitive, RoundingMode};
 use polars::datatypes::DataType;
-use polars::io::SerReader;
-use polars::prelude::{col, IntoLazy, JsonReader};
+use polars::frame::DataFrame;
+use polars::prelude::{col, IntoLazy};
 use polars::series::Series;
-use rbatis::rbdc::Decimal;
-use std::io::Cursor;
 use std::str::FromStr;
 
 pub fn ma(prices: &Series, n: usize) -> Vec<f32> {
@@ -47,7 +45,7 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
     count > n
 }
 
-pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
+pub fn max(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
     let mut max = prices.last().unwrap().close.clone();
     let len = prices.len();
     let n = if len < n { len } else { n };
@@ -72,11 +70,8 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> Decimal {
 /// or smaller than the current min
 ///
 /// return the first max and min
-pub fn first_max_min(prices: &[StockDailyPrice]) -> (Decimal, Decimal) {
-    let json = serde_json::to_string(prices).unwrap();
-    let polars = JsonReader::new(Cursor::new(json)).finish();
-    let df = polars.unwrap();
-    let close_df = df
+pub fn first_max_min(prices: &DataFrame) -> (BigDecimal, BigDecimal) {
+    let close_df = prices
         .clone()
         .lazy()
         .select([col("close").cast(DataType::Float32)])
@@ -88,7 +83,7 @@ pub fn first_max_min(prices: &[StockDailyPrice]) -> (Decimal, Decimal) {
     (max, min)
 }
 
-pub fn find_first_max(prices: &[f32]) -> Decimal {
+pub fn find_first_max(prices: &[f32]) -> BigDecimal {
     let mut max = prices.last().unwrap();
     let len = prices.len();
     for i in 0..len {
@@ -104,13 +99,12 @@ pub fn find_first_max(prices: &[f32]) -> Decimal {
             }
         }
     }
-    let decimal = Decimal::from_f32(*max)
+    BigDecimal::from_f32(*max)
         .unwrap()
-        .with_scale_round(2, RoundingMode::Up);
-    Decimal::from(decimal)
+        .with_scale_round(2, RoundingMode::Up)
 }
 
-pub fn find_first_min(prices: &[f32]) -> Decimal {
+pub fn find_first_min(prices: &[f32]) -> BigDecimal {
     let mut min = prices.last().unwrap();
     let len = prices.len();
     for i in 0..len {
@@ -126,13 +120,12 @@ pub fn find_first_min(prices: &[f32]) -> Decimal {
             }
         }
     }
-    let decimal = Decimal::from_f32(*min)
+    BigDecimal::from_f32(*min)
         .unwrap()
-        .with_scale_round(2, RoundingMode::Up);
-    Decimal::from(decimal)
+        .with_scale_round(2, RoundingMode::Up)
 }
 
-pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
+pub fn min(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
     let mut min = prices.last().unwrap().low.clone();
     let len = prices.len();
     let n = if len < n { len } else { n };
@@ -148,8 +141,8 @@ pub fn min(prices: &[StockDailyPrice], n: usize) -> Decimal {
     min
 }
 
-pub fn mean(prices: &[StockDailyPrice], n: usize) -> Decimal {
-    let mut total = Decimal::from_str("0").unwrap();
+pub fn mean(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
+    let mut total = BigDecimal::from_str("0").unwrap();
     let len = prices.len();
     let n = if len < n { len } else { n };
     for i in 0..len {
@@ -159,5 +152,5 @@ pub fn mean(prices: &[StockDailyPrice], n: usize) -> Decimal {
             break;
         }
     }
-    total / Decimal::from_str(n.to_string().as_str()).unwrap()
+    total / BigDecimal::from_str(n.to_string().as_str()).unwrap()
 }

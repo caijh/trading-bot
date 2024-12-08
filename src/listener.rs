@@ -6,8 +6,8 @@ use application_boot::application_listener::ApplicationListener;
 use application_context::context::application_event::{ApplicationEvenType, ApplicationEvent};
 use application_core::env::property_resolver::PropertyResolver;
 use async_trait::async_trait;
-use database::DbService;
 use database_common::connection::DbConnection;
+use database_mysql_seaorm::Dao;
 use redis_io::{Redis, RedisConfig};
 use std::error::Error;
 
@@ -29,7 +29,7 @@ impl ApplicationListener for ApplicationContextInitializedListener {
         let db_connection = environment
             .get_property::<DbConnection>("database")
             .unwrap();
-        let database_service = DbService::create_from_connection(db_connection);
+        let database_service = Dao::new(db_connection).await;
         application_context.get_bean_factory().set(database_service);
 
         let redis_config = environment.get_property::<RedisConfig>("redis");

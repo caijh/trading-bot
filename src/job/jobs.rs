@@ -4,23 +4,27 @@ use application_core::env::property_resolver::PropertyResolver;
 use application_core::lang::runnable::Runnable;
 use application_schedule::scheduler::Scheduler;
 use async_trait::async_trait;
-use database::DbService;
+use database_mysql_seaorm::Dao;
 use notification::{Notification, NotificationConfig};
+use sea_orm::EntityTrait;
 use std::error::Error;
 use tokio::spawn;
 use tracing::{error, info};
 
-use crate::analysis::stock_analysis_ctrl::IndexAnalysisParams;
-use crate::analysis::stock_analysis_model::AnalyzedStock;
-use crate::analysis::stock_analysis_svc;
-use crate::analysis::stock_analysis_svc::analysis_index;
+use crate::analysis::analysis_ctrl::IndexAnalysisParams;
+use crate::analysis::analysis_model::AnalyzedStock;
+use crate::analysis::analysis_svc;
+use crate::analysis::analysis_svc::analysis_index;
 use crate::holiday::holiday_svc::sync_holidays;
-use crate::index::stock_index_model::{IndexConstituent, StockIndex, SyncIndexConstituents};
-use crate::index::stock_index_svc::{
+use crate::index::index_constituent_model::SyncIndexConstituents;
+use crate::index::index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
+use crate::index::{index_constituent_model, index_model};
 use crate::stock::stock_svc::sync;
 use crate::token::token_svc;
+
+use crate::index::index_model::Model as StockIndex;
 
 pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
     let scheduler = Scheduler::new().await?;
@@ -57,7 +61,7 @@ impl Runnable for SyncAllIndexStockPriceJob {
 }
 
 pub struct AnalysisIndexStocksJob {
-    pub code: Option<String>
+    pub code: Option<String>,
 }
 
 #[async_trait]
@@ -65,11 +69,11 @@ impl Runnable for AnalysisIndexStocksJob {
     async fn run(&self) {
         info!("AnalysisIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
-        let dao = application_context
-            .get_bean_factory()
-            .get::<DbService>()
-            .dao();
-        let indexes = StockIndex::select_all(dao).await.unwrap();
+        let dao = application_context.get_bean_factory().get::<Dao>();
+        let indexes = index_model::Entity::find()
+            .all(&dao.connection)
+            .await
+            .unwrap();
         // filter indexes by code
         let indexes = match &self.code {
             Some(code) => indexes
@@ -97,7 +101,7 @@ impl Runnable for AnalysisIndexStocksJob {
 }
 
 pub struct AnalysisFundsJob {
-    pub code: Option<String>
+    pub code: Option<String>,
 }
 
 #[async_trait]
@@ -105,7 +109,7 @@ impl Runnable for AnalysisFundsJob {
     async fn run(&self) {
         info!("AnalysisFundsJob run ...");
         let code = self.code.clone();
-        let result = stock_analysis_svc::analysis_funds(code).await;
+        let result = analysis_svc::analysis_funds(code).await;
         match result {
             Ok(stocks) => {
                 spawn(notification_index_stocks_price(
@@ -151,10 +155,11 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
     let title = "股票关注-".to_string() + index.name.as_str();
     let mut content = "".to_string();
     for stock in stocks {
+        let patterns = stock.pattern.join(",");
         content.push_str(
             format!(
-                "{:<5} {} {}, C: {}, MIN: {}, MAX: {}\n",
-                stock.name, stock.code, stock.pattern, stock.current, stock.min, stock.max,
+                "{:<5} {} C: {} MIN: {} MAX: {} {}\n",
+                stock.name, stock.code, stock.current, stock.min, stock.max, patterns
             )
             .as_str(),
         );
@@ -187,11 +192,11 @@ impl Runnable for SyncIndexStocksJob {
     async fn run(&self) {
         info!("SyncIndexStocksJob run ...");
         let application_context = APPLICATION_CONTEXT.read().await;
-        let dao = application_context
-            .get_bean_factory()
-            .get::<DbService>()
-            .dao();
-        let indexes = StockIndex::select_all(dao).await.unwrap();
+        let dao = application_context.get_bean_factory().get::<Dao>();
+        let indexes = index_model::Entity::find()
+            .all(&dao.connection)
+            .await
+            .unwrap();
         for index in indexes {
             let constituents = sync_constituents(&index.code).await.unwrap();
             spawn(notification_index_stocks_changed(index, constituents));
@@ -234,7 +239,7 @@ async fn notification_index_stocks_changed(
 
 async fn do_notification_index_stocks_changed(
     index: &StockIndex,
-    index_constituents: Vec<IndexConstituent>,
+    index_constituents: Vec<index_constituent_model::Model>,
     add: bool,
 ) {
     if index_constituents.is_empty() {

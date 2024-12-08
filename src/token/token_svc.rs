@@ -29,7 +29,7 @@ pub async fn set_hkex_token(token: &str) {
 
 pub async fn reset_hkex_token() -> Result<(), Box<dyn Error>> {
     let token = get_hkex_token_from_website().await?;
-    info!("token  = {}", token);
+    info!("token = {}", token);
     set_hkex_token(&token).await;
 
     Ok(())

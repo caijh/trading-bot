@@ -1,14 +1,15 @@
 use application_beans::factory::bean_factory::BeanFactory;
 use application_cache::CacheManager;
 use application_context::context::application_context::APPLICATION_CONTEXT;
+use bigdecimal::BigDecimal;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
 use chrono::{Local, Timelike};
-use database::DbService;
+use database_mysql_seaorm::Dao;
 use rand::{thread_rng, Rng};
-use rbatis::rbdc::Decimal;
-use rbatis::RBatis;
 use redis::Commands;
 use redis_io::Redis;
+use sea_orm::ActiveValue::Set;
+use sea_orm::{ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, QueryOrder};
 use serde_json::Value;
 use std::error::Error;
 use std::fs::File;
@@ -20,10 +21,11 @@ use tracing::info;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
-use crate::fund::fund_model::Fund;
+use crate::fund::fund_model;
 use crate::holiday::holiday_svc::today_is_holiday;
-use crate::stock::stock_api;
-use crate::stock::stock_model::{Stock, StockDailyPrice, StockDailyPriceSyncRecord, StockPrice};
+use crate::stock::stock_model::{Model as Stock, StockPrice};
+use crate::stock::stock_price_model::Model as StockDailyPrice;
+use crate::stock::{stock_api, stock_model, stock_price_model, sync_record_model};
 
 pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
     let exchange = Exchange::from_str(exchange)?;
@@ -278,65 +280,66 @@ pub fn read_funds_from_sz_excel(path: &Path, exchange: &str) -> Result<Vec<Stock
 /// ```
 async fn save_stocks(stocks: &[Stock]) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
+    let dao = application_context.get_bean_factory().get::<Dao>();
 
-    Stock::insert_batch(dao, stocks, stocks.len() as u64).await?;
-
+    let stocks: Vec<stock_model::ActiveModel> = stocks
+        .iter()
+        .map(|e| e.clone().into_active_model())
+        .collect();
+    stock_model::Entity::insert_many(stocks)
+        .on_empty_do_nothing()
+        .exec(&dao.connection)
+        .await?;
     Ok(())
 }
 
 async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
+    let dao = application_context.get_bean_factory().get::<Dao>();
 
     let mut funds = Vec::new();
     for stock in stocks {
-        funds.push(Fund {
-            code: stock.code.clone(),
-            name: stock.name.clone(),
-            exchange: stock.exchange.clone(),
+        funds.push(fund_model::ActiveModel {
+            code: Set(stock.code.clone()),
+            name: Set(stock.name.clone()),
+            exchange: Set(stock.exchange.clone()),
         });
     }
 
-    Fund::insert_batch(dao, &funds, funds.len() as u64).await?;
+    fund_model::Entity::insert_many(funds)
+        .on_empty_do_nothing()
+        .exec(&dao.connection)
+        .await?;
 
     Ok(())
 }
 
 pub async fn delete_stocks(exchange: &str) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-
-    Stock::delete_by_exchange(dao, exchange).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    stock_model::Entity::delete_many()
+        .filter(stock_model::Column::Exchange.eq(exchange))
+        .exec(&dao.connection)
+        .await?;
 
     Ok(())
 }
 
 pub async fn delete_funds(exchange: &str) -> Result<(), Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-
-    Fund::delete_by_column(dao, "exchange", exchange).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    fund_model::Entity::delete_many()
+        .filter(fund_model::Column::Exchange.eq(exchange))
+        .exec(&dao.connection)
+        .await?;
 
     Ok(())
 }
 
 pub async fn get_stock_daily_price_from_cache(
-    dao: &RBatis,
+    dao: &Dao,
     stock: &Stock,
-) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
+) -> Result<Vec<stock_price_model::Model>, Box<dyn Error>> {
     let client = Redis::get_client();
     let mut con = client.get_connection()?;
     let key = "Stock:".to_string() + &stock.code;
@@ -344,12 +347,16 @@ pub async fn get_stock_daily_price_from_cache(
     match value {
         None => {
             // 从数据库获取
-            let prices = StockDailyPrice::select_by_column(dao, "code", &stock.code).await?;
+            let prices = stock_price_model::Entity::find()
+                .filter(stock_price_model::Column::Code.eq(&stock.code))
+                .order_by_asc(stock_price_model::Column::Date)
+                .all(&dao.connection)
+                .await?;
             Ok(prices)
         }
         Some(value) => {
             info!("Get stock daily price from cache, code = {}", stock.code);
-            let prices: Vec<StockDailyPrice> = serde_json::from_str(&value).unwrap();
+            let prices: Vec<stock_price_model::Model> = serde_json::from_str(&value).unwrap();
             Ok(prices)
         }
     }
@@ -358,11 +365,10 @@ pub async fn get_stock_daily_price_from_cache(
 pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, Box<dyn Error>> {
     info!("Get stock daily price, code = {}", code);
     let application_context = APPLICATION_CONTEXT.read().await;
-    let dao = application_context
-        .get_bean_factory()
-        .get::<DbService>()
-        .dao();
-    let stock = Stock::select_by_code(dao, code).await?;
+    let dao = application_context.get_bean_factory().get::<Dao>();
+    let stock = stock_model::Entity::find_by_id(code)
+        .one(&dao.connection)
+        .await?;
     if stock.is_none() {
         return Err("Stock not found".into());
     }
@@ -375,19 +381,21 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
     let mut daily_prices: Vec<StockDailyPrice> =
         get_stock_daily_price_from_cache(dao, &stock).await?;
     let mut updated: bool = false;
-    let sync_record = StockDailyPriceSyncRecord::select_by_code(dao, code).await?;
+    let sync_record = sync_record_model::Entity::find_by_id(code)
+        .one(&dao.connection)
+        .await?;
     if let Some(sync_record) = sync_record {
         updated = sync_record.date == date && sync_record.updated;
     } else {
-        StockDailyPriceSyncRecord::insert(
-            dao,
-            &StockDailyPriceSyncRecord {
-                code: code.to_string(),
-                date,
-                updated: false,
-            },
-        )
-        .await?;
+        let record = sync_record_model::ActiveModel {
+            code: Set(code.to_string()),
+            date: Set(date),
+            updated: Set(false),
+        };
+        sync_record_model::Entity::insert(record)
+            .on_empty_do_nothing()
+            .exec(&dao.connection)
+            .await?;
     }
     if !updated {
         let dates: Vec<u64> = daily_prices.iter().map(|e| e.date).collect();
@@ -398,12 +406,12 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
             let daily_price = StockDailyPrice {
                 code: code.to_string(),
                 date: dto.d.parse::<u64>().unwrap(),
-                open: Decimal::new(&dto.o).unwrap(),
-                close: Decimal::new(&dto.c).unwrap(),
-                high: Decimal::new(&dto.h).unwrap(),
-                low: Decimal::new(&dto.l).unwrap(),
-                volume: Some(Decimal::new(&dto.v).unwrap()),
-                amount: Some(Decimal::new(&dto.e).unwrap()),
+                open: BigDecimal::from_str(&dto.o).unwrap(),
+                close: BigDecimal::from_str(&dto.c).unwrap(),
+                high: BigDecimal::from_str(&dto.h).unwrap(),
+                low: BigDecimal::from_str(&dto.l).unwrap(),
+                volume: Some(BigDecimal::from_str(&dto.v).unwrap()),
+                amount: Some(BigDecimal::from_str(&dto.e).unwrap()),
                 zf: None,
                 hs: None,
                 zd: None,
@@ -412,24 +420,25 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
             let d = daily_price.date;
             price_dates.push(d);
             if !dates.contains(&d) {
-                new_prices.push(daily_price.clone());
+                new_prices.push(daily_price.clone().into_active_model());
                 daily_prices.push(daily_price);
             }
         }
         if !new_prices.is_empty() {
-            StockDailyPrice::insert_batch(dao, &new_prices, new_prices.len() as u64).await?;
+            stock_price_model::Entity::insert_many(new_prices)
+                .exec(&dao.connection)
+                .await?;
         }
         if price_dates.contains(&date) || today_is_holiday().await?.is_holiday {
-            StockDailyPriceSyncRecord::update_by_column(
-                dao,
-                &StockDailyPriceSyncRecord {
-                    code: code.to_string(),
-                    date,
-                    updated: true,
-                },
-                "code",
-            )
-            .await?;
+            let record = sync_record_model::ActiveModel {
+                code: Set(code.to_string()),
+                date: Set(date),
+                updated: Set(true),
+            };
+            sync_record_model::Entity::update(record)
+                .filter(sync_record_model::Column::Code.eq(code.to_string()))
+                .exec(&dao.connection)
+                .await?;
             let client = Redis::get_client();
             let mut con = client.get_connection()?;
             let key = "Stock:".to_string() + &stock.code;
@@ -455,18 +464,18 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
 
     let price = StockPrice {
         code: code.to_string(),
-        high: Some(Decimal::new(&price_dto.h).unwrap()),
-        low: Some(Decimal::new(&price_dto.l).unwrap()),
-        open: Some(Decimal::new(&price_dto.o).unwrap()),
-        pc: Some(Decimal::new(&price_dto.pc).unwrap()),
-        price: Decimal::new(&price_dto.p).unwrap(),
-        amount: Some(Decimal::new(&price_dto.cje).unwrap()),
-        ud: Some(Decimal::new(&price_dto.ud).unwrap()),
-        volume: Some(Decimal::new(&price_dto.v).unwrap()),
+        high: Some(BigDecimal::from_str(&price_dto.h).unwrap()),
+        low: Some(BigDecimal::from_str(&price_dto.l).unwrap()),
+        open: Some(BigDecimal::from_str(&price_dto.o).unwrap()),
+        pc: Some(BigDecimal::from_str(&price_dto.pc).unwrap()),
+        price: BigDecimal::from_str(&price_dto.p).unwrap(),
+        amount: Some(BigDecimal::from_str(&price_dto.cje).unwrap()),
+        ud: Some(BigDecimal::from_str(&price_dto.ud).unwrap()),
+        volume: Some(BigDecimal::from_str(&price_dto.v).unwrap()),
         yc: if price_dto.yc.is_empty() {
             None
         } else {
-            Some(Decimal::new(&price_dto.yc).unwrap())
+            Some(BigDecimal::from_str(&price_dto.yc).unwrap())
         },
         zf: None,
         zs: None,
@@ -476,24 +485,23 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
     Ok(price)
 }
 
-pub async fn get_stock(code: &str) -> Result<Option<Stock>, Box<dyn Error>> {
+pub async fn get_stock(code: &str) -> Result<Stock, Box<dyn Error>> {
     let stock = CacheManager::get(code).await;
     if stock.is_none() {
         let application_context = APPLICATION_CONTEXT.read().await;
-        let dao = application_context
-            .get_bean_factory()
-            .get::<DbService>()
-            .dao();
-        let stock = Stock::select_by_code(dao, code).await?;
+        let dao = application_context.get_bean_factory().get::<Dao>();
+        let stock = stock_model::Entity::find_by_id(code)
+            .one(&dao.connection)
+            .await?;
         match stock {
-            None => Ok(None),
+            None => Err("Stock not found".into()),
             Some(stock) => {
                 CacheManager::set(code, &serde_json::to_string(&stock).unwrap()).await;
-                Ok(Some(stock))
+                Ok(stock)
             }
         }
     } else {
         let stock = serde_json::from_str(&stock.unwrap()).unwrap();
-        Ok(Some(stock))
+        Ok(stock)
     }
 }
