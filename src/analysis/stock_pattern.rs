@@ -22,7 +22,7 @@ pub struct HammerPattern {}
 
 impl StockPattern for HammerPattern {
     fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
-        let price = prices.last().unwrap();
+        let _price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let price = prices.last().unwrap();
         let factor_1 = BigDecimal::from_str("4").unwrap();
@@ -163,7 +163,10 @@ impl StockPattern for MaPattern {
             .unwrap();
         let ma = ma(&close_df["close"], n);
         let ma_last = ma.last().unwrap();
-        price.is_up() && price.close > BigDecimal::from_f32(*ma_last).unwrap()
+        let ma_last_pre = ma.get(ma.len()-2).unwrap();
+        price.is_up() 
+            && price.close > BigDecimal::from_f32(*ma_last).unwrap()
+            && pre_price.close < BigDecimal::from_f32(*ma_last_pre).unwrap()
     }
 
     fn name(&self) -> String {
