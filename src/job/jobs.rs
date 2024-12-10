@@ -94,7 +94,7 @@ impl Runnable for AnalysisIndexStocksJob {
                 Err(e) => {
                     error!("analysis index {} stocks fail, {}", index.name, e);
                     spawn(notification_error(
-                        format!("analysis index {} fail, {}", index.name, e).as_str(),
+                        format!("analysis index {} fail, {}", index.name, e),
                     ));
                 }
             }
@@ -128,7 +128,7 @@ impl Runnable for AnalysisFundsJob {
             Err(e) => {
                 error!("analysis fund stocks fail, {}", e);
                 spawn(notification_error(
-                    format!("analysis fund fail, {}", e).as_str(),
+                    format!("analysis fund fail, {}", e),
                 ));
             }
         }
@@ -191,7 +191,7 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
     }
 }
 
-async fn notification_error(content: &str) {
+async fn notification_error(content: String) {
     if content.is_empty() {
         return;
     }
@@ -206,7 +206,7 @@ async fn notification_error(content: &str) {
                 "{}/send/{}",
                 notification_config.url, notification_config.receiver
             );
-            Notification::create(&title, content)
+            Notification::create(&title, &content)
                 .send(
                     url.as_str(),
                     notification_config.token.as_str(),
