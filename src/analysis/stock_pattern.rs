@@ -23,15 +23,18 @@ pub struct HammerPattern {}
 impl StockPattern for HammerPattern {
     fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
         let price = prices.last().unwrap();
+        let pre_price = prices.get(prices.len() - 2).unwrap();
+        let price = prices.last().unwrap();
         let factor_1 = BigDecimal::from_str("4").unwrap();
         let factor_2 = BigDecimal::from_str("2").unwrap();
         let real_body = price.get_real_body();
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        lower_shadow > real_body.clone() * factor_2.clone()
-            && lower_shadow > upper_shadow.clone() * factor_1.clone()
+        lower_shadow >= real_body.clone() * factor_2.clone()
+            && lower_shadow >= upper_shadow.clone() * factor_1.clone()
             && down_at_least(prices, DOWN_AT_LEAST_DAYS)
+            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
 
     fn name(&self) -> String {
@@ -40,11 +43,12 @@ impl StockPattern for HammerPattern {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct MorningStarPattern {}
+pub struct DojiStarPattern {}
 
-impl StockPattern for MorningStarPattern {
+impl StockPattern for DojiStarPattern {
     fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
         let price = prices.last().unwrap();
+        let pre_price = prices.get(prices.len() - 2).unwrap();
         let factor_1 = BigDecimal::from_str("0.05").unwrap();
         let real_body = price.get_real_body();
         let lower_shadow = price.get_lower_shadow();
@@ -52,10 +56,11 @@ impl StockPattern for MorningStarPattern {
         real_body <= factor_1
             && lower_shadow > upper_shadow
             && down_at_least(prices, DOWN_AT_LEAST_DAYS)
+            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
 
     fn name(&self) -> String {
-        "启明十字星".to_string()
+        "十字星".to_string()
     }
 }
 
@@ -83,6 +88,7 @@ impl StockPattern for BullishEngulfingPattern {
                     && real_body > pre_real_body
                     && real_body > upper_shadow.clone() * factor_1.clone()
                     && down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS)
+                    && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
                 {
                     return true;
                 }
@@ -113,6 +119,7 @@ impl StockPattern for PiercingPattern {
             && price.close > mid_price
             && price.close < pre_price.open
             && down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS)
+            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
 
     fn name(&self) -> String {
@@ -130,6 +137,7 @@ impl StockPattern for UpGap {
             && pre_price.is_down()
             && price.open > pre_price.open
             && down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS)
+            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
 
     fn name(&self) -> String {
@@ -155,10 +163,7 @@ impl StockPattern for MaPattern {
             .unwrap();
         let ma = ma(&close_df["close"], n);
         let ma_last = ma.last().unwrap();
-        let m_last_pre = ma.get(ma.len() - 2).unwrap();
-        price.is_up()
-            && price.close > BigDecimal::from_f32(*ma_last).unwrap()
-            && pre_price.close < BigDecimal::from_f32(*m_last_pre).unwrap()
+        price.is_up() && price.close > BigDecimal::from_f32(*ma_last).unwrap()
     }
 
     fn name(&self) -> String {
@@ -169,10 +174,11 @@ impl StockPattern for MaPattern {
 pub fn get_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
         Box::new(HammerPattern {}),
-        Box::new(MorningStarPattern {}),
+        Box::new(DojiStarPattern {}),
         Box::new(BullishEngulfingPattern {}),
         Box::new(PiercingPattern {}),
         Box::new(UpGap {}),
+        Box::new(MaPattern { ma: 60 }),
         Box::new(MaPattern { ma: 120 }),
     ]
 }
