@@ -37,12 +37,12 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
         } else {
             break;
         }
-        if count > n {
+        if count >= n {
             break;
         }
         cur -= 1;
     }
-    count > n
+    count >= n
 }
 
 pub fn max(prices: &[StockDailyPrice], n: usize) -> BigDecimal {

@@ -10,7 +10,6 @@ use polars::io::SerReader;
 use polars::prelude::JsonReader;
 use std::error::Error;
 use std::io::Cursor;
-use std::ops::Not;
 use tracing::info;
 
 pub async fn analysis_index(
@@ -26,7 +25,7 @@ pub async fn analysis_index(
         };
         let r = analysis_stock(&params).await?;
         if let Some(item) = r {
-            if item.pattern.is_empty().not() {
+            if item.pattern.len() >= 2 {
                 focus_stocks.push(item);
             }
         }
@@ -89,7 +88,7 @@ pub async fn analysis_funds(code: Option<String>) -> Result<Vec<AnalyzedStock>, 
         };
         let r = analysis_stock(&params).await?;
         if let Some(item) = r {
-            if item.pattern.is_empty().not() {
+            if item.pattern.len() >= 2 {
                 focus_stocks.push(item);
             }
         }
