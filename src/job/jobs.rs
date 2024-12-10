@@ -93,6 +93,9 @@ impl Runnable for AnalysisIndexStocksJob {
                 }
                 Err(e) => {
                     error!("analysis index {} stocks fail, {}", index.name, e);
+                    spawn(notification_error(
+                        format!("analysis index {} fail, {}", index.name, e).as_str(),
+                    ));
                 }
             }
         }
@@ -124,6 +127,9 @@ impl Runnable for AnalysisFundsJob {
             }
             Err(e) => {
                 error!("analysis fund stocks fail, {}", e);
+                spawn(notification_error(
+                    format!("analysis fund fail, {}", e).as_str(),
+                ));
             }
         }
     }
@@ -175,6 +181,32 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
                 notification_config.url, notification_config.receiver
             );
             Notification::create(&title, &content)
+                .send(
+                    url.as_str(),
+                    notification_config.token.as_str(),
+                    notification_config.receiver.as_str(),
+                )
+                .await
+        }
+    }
+}
+
+async fn notification_error(content: &str) {
+    if content.is_empty() {
+        return;
+    }
+    let title = "错误提醒-".to_string();
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.get_environment().await;
+    let result = environment.get_property::<NotificationConfig>("notification");
+    match result {
+        None => {}
+        Some(notification_config) => {
+            let url = format!(
+                "{}/send/{}",
+                notification_config.url, notification_config.receiver
+            );
+            Notification::create(&title, content)
                 .send(
                     url.as_str(),
                     notification_config.token.as_str(),
