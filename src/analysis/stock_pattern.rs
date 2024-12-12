@@ -49,7 +49,7 @@ impl StockPattern for DojiStarPattern {
     fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
-        let factor_1 = BigDecimal::from_str("0.05").unwrap();
+        let factor_1 = BigDecimal::from_str("0.03").unwrap();
         let real_body = price.get_real_body();
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
