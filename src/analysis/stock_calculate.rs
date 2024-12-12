@@ -29,6 +29,7 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
     let len = prices.len();
     let mut cur = len - 1;
     let mut count = 0;
+    let n = n - 1;
     loop {
         let p1 = prices.get(cur).unwrap();
         let p2 = prices.get(cur - 1).unwrap();
