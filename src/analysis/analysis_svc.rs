@@ -1,7 +1,8 @@
 use crate::analysis::analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
 use crate::analysis::analysis_model::AnalyzedStock;
 use crate::analysis::stock_calculate::first_max_min;
-use crate::analysis::stock_pattern::get_patterns;
+use crate::analysis::stock_pattern::get_candlestick_patterns;
+use crate::analysis::stock_pattern::get_ma_patterns;
 use crate::fund::fund_svc;
 use crate::index::index_svc::{get_constituent_stocks, get_stock_index};
 use crate::stock::stock_svc;
@@ -46,13 +47,20 @@ pub async fn analysis_stock(
     let json = serde_json::to_string(&prices).unwrap();
     let polars = JsonReader::new(Cursor::new(json)).finish();
     let df = polars?;
-    let patterns = get_patterns();
+    let patterns = get_candlestick_patterns();
+    let ma_patterns = get_ma_patterns();
     let mut match_patterns = Vec::new();
     for pattern in patterns {
         info!("test pattern {}", pattern.name());
         if pattern.is_match(&prices, &df) {
             info!("pattern {} matched", pattern.name());
-            match_patterns.push(pattern.name());
+            let macth_ma_patterns = ma_patterns.iter().filter(|ma| ma.is_match(&prices, &df)).collect::<Vec<_>>();
+            if !macth_ma_patterns.is_empty() {
+                match_patterns.push(pattern.name());
+                for ele in macth_ma_patterns {
+                    info!("pattern {} matched", ele.name());
+                }
+            }
         }
     }
 

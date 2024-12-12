@@ -174,13 +174,19 @@ impl StockPattern for MaPattern {
     }
 }
 
-pub fn get_patterns() -> Vec<Box<dyn StockPattern>> {
+pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
         Box::new(HammerPattern {}),
         Box::new(DojiStarPattern {}),
         Box::new(BullishEngulfingPattern {}),
         Box::new(PiercingPattern {}),
         Box::new(UpGap {}),
+    ]
+}
+
+pub fn get_ma_patterns() -> Vec<Box<dyn StockPattern>> {
+    vec![
+        Box::new(MaPattern { ma: 30 }),
         Box::new(MaPattern { ma: 60 }),
         Box::new(MaPattern { ma: 120 }),
     ]
