@@ -59,6 +59,7 @@ pub async fn analysis_stock(
                 match_patterns.push(pattern.name());
                 for ele in macth_ma_patterns {
                     info!("pattern {} matched", ele.name());
+                    match_patterns.push(ele.name());
                 }
             }
         }
