@@ -11,7 +11,7 @@ use polars::io::SerReader;
 use polars::prelude::JsonReader;
 use std::error::Error;
 use std::io::Cursor;
-use tracing::info;
+use tracing::{error, info};
 
 pub async fn analysis_index(
     params: &IndexAnalysisParams,
@@ -52,13 +52,17 @@ pub async fn analysis_stock(
     let mut match_patterns = Vec::new();
     for pattern in patterns {
         info!("test pattern {}", pattern.name());
-        if pattern.is_match(&prices, &df) {
+        if pattern.is_match(&stock, &prices, &df) {
             info!("pattern {} matched", pattern.name());
-            let macth_ma_patterns = ma_patterns.iter().filter(|ma| ma.is_match(&prices, &df)).collect::<Vec<_>>();
-            if !macth_ma_patterns.is_empty() {
+            let match_ma_patterns = ma_patterns
+                .iter()
+                .filter(|ma| ma.is_match(&stock, &prices, &df))
+                .collect::<Vec<_>>();
+            if !match_ma_patterns.is_empty() {
                 match_patterns.push(pattern.name());
-                for ele in macth_ma_patterns {
+                for ele in match_ma_patterns {
                     info!("pattern {} matched", ele.name());
+                    match_patterns.push(ele.name());
                 }
             }
         }
@@ -94,10 +98,17 @@ pub async fn analysis_funds(code: Option<String>) -> Result<Vec<AnalyzedStock>, 
         let params = StockAnalysisParams {
             code: fund.code.clone(),
         };
-        let r = analysis_stock(&params).await?;
-        if let Some(item) = r {
-            if item.pattern.len() >= 2 {
-                focus_stocks.push(item);
+        let r = analysis_stock(&params).await;
+        match r {
+            Ok(r) => {
+                if let Some(item) = r {
+                    if item.pattern.len() >= 2 {
+                        focus_stocks.push(item);
+                    }
+                }
+            }
+            Err(e) => {
+                error!("analysis_stock {} fail, {}", &params.code, e)
             }
         }
     }

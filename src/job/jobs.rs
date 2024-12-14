@@ -6,6 +6,9 @@ use application_schedule::scheduler::Scheduler;
 use async_trait::async_trait;
 use database_mysql_seaorm::Dao;
 use notification::{Notification, NotificationConfig};
+use rand::{thread_rng, Rng};
+use redis::Commands;
+use redis_io::Redis;
 use sea_orm::EntityTrait;
 use std::error::Error;
 use tokio::spawn;
@@ -15,13 +18,14 @@ use crate::analysis::analysis_ctrl::IndexAnalysisParams;
 use crate::analysis::analysis_model::AnalyzedStock;
 use crate::analysis::analysis_svc;
 use crate::analysis::analysis_svc::analysis_index;
+use crate::fund::fund_svc;
 use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::index_constituent_model::SyncIndexConstituents;
 use crate::index::index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
 };
 use crate::index::{index_constituent_model, index_model};
-use crate::stock::stock_svc::sync;
+use crate::stock::stock_svc::{sync, sync_stock_daily_price};
 use crate::token::token_svc;
 
 use crate::index::index_model::Model as StockIndex;
@@ -42,6 +46,23 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
             Box::new(SyncHKEXTokenJob),
         )
         .await;
+    let _ = scheduler
+        .add_job(
+            2,
+            "同步指数成分份股股价",
+            "0 30 15,16 * * *",
+            Box::new(SyncAllIndexStockPriceJob),
+        )
+        .await;
+
+    let _ = scheduler
+        .add_job(
+            3,
+            "同步基金股价",
+            "0 30 15,16 * * *",
+            Box::new(SyncFundPriceJob),
+        )
+        .await;
 
     Ok(())
 }
@@ -51,12 +72,62 @@ pub struct SyncAllIndexStockPriceJob;
 #[async_trait]
 impl Runnable for SyncAllIndexStockPriceJob {
     async fn run(&self) {
-        info!("SyncAllIndexStockPriceJob run ...");
-        let indexes = get_all_stock_index().await.unwrap();
-        for index in indexes {
-            let _ = sync_constituent_stocks_daily_price(&index.code).await;
+        let seconds = thread_rng().gen_range(1..10);
+        tokio::time::sleep(std::time::Duration::from_secs(seconds)).await;
+
+        let client = Redis::get_client();
+        let mut con = client.get_connection().unwrap();
+        let key = "Sync:Index:Price".to_string();
+        let value = con.get::<&str, Option<String>>(&key).unwrap();
+
+        match value {
+            None => {
+                con.set_ex::<&str, &str, String>(&key, "doing", 3600)
+                    .unwrap();
+                info!("SyncAllIndexStockPriceJob run ...");
+                let indexes = get_all_stock_index().await.unwrap();
+                for index in indexes {
+                    let _ = sync_constituent_stocks_daily_price(&index.code).await;
+                }
+                info!("SyncAllIndexStockPriceJob end success");
+                con.del::<&str, i32>(&key).unwrap();
+            }
+            Some(_value) => {
+                info!("Job is running")
+            }
         }
-        info!("SyncAllIndexStockPriceJob end success");
+    }
+}
+
+pub struct SyncFundPriceJob;
+
+#[async_trait]
+impl Runnable for SyncFundPriceJob {
+    async fn run(&self) {
+        let seconds = thread_rng().gen_range(1..10);
+        tokio::time::sleep(std::time::Duration::from_secs(seconds)).await;
+
+        let client = Redis::get_client();
+        let mut con = client.get_connection().unwrap();
+        let key = "Sync:Fund:Price".to_string();
+        let value = con.get::<&str, Option<String>>(&key).unwrap();
+
+        match value {
+            None => {
+                con.set_ex::<&str, &str, String>(&key, "doing", 3600)
+                    .unwrap();
+                info!("SyncFundPriceJob run ...");
+                let funds = fund_svc::find_all().await.unwrap();
+                for fund in funds {
+                    let _ = sync_stock_daily_price(&fund.code).await;
+                }
+                info!("SyncFundPriceJob end success");
+                con.del::<&str, i32>(&key).unwrap();
+            }
+            Some(_value) => {
+                info!("Job is running")
+            }
+        }
     }
 }
 
@@ -93,9 +164,10 @@ impl Runnable for AnalysisIndexStocksJob {
                 }
                 Err(e) => {
                     error!("analysis index {} stocks fail, {}", index.name, e);
-                    spawn(notification_error(
-                        format!("analysis index {} fail, {}", index.name, e),
-                    ));
+                    spawn(notification_error(format!(
+                        "analysis index {} fail, {}",
+                        index.name, e
+                    )));
                 }
             }
         }
@@ -127,9 +199,7 @@ impl Runnable for AnalysisFundsJob {
             }
             Err(e) => {
                 error!("analysis fund stocks fail, {}", e);
-                spawn(notification_error(
-                    format!("analysis fund fail, {}", e),
-                ));
+                spawn(notification_error(format!("analysis fund fail, {}", e)));
             }
         }
     }

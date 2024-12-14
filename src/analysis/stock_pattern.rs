@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::analysis::stock_calculate::{down_at_least, ma};
+use crate::stock::stock_model;
 use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
 use bigdecimal::{BigDecimal, FromPrimitive};
 use polars::datatypes::DataType;
@@ -11,7 +12,12 @@ use serde::{Deserialize, Serialize};
 const DOWN_AT_LEAST_DAYS: i32 = 3;
 
 pub trait StockPattern {
-    fn is_match(&self, prices: &[StockDailyPrice], df: &DataFrame) -> bool;
+    fn is_match(
+        &self,
+        stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        df: &DataFrame,
+    ) -> bool;
 
     fn name(&self) -> String;
 }
@@ -21,7 +27,12 @@ pub trait StockPattern {
 pub struct HammerPattern {}
 
 impl StockPattern for HammerPattern {
-    fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        _df: &DataFrame,
+    ) -> bool {
         let _price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let price = prices.last().unwrap();
@@ -31,8 +42,8 @@ impl StockPattern for HammerPattern {
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        lower_shadow >= real_body.clone() * factor_2.clone()
-            && lower_shadow >= upper_shadow.clone() * factor_1.clone()
+        lower_shadow >= (real_body.clone() * factor_2.clone())
+            && lower_shadow >= (upper_shadow.clone() * factor_1.clone())
             && down_at_least(prices, DOWN_AT_LEAST_DAYS)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
@@ -46,10 +57,19 @@ impl StockPattern for HammerPattern {
 pub struct DojiStarPattern {}
 
 impl StockPattern for DojiStarPattern {
-    fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
+    fn is_match(
+        &self,
+        stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        _df: &DataFrame,
+    ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
-        let factor_1 = BigDecimal::from_str("0.03").unwrap();
+        let factor_1 = if stock.stock_type == "Fund" {
+            BigDecimal::from_str("0.003").unwrap()
+        } else {
+            BigDecimal::from_str("0.03").unwrap()
+        };
         let real_body = price.get_real_body();
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
@@ -67,7 +87,12 @@ impl StockPattern for DojiStarPattern {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BullishEngulfingPattern {}
 impl StockPattern for BullishEngulfingPattern {
-    fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        _df: &DataFrame,
+    ) -> bool {
         let price = prices.last().unwrap();
         if price.is_down() {
             return false;
@@ -86,7 +111,7 @@ impl StockPattern for BullishEngulfingPattern {
                 if price.open < pre_close.clone()
                     && price.close > pre_open.clone()
                     && real_body > pre_real_body
-                    && real_body > upper_shadow.clone() * factor_1.clone()
+                    && real_body > (upper_shadow.clone() * factor_1.clone())
                     && down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS)
                     && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
                 {
@@ -106,7 +131,12 @@ impl StockPattern for BullishEngulfingPattern {
 pub struct PiercingPattern {}
 
 impl StockPattern for PiercingPattern {
-    fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        _df: &DataFrame,
+    ) -> bool {
         if prices.len() < 2 {
             return false;
         }
@@ -130,7 +160,12 @@ impl StockPattern for PiercingPattern {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct UpGap {}
 impl StockPattern for UpGap {
-    fn is_match(&self, prices: &[StockDailyPrice], _df: &DataFrame) -> bool {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        _df: &DataFrame,
+    ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
         price.is_up()
@@ -151,9 +186,14 @@ pub struct MaPattern {
 }
 
 impl StockPattern for MaPattern {
-    fn is_match(&self, prices: &[StockDailyPrice], df: &DataFrame) -> bool {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        df: &DataFrame,
+    ) -> bool {
         let price = prices.last().unwrap();
-        let pre_price = prices.get(prices.len() - 2).unwrap();
+        // let pre_price = prices.get(prices.len() - 2).unwrap();
         let n = self.ma;
         let close_df = df
             .clone()
@@ -163,10 +203,9 @@ impl StockPattern for MaPattern {
             .unwrap();
         let ma = ma(&close_df["close"], n);
         let ma_last = ma.last().unwrap();
-        let ma_last_pre = ma.get(ma.len()-2).unwrap();
-        price.is_up() 
-            && price.close > BigDecimal::from_f32(*ma_last).unwrap()
-            && pre_price.close < BigDecimal::from_f32(*ma_last_pre).unwrap()
+        // let ma_last_pre = ma.get(ma.len() - 2).unwrap();
+        price.close >= BigDecimal::from_f32(*ma_last).unwrap()
+        // && pre_price.close <= BigDecimal::from_f32(*ma_last_pre).unwrap()
     }
 
     fn name(&self) -> String {
@@ -186,7 +225,6 @@ pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
 
 pub fn get_ma_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
-        Box::new(MaPattern { ma: 30 }),
         Box::new(MaPattern { ma: 60 }),
         Box::new(MaPattern { ma: 120 }),
     ]
