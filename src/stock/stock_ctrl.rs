@@ -1,5 +1,3 @@
-use crate::analysis::analysis_ctrl::StockAnalysisParams;
-use crate::analysis::analysis_svc;
 use crate::job::jobs::SyncStocksJob;
 use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
 use application_core::lang::runnable::Runnable;
@@ -35,13 +33,6 @@ async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
     RespBody::<()>::success_info("Sync Stocks in background")
 }
 
-/// 获取股票日线价格
-#[get("/stock/daily")]
-async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
-    let r = get_stock_daily_price(&params.code).await;
-    RespBody::result(&r).response()
-}
-
 /// 获取股票当前价格
 #[get("/stock/price")]
 async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
@@ -50,9 +41,9 @@ async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
     RespBody::result(&r).response()
 }
 
-#[get("/stock/pattern")]
-async fn stock_pattern(Query(params): Query<StockParams>) -> impl IntoResponse {
-    let r = analysis_svc::analysis_stock(&StockAnalysisParams { code: params.code }).await;
-
+/// 获取股票日线价格
+#[get("/stock/price/daily")]
+async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
+    let r = get_stock_daily_price(&params.code).await;
     RespBody::result(&r).response()
 }
