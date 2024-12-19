@@ -168,14 +168,9 @@ impl StockPattern for UpGap {
     ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
-        let pre_high_price = if pre_price.is_up() {
-            pre_price.close.clone()
-        } else {
-            pre_price.open.clone()
-        };
         price.is_up()
             // && pre_price.is_down()
-            && price.open > pre_high_price
+            && price.open > pre_price.high
             && down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
