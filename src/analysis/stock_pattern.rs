@@ -158,8 +158,9 @@ impl StockPattern for PiercingPattern {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct UpGap {}
-impl StockPattern for UpGap {
+pub struct RisingWindowPattern {}
+
+impl StockPattern for RisingWindowPattern {
     fn is_match(
         &self,
         _stock: &stock_model::Model,
@@ -219,7 +220,7 @@ pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
         Box::new(DojiStarPattern {}),
         Box::new(BullishEngulfingPattern {}),
         Box::new(PiercingPattern {}),
-        Box::new(UpGap {}),
+        Box::new(RisingWindowPattern {}),
     ]
 }
 
