@@ -1,5 +1,6 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -172,7 +173,7 @@ pub async fn get_stock_daily_price(
                         DateTime::from_timestamp_millis(k.first().unwrap().as_i64().unwrap())
                             .unwrap();
                     let price = StockDailyPriceDTO {
-                        d: dt.format("%Y%m%d").to_string(),
+                        d: dt.with_timezone(&Local).format("%Y%m%d").to_string(),
                         o,
                         c: k.get(4).unwrap().as_number().unwrap().to_string(),
                         l: k.get(3).unwrap().as_number().unwrap().to_string(),
@@ -185,6 +186,23 @@ pub async fn get_stock_daily_price(
                     };
                     stock_prices.push(price);
                 }
+                // append today price
+                // let stock_price = get_current_price(&stock.code).await?;
+                // let date = Local::now()
+                //     .format("%Y%m%d")
+                //     .to_string();
+                // stock_prices.push(StockDailyPriceDTO {
+                //     d: date,
+                //     o: stock_price.o,
+                //     h: stock_price.h,
+                //     l: stock_price.l,
+                //     c: stock_price.p,
+                //     v: stock_price.v,
+                //     e: stock_price.cje,
+                //     zd: stock_price.ud,
+                //     zdf: stock_price.pc,
+                //     hs: "".to_string(),
+                // });
             }
             Ok(stock_prices)
         }
@@ -315,20 +333,37 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             let json = remove_jquery_wrapping_fn_call(&text);
             let data = json.get("data").unwrap();
             let data = data.get("quote").unwrap();
+            let v = data["vo"].as_str().unwrap().to_string();
+            let vo_u = data["vo_u"].as_str().unwrap().to_string();
+            let v = cal_value(&v, &vo_u);
+            let am = data["am"].as_str().unwrap().to_string();
+            let am_u = data["am_u"].as_str().unwrap().to_string();
+            let am = cal_value(&am, &am_u);
             Ok(StockPriceDTO {
                 h: data["hi"].as_str().unwrap().to_string(),
                 l: data["lo"].as_str().unwrap().to_string(),
                 o: data["op"].as_str().unwrap().to_string(),
                 pc: data["pc"].as_str().unwrap().to_string(),
-                p: data["bd"].as_str().unwrap().to_string(),
-                cje: data["am"].as_str().unwrap().to_string(),
+                p: data["ls"].as_str().unwrap().to_string(),
+                cje: am.to_string(),
                 ud: data["nc"].as_str().unwrap().to_string(),
-                v: data["vo"].as_str().unwrap().to_string(),
+                v: v.to_string(),
                 yc: data["hc"].as_str().unwrap().to_string(),
                 t: data["update_time"].as_str().unwrap().to_string(),
             })
         }
     }
+}
+
+fn cal_value(val: &str, unit: &str) -> BigDecimal {
+    let val = BigDecimal::from_str(val).unwrap();
+    let unit = match unit {
+        "B" => BigDecimal::from(1000000000),
+        "M" => BigDecimal::from(1000000),
+        "K" => BigDecimal::from(1000),
+        _ => BigDecimal::from(1),
+    };
+    val * unit
 }
 
 fn remove_jquery_wrapping_fn_call(data: &str) -> Value {

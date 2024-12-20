@@ -489,7 +489,7 @@ pub async fn sync_stock_daily_price(code: &str) -> Result<(), Box<dyn Error>> {
 }
 
 fn create_stock_daily_price(code: &str, dto: &StockDailyPriceDTO) -> StockDailyPrice {
-    let daily_price = StockDailyPrice {
+    StockDailyPrice {
         code: code.to_string(),
         date: dto.d.parse::<u64>().unwrap(),
         open: BigDecimal::from_str(&dto.o).unwrap(),
@@ -502,8 +502,7 @@ fn create_stock_daily_price(code: &str, dto: &StockDailyPriceDTO) -> StockDailyP
         hs: None,
         zd: None,
         zde: None,
-    };
-    daily_price
+    }
 }
 
 pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {

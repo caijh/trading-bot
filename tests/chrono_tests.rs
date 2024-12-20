@@ -19,8 +19,11 @@ mod tests {
 
     #[test]
     fn test_format_timestamp() {
-        let dt: DateTime<chrono::Utc> = DateTime::from_timestamp_millis(1732809600000).unwrap();
-        let d = dt.format("%Y%m%d").to_string();
-        assert_eq!(d, "20241128");
+        let dt = DateTime::from_timestamp_millis(1734537600000).unwrap();
+        let d = dt
+            .with_timezone(&chrono::Local)
+            .format("%Y%m%d")
+            .to_string();
+        assert_eq!(d, "20241219");
     }
 }
