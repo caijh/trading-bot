@@ -143,11 +143,16 @@ impl StockPattern for PiercingPattern {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let mid_price = pre_price.get_middle_price();
+        let factor = BigDecimal::from_str("2").unwrap();
+        let real_body = price.get_real_body();
+        let upper_shadow = price.get_upper_shadow();
+
         price.is_up()
             && pre_price.is_down()
             && price.open < pre_price.close
             && price.close > mid_price
             && price.close < pre_price.open
+            && real_body > (upper_shadow.clone() * factor.clone())
             && down_at_least(&prices[0..prices.len() - 1], DOWN_AT_LEAST_DAYS)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }

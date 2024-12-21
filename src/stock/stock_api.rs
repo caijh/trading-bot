@@ -11,6 +11,7 @@ use tracing::info;
 use util::request::Request;
 
 use crate::exchange::exchange_model::Exchange;
+use crate::holiday::holiday_svc::today_is_holiday;
 use crate::stock::stock_model;
 use crate::stock::stock_svc::get_stock;
 use crate::token::token_svc;
@@ -162,6 +163,7 @@ pub async fn get_stock_daily_price(
                 .unwrap()
                 .as_array();
             if let Some(kline) = kline {
+                let mut dates = Vec::new();
                 for k in kline {
                     let k = k.as_array().unwrap();
                     let o = k.get(1).unwrap();
@@ -172,8 +174,10 @@ pub async fn get_stock_daily_price(
                     let dt: DateTime<Utc> =
                         DateTime::from_timestamp_millis(k.first().unwrap().as_i64().unwrap())
                             .unwrap();
+                    let date = dt.with_timezone(&Local).format("%Y%m%d").to_string();
+                    dates.push(date.clone());
                     let price = StockDailyPriceDTO {
-                        d: dt.with_timezone(&Local).format("%Y%m%d").to_string(),
+                        d: date,
                         o,
                         c: k.get(4).unwrap().as_number().unwrap().to_string(),
                         l: k.get(3).unwrap().as_number().unwrap().to_string(),
@@ -186,23 +190,28 @@ pub async fn get_stock_daily_price(
                     };
                     stock_prices.push(price);
                 }
-                // append today price
-                // let stock_price = get_current_price(&stock.code).await?;
-                // let date = Local::now()
-                //     .format("%Y%m%d")
-                //     .to_string();
-                // stock_prices.push(StockDailyPriceDTO {
-                //     d: date,
-                //     o: stock_price.o,
-                //     h: stock_price.h,
-                //     l: stock_price.l,
-                //     c: stock_price.p,
-                //     v: stock_price.v,
-                //     e: stock_price.cje,
-                //     zd: stock_price.ud,
-                //     zdf: stock_price.pc,
-                //     hs: "".to_string(),
-                // });
+                let date = Local::now().format("%Y%m%d").to_string();
+                let holiday_result = today_is_holiday().await?;
+                if !dates.contains(&date) && !holiday_result.is_holiday {
+                    // append today price
+                    let stock_price = get_current_price(&stock.code).await?;
+                    let date = NaiveDateTime::parse_from_str(&stock_price.t, "%Y-%m-%d %H:%M:%S")
+                        .unwrap()
+                        .format("%Y%m%d")
+                        .to_string();
+                    stock_prices.push(StockDailyPriceDTO {
+                        d: date,
+                        o: stock_price.o,
+                        h: stock_price.h,
+                        l: stock_price.l,
+                        c: stock_price.p,
+                        v: stock_price.v,
+                        e: stock_price.cje,
+                        zd: stock_price.ud,
+                        zdf: stock_price.pc,
+                        hs: "".to_string(),
+                    });
+                }
             }
             Ok(stock_prices)
         }
@@ -339,6 +348,11 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             let am = data["am"].as_str().unwrap().to_string();
             let am_u = data["am_u"].as_str().unwrap().to_string();
             let am = cal_value(&am, &am_u);
+            let update_time = data["updatetime"].as_str().unwrap().to_string();
+            let t = NaiveDateTime::parse_from_str(&update_time, "%Y年%m月%d日%H:%M")
+                .unwrap()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string();
             Ok(StockPriceDTO {
                 h: data["hi"].as_str().unwrap().to_string(),
                 l: data["lo"].as_str().unwrap().to_string(),
@@ -349,7 +363,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 ud: data["nc"].as_str().unwrap().to_string(),
                 v: v.to_string(),
                 yc: data["hc"].as_str().unwrap().to_string(),
-                t: data["update_time"].as_str().unwrap().to_string(),
+                t,
             })
         }
     }

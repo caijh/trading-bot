@@ -1,5 +1,5 @@
 use crate::job::jobs::SyncStocksJob;
-use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price};
+use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price, sync_stock_daily_price};
 use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
 use application_web_macros::get;
@@ -45,5 +45,11 @@ async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
 #[get("/stock/price/daily")]
 async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
     let r = get_stock_daily_price(&params.code).await;
+    RespBody::result(&r).response()
+}
+
+#[get("/stock/price/daily/sync")]
+async fn sync_stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
+    let r = sync_stock_daily_price(&params.code).await;
     RespBody::result(&r).response()
 }
