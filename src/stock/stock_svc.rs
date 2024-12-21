@@ -9,7 +9,9 @@ use rand::{thread_rng, Rng};
 use redis::Commands;
 use redis_io::Redis;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, QueryOrder};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, QueryOrder,
+};
 use serde_json::Value;
 use std::error::Error;
 use std::fs::File;
@@ -449,13 +451,19 @@ pub async fn sync_stock_daily_price(code: &str) -> Result<(), Box<dyn Error>> {
             .exec(&dao.connection)
             .await?;
     }
+    info!("Sync stock daily price, updated = {}", updated);
     if !updated {
-        // 没有同步
+        // 从数据中获取
         let prices = stock_price_model::Entity::find()
             .filter(stock_price_model::Column::Code.eq(&stock.code))
             .order_by_asc(stock_price_model::Column::Date)
             .all(&dao.connection)
             .await?;
+        let last_price = if !prices.is_empty() {
+            prices.last()
+        } else {
+            None
+        };
         let dates: Vec<u64> = prices.iter().map(|e| e.date).collect();
         let mut new_prices = Vec::new();
         let mut price_dates = Vec::new();
@@ -464,8 +472,16 @@ pub async fn sync_stock_daily_price(code: &str) -> Result<(), Box<dyn Error>> {
             let daily_price = create_stock_daily_price(code, &dto);
             let d = daily_price.date;
             price_dates.push(d);
+
             if !dates.contains(&d) {
+                // 数据库中没有
                 new_prices.push(daily_price.clone().into_active_model());
+            }
+
+            if stock.exchange == "HK" && last_price.is_some() && last_price.unwrap().date == d {
+                // 港交所今天的数据，要到明天才更新
+                let price = daily_price.clone().into_active_model();
+                price.update(&dao.connection).await?;
             }
         }
         if !new_prices.is_empty() {
