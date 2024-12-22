@@ -76,7 +76,8 @@ impl StockPattern for DojiStarPattern {
         real_body <= factor_1
             && lower_shadow > upper_shadow
             && down_at_least(prices, DOWN_AT_LEAST_DAYS)
-            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
+            && price.volume.clone().unwrap() < pre_price.volume.clone().unwrap()
+        // 缩量
     }
 
     fn name(&self) -> String {
