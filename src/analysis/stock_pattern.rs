@@ -49,7 +49,7 @@ impl StockPattern for HammerPattern {
         lower_shadow >= (real_body.clone() * factor_2.clone())
             && lower_shadow >= (upper_shadow.clone() * factor_1.clone())
             && down_at_least(prices, n)
-            && price.volume.clone().unwrap() <= pre_price.volume.clone().unwrap()
+            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
 
     fn name(&self) -> String {
@@ -85,8 +85,7 @@ impl StockPattern for DojiStarPattern {
         real_body <= factor_1
             && lower_shadow > upper_shadow
             && down_at_least(prices, n)
-            // 缩量
-            && price.volume.clone().unwrap() < pre_price.volume.clone().unwrap()
+            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
 
     fn name(&self) -> String {
