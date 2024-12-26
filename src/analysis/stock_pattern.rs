@@ -221,12 +221,12 @@ pub struct MaPattern {
 impl StockPattern for MaPattern {
     fn is_match(
         &self,
-        stock: &stock_model::Model,
+        _stock: &stock_model::Model,
         prices: &[StockDailyPrice],
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
-        let pre_price = prices.get(prices.len() - 2).unwrap();
+        let _pre_price = prices.get(prices.len() - 2).unwrap();
         let n = self.ma;
         let close_df = df
             .clone()
@@ -237,12 +237,10 @@ impl StockPattern for MaPattern {
         let ma = ma(&close_df["close"], n);
         let ma_last = ma.last().unwrap();
         let ma_last_pre = ma.get(ma.len() - 2).unwrap();
-        if stock.stock_type == "Fund" {
-            price.close >= BigDecimal::from_f32(*ma_last).unwrap()
-                && pre_price.close <= BigDecimal::from_f32(*ma_last_pre).unwrap()
-        } else {
-            price.close >= BigDecimal::from_f32(*ma_last).unwrap()
-        }
+        // 收盘价在均线之上
+        price.close >= BigDecimal::from_f32(*ma_last).unwrap()
+            // 均线向上
+            && ma_last_pre < ma_last
     }
 
     fn name(&self) -> String {

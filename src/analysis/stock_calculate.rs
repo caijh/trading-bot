@@ -33,7 +33,7 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
     loop {
         let p1 = prices.get(cur).unwrap();
         let p2 = prices.get(cur - 1).unwrap();
-        if p1.get_middle_price() <= p2.get_middle_price() {
+        if p1.get_middle_price() < p2.get_middle_price() || p1.close < p2.close {
             count += 1;
         } else {
             break;
