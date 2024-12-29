@@ -46,7 +46,8 @@ impl StockPattern for HammerPattern {
             DOWN_AT_LEAST_DAYS + 1
         };
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        lower_shadow >= (real_body.clone() * factor_2.clone())
+        real_body > BigDecimal::from_u8(0).unwrap()
+            && lower_shadow >= (real_body.clone() * factor_2.clone())
             && lower_shadow >= (upper_shadow.clone() * factor_1.clone())
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
