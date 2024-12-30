@@ -90,7 +90,7 @@ impl Runnable for SyncAllIndexStockPriceJob {
                     let _ = sync_constituent_stocks_daily_price(&index.code).await;
                 }
                 info!("SyncAllIndexStockPriceJob end success");
-                con.del::<&str, i32>(&key).unwrap();
+                let _ = con.del::<&str, i32>(&key);
             }
             Some(_value) => {
                 info!("Job is running")
