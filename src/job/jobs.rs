@@ -122,7 +122,7 @@ impl Runnable for SyncFundPriceJob {
                     let _ = sync_stock_daily_price(&fund.code).await;
                 }
                 info!("SyncFundPriceJob end success");
-                con.del::<&str, i32>(&key).unwrap();
+                let _ = con.del::<&str, i32>(&key);
             }
             Some(_value) => {
                 info!("Job is running")
