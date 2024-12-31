@@ -1,7 +1,7 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
 use bigdecimal::BigDecimal;
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Utc};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -192,7 +192,12 @@ pub async fn get_stock_daily_price(
                 }
                 let date = Local::now().format("%Y%m%d").to_string();
                 let holiday_result = today_is_holiday().await?;
-                if !dates.contains(&date) && !holiday_result.is_holiday {
+                // new time from Local::now with 9:30
+                let open_time = Local::now()
+                    .with_time(NaiveTime::from_hms_opt(9, 30, 0).unwrap())
+                    .unwrap();
+                if Local::now() > open_time && !dates.contains(&date) && !holiday_result.is_holiday
+                {
                     // append today price
                     let stock_price = get_current_price(&stock.code).await?;
                     let date = NaiveDateTime::parse_from_str(&stock_price.t, "%Y-%m-%d %H:%M:%S")
@@ -255,18 +260,17 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
     let exchange = Exchange::from_str(&stock.exchange)?;
     match exchange {
         Exchange::SH => {
-            let url = environment
+            let base_url = environment
                 .get_property::<String>("stock.api.sh.baseurl")
                 .unwrap();
-            let response = client
-                .get(format!(
-                    "{}/v1/sh1/snap/{}?_={}",
-                    url,
-                    code,
-                    Local::now().timestamp_millis()
-                ))
-                .send()
-                .await?;
+            let url = format!(
+                "{}/v1/sh1/snap/{}?_={}",
+                base_url,
+                code,
+                Local::now().timestamp_millis()
+            );
+            info!("Get stock {} daily price from url = {}", code, url);
+            let response = client.get(url).send().await?;
             let json: Value = response.json().await?;
             let snap = json.get("snap").unwrap();
             let date = json.get("date").unwrap().to_string();
@@ -293,18 +297,17 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             })
         }
         Exchange::SZ => {
-            let url = environment
+            let base_url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
                 .unwrap();
-            let response = client
-                .get(format!(
-                    "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
-                    url,
-                    thread_rng().gen::<f64>(),
-                    code
-                ))
-                .send()
-                .await?;
+            let url = format!(
+                "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
+                base_url,
+                thread_rng().gen::<f64>(),
+                code
+            );
+            info!("Get stock {} daily price from url = {}", code, url);
+            let response = client.get(url).send().await?;
             let json: Value = response.json().await?;
             let data = json.get("data").unwrap();
             Ok(StockPriceDTO {
@@ -321,23 +324,22 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
             })
         }
         Exchange::HK => {
-            let url = environment
+            let base_url = environment
                 .get_property::<String>("stock.api.hk.baseurl")
                 .unwrap();
             let token = token_svc::get_hkex_token().await;
             let timestamp = Local::now().timestamp_millis();
-            let response = client
-                .get(format!(
-                    "{}/hkexwidget/data/getequityquote?sym={}&token={}&lang=chi&qid={}&callback=jQuery_{}&_={}",
-                    url,
-                    code,
-                    token,
-                    timestamp,
-                    timestamp,
-                    timestamp,
-                ))
-                .send()
-                .await?;
+            let url = format!(
+                "{}/hkexwidget/data/getequityquote?sym={}&token={}&lang=chi&qid={}&callback=jQuery_{}&_={}",
+                base_url,
+                code,
+                token,
+                timestamp,
+                timestamp,
+                timestamp,
+            );
+            info!("Get stock {} daily price from url = {}", code, url);
+            let response = client.get(url).send().await?;
             let text = response.text().await?;
             let json = remove_jquery_wrapping_fn_call(&text);
             let data = json.get("data").unwrap();
@@ -370,6 +372,9 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
 }
 
 fn cal_value(val: &str, unit: &str) -> BigDecimal {
+    if val.is_empty() {
+        return BigDecimal::from(0);
+    }
     let val = BigDecimal::from_str(val).unwrap();
     let unit = match unit {
         "B" => BigDecimal::from(1000000000),
