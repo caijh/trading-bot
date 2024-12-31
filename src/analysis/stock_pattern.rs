@@ -108,7 +108,7 @@ impl StockPattern for BullishEngulfingPattern {
             return false;
         }
 
-        let factor_1 = BigDecimal::from_str("2").unwrap();
+        let factor = BigDecimal::from_str("2").unwrap();
         let real_body = price.get_real_body();
         let upper_shadow = price.get_upper_shadow();
 
@@ -126,9 +126,10 @@ impl StockPattern for BullishEngulfingPattern {
                 if price.open < pre_close.clone()
                     && price.close > pre_open.clone()
                     && real_body > pre_real_body
-                    && real_body > (upper_shadow.clone() * factor_1.clone())
+                    && real_body > (upper_shadow.clone() * factor.clone())
                     && down_at_least(&prices[0..prices.len() - 1], n)
-                    && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
+                    && (price.volume.clone().unwrap()
+                        > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
                 {
                     return true;
                 }
@@ -173,7 +174,8 @@ impl StockPattern for PiercingPattern {
             && price.close < pre_price.open
             && real_body > (upper_shadow.clone() * factor.clone())
             && down_at_least(&prices[0..prices.len() - 1], n)
-            && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
+            && (price.volume.clone().unwrap()
+                > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
     }
 
     fn name(&self) -> String {
