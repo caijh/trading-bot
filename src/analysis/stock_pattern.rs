@@ -128,7 +128,8 @@ impl StockPattern for BullishEngulfingPattern {
                     && real_body > pre_real_body
                     && real_body > (upper_shadow.clone() * factor.clone())
                     && down_at_least(&prices[0..prices.len() - 1], n)
-                    && (price.volume.clone().unwrap() > pre_price.volume.clone().unwrap() * factor)
+                    && (price.volume.clone().unwrap()
+                        > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
                 {
                     return true;
                 }
@@ -173,7 +174,8 @@ impl StockPattern for PiercingPattern {
             && price.close < pre_price.open
             && real_body > (upper_shadow.clone() * factor.clone())
             && down_at_least(&prices[0..prices.len() - 1], n)
-            && (price.volume.clone().unwrap() > pre_price.volume.clone().unwrap() * factor)
+            && (price.volume.clone().unwrap()
+                > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
     }
 
     fn name(&self) -> String {
