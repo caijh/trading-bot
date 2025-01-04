@@ -251,6 +251,36 @@ impl StockPattern for MaPattern {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct BIASPattern {}
+
+impl StockPattern for BIASPattern {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        df: &DataFrame,
+    ) -> bool {
+        let price = prices.last().unwrap();
+        let close_df = df
+            .clone()
+            .lazy()
+            .select([col("close").cast(DataType::Float32)])
+            .collect()
+            .unwrap();
+        let ma = ma(&close_df["close"], 25);
+        let ma_last = ma.last().unwrap();
+        let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
+        price.close < ma_last
+            && (((ma_last.clone() - price.close.clone()) / ma_last) > BigDecimal::from_f32(0.15).unwrap())
+    }
+
+    fn name(&self) -> String {
+        "BAIS".to_string()
+    }
+}
+
+
 pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
         Box::new(HammerPattern {}),
@@ -258,6 +288,7 @@ pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
         Box::new(BullishEngulfingPattern {}),
         Box::new(PiercingPattern {}),
         Box::new(RisingWindowPattern {}),
+        Box::new(BIASPattern {}),
     ]
 }
 
