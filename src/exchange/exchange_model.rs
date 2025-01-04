@@ -10,6 +10,8 @@ pub enum Exchange {
     SZ,
     /// 港交所
     HK,
+    /// 纳斯达克交易所
+    NASDAQ,
 }
 
 impl AsRef<str> for Exchange {
@@ -18,6 +20,7 @@ impl AsRef<str> for Exchange {
             Exchange::SH => "SH",
             Exchange::SZ => "SZ",
             Exchange::HK => "HK",
+            Exchange::NASDAQ => "NASDAQ",
         }
     }
 }
@@ -30,6 +33,7 @@ impl FromStr for Exchange {
             "SH" => Ok(Exchange::SH),
             "SZ" => Ok(Exchange::SZ),
             "HK" => Ok(Exchange::HK),
+            "NASDAQ" => Ok(Exchange::NASDAQ),
             _ => Err("Error Exchange value, SH（上海证券交易所） or SZ（深圳证券交易所）".into()),
         }
     }

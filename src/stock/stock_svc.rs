@@ -25,8 +25,9 @@ use util::request::Request;
 use crate::exchange::exchange_model::Exchange;
 use crate::fund::fund_model;
 use crate::holiday::holiday_svc::today_is_holiday;
+use crate::index::index_api;
 use crate::stock::stock_api::StockDailyPriceDTO;
-use crate::stock::stock_model::{Model as Stock, StockPrice};
+use crate::stock::stock_model::{Model as Stock, Model, StockPrice};
 use crate::stock::stock_price_model::Model as StockDailyPrice;
 use crate::stock::{stock_api, stock_model, stock_price_model, sync_record_model};
 
@@ -57,48 +58,58 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             save_stocks(&stocks).await?;
         }
         Exchange::HK => {
-            let url = format!(
-                "https://www.hsi.com.hk/data/schi/rt/index-series/hsi/constituents.do?{}",
-                thread_rng().gen_range(1000..9999)
-            );
-            let response = Request::get_response(&url).await?;
-            let data: Value = response.json().await?;
-            let index_series_list = data.get("indexSeriesList").unwrap().as_array().unwrap();
-            let index_series = index_series_list.first().unwrap().as_object().unwrap();
-            let index_list = index_series.get("indexList").unwrap().as_array().unwrap();
-            let index_stocks = index_list
-                .first()
-                .unwrap()
-                .get("constituentContent")
-                .unwrap()
-                .as_array()
-                .unwrap();
-            let mut stocks = Vec::new();
-            for index_stock in index_stocks {
-                let stock = Stock {
-                    code: index_stock
-                        .get("code")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    name: index_stock
-                        .get("constituentName")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    exchange: "HK".to_string(),
-                    stock_type: "Stock".to_string(),
-                    to_code: None,
-                };
-                stocks.push(stock);
-            }
+            let stocks = get_stock_from_hk().await?;
+            delete_stocks(exchange.as_ref()).await?;
+            save_stocks(&stocks).await?;
+        }
+        Exchange::NASDAQ => {
+            let stocks = index_api::get_stocks(&Exchange::NASDAQ,"nasdaq100").await?;
             delete_stocks(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
         }
     }
     Ok(())
+}
+
+async fn get_stock_from_hk() -> Result<Vec<Model>, Box<dyn Error>> {
+    let url = format!(
+        "https://www.hsi.com.hk/data/schi/rt/index-series/hsi/constituents.do?{}",
+        thread_rng().gen_range(1000..9999)
+    );
+    let response = Request::get_response(&url).await?;
+    let data: Value = response.json().await?;
+    let index_series_list = data.get("indexSeriesList").unwrap().as_array().unwrap();
+    let index_series = index_series_list.first().unwrap().as_object().unwrap();
+    let index_list = index_series.get("indexList").unwrap().as_array().unwrap();
+    let index_stocks = index_list
+        .first()
+        .unwrap()
+        .get("constituentContent")
+        .unwrap()
+        .as_array()
+        .unwrap();
+    let mut stocks = Vec::new();
+    for index_stock in index_stocks {
+        let stock = Stock {
+            code: index_stock
+                .get("code")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string(),
+            name: index_stock
+                .get("constituentName")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                .to_string(),
+            exchange: "HK".to_string(),
+            stock_type: "Stock".to_string(),
+            to_code: None,
+        };
+        stocks.push(stock);
+    }
+    Ok(stocks)
 }
 
 pub async fn sync_funds(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
@@ -124,6 +135,7 @@ pub async fn sync_funds(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             save_funds(&stocks).await?;
         }
         Exchange::HK => {}
+        Exchange::NASDAQ => {}
     }
     Ok(())
 }
@@ -513,7 +525,7 @@ fn create_stock_daily_price(code: &str, dto: &StockDailyPriceDTO) -> StockDailyP
         high: BigDecimal::from_str(&dto.h).unwrap(),
         low: BigDecimal::from_str(&dto.l).unwrap(),
         volume: Some(BigDecimal::from_str(&dto.v).unwrap()),
-        amount: Some(BigDecimal::from_str(&dto.e).unwrap()),
+        amount: if dto.e.is_empty()  { None} else { Some(BigDecimal::from_str(&dto.e).unwrap()) },
         zf: None,
         hs: None,
         zd: None,
@@ -526,13 +538,13 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
 
     let price = StockPrice {
         code: code.to_string(),
-        high: Some(BigDecimal::from_str(&price_dto.h).unwrap()),
-        low: Some(BigDecimal::from_str(&price_dto.l).unwrap()),
-        open: Some(BigDecimal::from_str(&price_dto.o).unwrap()),
-        pc: Some(BigDecimal::from_str(&price_dto.pc).unwrap()),
+        high: if price_dto.h.is_empty() { None} else {Some(BigDecimal::from_str(&price_dto.h).unwrap())},
+        low: if price_dto.l.is_empty() {None} else {Some(BigDecimal::from_str(&price_dto.l).unwrap())},
+        open: if price_dto.o.is_empty() {None} else {Some(BigDecimal::from_str(&price_dto.o).unwrap())},
+        pc: if price_dto.pc.is_empty() {None}  else {Some(BigDecimal::from_str(&price_dto.pc).unwrap())},
         price: BigDecimal::from_str(&price_dto.p).unwrap(),
-        amount: Some(BigDecimal::from_str(&price_dto.cje).unwrap()),
-        ud: Some(BigDecimal::from_str(&price_dto.ud).unwrap()),
+        amount: if price_dto.cje.is_empty() {None} else  {Some(BigDecimal::from_str(&price_dto.cje).unwrap())},
+        ud: if price_dto.ud.is_empty() {None} else { Some(BigDecimal::from_str(&price_dto.ud).unwrap()) },
         volume: Some(BigDecimal::from_str(&price_dto.v).unwrap()),
         yc: if price_dto.yc.is_empty() {
             None

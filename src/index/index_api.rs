@@ -67,7 +67,44 @@ pub async fn get_stocks(exchange: &Exchange, index: &str) -> Result<Vec<Stock>, 
             }
             Ok(stocks)
         }
+        Exchange::NASDAQ => {
+            get_stocks_from_nasdaq(index).await
+        }
     }
+}
+
+async fn  get_stocks_from_nasdaq(index: &str) -> Result<Vec<Stock>, Box<dyn Error>>{
+    let url = format!(
+        "https://api.nasdaq.com/api/quote/list-type/{}",
+        index,
+    );
+    info!("Query Index Stocks from url = {}", url);
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert("Accept", "*/*".parse().unwrap());
+    headers.insert("Connection", "keep-alive".parse().unwrap());
+    headers.insert("Accept-Encoding", "gzip, deflate, br".parse().unwrap());
+    headers.insert("Accept-Language", "en-US,en;q=0.9".parse().unwrap());
+    let client = reqwest::Client::builder().cookie_store(true).build().unwrap();
+    let response = client.get(&url).headers(headers).send().await?;
+    let text = response.text().await?;
+    let data = serde_json::from_str::<Value>(&text).unwrap();
+    let data = data.get("data").unwrap();
+    let data = data.get("data").unwrap();
+    let rows = data.get("rows").unwrap().as_array().unwrap();
+    let mut stocks = Vec::new();
+    for row in rows {
+        let stock = Stock {
+            code: row.get("symbol").unwrap().as_str().unwrap().to_string(),
+            name: row.get("companyName").unwrap().as_str().unwrap().to_string(),
+            exchange: "NASDAQ".to_string(),
+            stock_type: "Stock".to_string(),
+            to_code: None,
+        };
+        stocks.push(stock);
+    }
+    info!("socks length {}", stocks.len());
+    Ok(stocks)
 }
 
 async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {

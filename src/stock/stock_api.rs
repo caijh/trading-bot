@@ -1,7 +1,7 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
 use bigdecimal::BigDecimal;
-use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc};
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -41,16 +41,16 @@ pub async fn get_stock_daily_price(
     stock: &stock_model::Model,
 ) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let exchange = Exchange::from_str(stock.exchange.as_str())?;
+    info!(
+        "Get stock daily price from {}, code = {}",
+        exchange.as_ref(),
+        stock.code
+    );
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
     let mut stock_prices = Vec::new();
     match exchange {
         Exchange::SH => {
-            info!(
-                "Get stock daily price from {}, code = {}",
-                exchange.as_ref(),
-                stock.code
-            );
             let url = environment
                 .get_property::<String>("stock.api.sh.baseurl")
                 .unwrap();
@@ -84,11 +84,6 @@ pub async fn get_stock_daily_price(
             Ok(stock_prices)
         }
         Exchange::SZ => {
-            info!(
-                "Get stock daily price from {}, code = {}",
-                exchange.as_ref(),
-                stock.code
-            );
             let url = environment
                 .get_property::<String>("stock.api.sz.baseurl")
                 .unwrap();
@@ -133,11 +128,6 @@ pub async fn get_stock_daily_price(
             Ok(stock_prices)
         }
         Exchange::HK => {
-            info!(
-                "Get stock daily price from {}, code = {}",
-                exchange.as_ref(),
-                stock.code
-            );
             let url = environment
                 .get_property::<String>("stock.api.hk.baseurl")
                 .unwrap();
@@ -220,8 +210,73 @@ pub async fn get_stock_daily_price(
             }
             Ok(stock_prices)
         }
+        Exchange::NASDAQ => {
+            get_stock_daily_price_from_nasdaq(&exchange, stock).await
+        }
     }
 }
+
+async fn get_stock_daily_price_from_nasdaq(_exchange: &Exchange, stock: &stock_model::Model) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.get_environment().await;
+
+    let url = environment
+        .get_property::<String>("stock.api.nasdaq.charting")
+        .unwrap();
+    let now = Local::now();
+    let today = now.format("%Y-%m-%d").to_string();
+    let year_day_before_now = now
+        .checked_sub_signed(Duration::days(360))
+        .unwrap()
+        .format("%Y-%m-%d")
+        .to_string();
+    let url = format!(
+        "{}/data/charting/historical?symbol={}&date={}~{}&includeLatestIntradayData=1&",
+        url,
+        &stock.code,
+        year_day_before_now,
+        today,
+    );
+    info!("{:?}", url);
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert("Accept", "*/*".parse().unwrap());
+    headers.insert("Connection", "keep-alive".parse().unwrap());
+    headers.insert("Accept-Encoding", "gzip, deflate, br".parse().unwrap());
+    headers.insert("Accept-Language", "en-US,en;q=0.9".parse().unwrap());
+    headers.insert("X-KL-Ajax-Request", "Ajax_Request".parse().unwrap());
+    headers.insert("Referer", "https://charting.nasdaq.com/dynamic/chart.html".parse().unwrap());
+    let client = reqwest::Client::builder().cookie_store(true).build().unwrap();
+    let response = client.get(&url).headers(headers).send().await?;
+    let data: Value = response.json().await?;
+    let kline = data
+        .get("marketData")
+        .unwrap()
+        .as_array();
+    let mut  stock_prices = Vec::new();
+    if let Some(kline) = kline {
+        for k in kline {
+            let datetime = k["Date"].as_str().unwrap();
+            let datetime = NaiveDateTime::parse_from_str(datetime, "%Y-%m-%d %H:%M:%S");
+            let date = datetime.unwrap().format("%Y%m%d").to_string();
+            let price = StockDailyPriceDTO {
+                d: date,
+                o: k["Open"].as_number().unwrap().to_string(),
+                c: k["Close"].as_number().unwrap().to_string(),
+                l: k["Low"].as_number().unwrap().to_string(),
+                h: k["High"].as_number().unwrap().to_string(),
+                zd: "".to_string(),
+                zdf: "".to_string(),
+                v: k["Volume"].as_number().unwrap().to_string(),
+                e: "".to_string(),
+                hs: "".to_string(),
+            };
+            stock_prices.push(price);
+        }
+    }
+    Ok(stock_prices)
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockPriceDTO {
@@ -368,7 +423,68 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 t,
             })
         }
+        Exchange::NASDAQ => {
+            get_current_price_from_nasdaq(&code).await
+        }
     }
+}
+
+async fn get_current_price_from_nasdaq(code: &str) -> Result<StockPriceDTO, Box<dyn Error>>{
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.get_environment().await;
+    let base_url = environment
+        .get_property::<String>("stock.api.nasdaq.baseurl")
+        .unwrap();
+    let url = format!(
+        "{}/api/quote/{}/info?assetclass=stocks",
+        base_url,
+        code,
+    );
+    info!("Get stock {} daily price from url = {}", code, url);
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
+    headers.insert("Accept", "*/*".parse().unwrap());
+    headers.insert("Connection", "keep-alive".parse().unwrap());
+    headers.insert("Accept-Encoding", "gzip, deflate, br".parse().unwrap());
+    headers.insert("Accept-Language", "en-US,en;q=0.9".parse().unwrap());
+    let client = reqwest::Client::builder().cookie_store(true).build().unwrap();
+    let response = client.get(&url).headers(headers).send().await?;
+    let text: Value = response.json().await?;
+    let data = text.get("data").unwrap();
+    let market_status = data.get("marketStatus").unwrap().as_str().unwrap();
+    let primary_data = data.get("primaryData").unwrap();
+    let secondary_data = data.get("secondaryData").unwrap();
+    let mut price = "".to_string();
+    let mut v = "".to_string();
+    let mut pc = "".to_string();
+    let mut update_time = "".to_string();
+    if market_status == "Closed" {
+        price = primary_data["lastSalePrice"].as_str().unwrap().to_string();
+        v = primary_data["volume"].as_str().unwrap().to_string();
+        pc = primary_data["percentageChange"].as_str().unwrap().to_string();
+        update_time = primary_data["lastTradeTimestamp"].as_str().unwrap().to_string();
+    } else {
+        price = secondary_data["lastSalePrice"].as_str().unwrap().to_string();
+        v = secondary_data["volume"].as_str().unwrap().to_string();
+        pc = secondary_data["percentageChange"].as_str().unwrap().to_string();
+        update_time = secondary_data["lastTradeTimestamp"].as_str().unwrap().to_string();
+    }
+    price = price.replace("$", "");
+    pc = pc.replace("%", "");
+    v = v.replace(",", "");
+    let t = update_time.to_string();
+    Ok(StockPriceDTO {
+        h: "".to_string(),
+        l: "".to_string(),
+        o: "".to_string(),
+        pc,
+        p: price,
+        cje: "".to_string(),
+        ud: "".to_string(),
+        v,
+        yc: "".to_string(),
+        t,
+    })
 }
 
 fn cal_value(val: &str, unit: &str) -> BigDecimal {
