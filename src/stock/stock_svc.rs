@@ -63,7 +63,7 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             save_stocks(&stocks).await?;
         }
         Exchange::NASDAQ => {
-            let stocks = index_api::get_stocks(&Exchange::NASDAQ,"nasdaq100").await?;
+            let stocks = index_api::get_stocks(&Exchange::NASDAQ, "nasdaq100").await?;
             delete_stocks(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
         }
@@ -463,7 +463,7 @@ pub async fn sync_stock_daily_price(code: &str) -> Result<(), Box<dyn Error>> {
             .exec(&dao.connection)
             .await?;
     }
-    info!("Sync stock daily price, updated = {}", updated);
+    info!("Sync stock {} daily price, updated = {}", code, updated);
     if !updated {
         // 从数据中获取
         let prices = stock_price_model::Entity::find()
@@ -525,7 +525,11 @@ fn create_stock_daily_price(code: &str, dto: &StockDailyPriceDTO) -> StockDailyP
         high: BigDecimal::from_str(&dto.h).unwrap(),
         low: BigDecimal::from_str(&dto.l).unwrap(),
         volume: Some(BigDecimal::from_str(&dto.v).unwrap()),
-        amount: if dto.e.is_empty()  { None} else { Some(BigDecimal::from_str(&dto.e).unwrap()) },
+        amount: if dto.e.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&dto.e).unwrap())
+        },
         zf: None,
         hs: None,
         zd: None,
@@ -538,13 +542,37 @@ pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
 
     let price = StockPrice {
         code: code.to_string(),
-        high: if price_dto.h.is_empty() { None} else {Some(BigDecimal::from_str(&price_dto.h).unwrap())},
-        low: if price_dto.l.is_empty() {None} else {Some(BigDecimal::from_str(&price_dto.l).unwrap())},
-        open: if price_dto.o.is_empty() {None} else {Some(BigDecimal::from_str(&price_dto.o).unwrap())},
-        pc: if price_dto.pc.is_empty() {None}  else {Some(BigDecimal::from_str(&price_dto.pc).unwrap())},
+        high: if price_dto.h.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&price_dto.h).unwrap())
+        },
+        low: if price_dto.l.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&price_dto.l).unwrap())
+        },
+        open: if price_dto.o.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&price_dto.o).unwrap())
+        },
+        pc: if price_dto.pc.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&price_dto.pc).unwrap())
+        },
         price: BigDecimal::from_str(&price_dto.p).unwrap(),
-        amount: if price_dto.cje.is_empty() {None} else  {Some(BigDecimal::from_str(&price_dto.cje).unwrap())},
-        ud: if price_dto.ud.is_empty() {None} else { Some(BigDecimal::from_str(&price_dto.ud).unwrap()) },
+        amount: if price_dto.cje.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&price_dto.cje).unwrap())
+        },
+        ud: if price_dto.ud.is_empty() {
+            None
+        } else {
+            Some(BigDecimal::from_str(&price_dto.ud).unwrap())
+        },
         volume: Some(BigDecimal::from_str(&price_dto.v).unwrap()),
         yc: if price_dto.yc.is_empty() {
             None

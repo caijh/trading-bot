@@ -17,13 +17,6 @@ use crate::stock::stock_svc::get_stock;
 use crate::token::token_svc;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct StockDTO {
-    pub dm: String,
-    pub mc: String,
-    pub jys: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDailyPriceDTO {
     pub d: String,
     pub o: String,
