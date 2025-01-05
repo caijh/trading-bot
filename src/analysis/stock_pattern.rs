@@ -272,14 +272,14 @@ impl StockPattern for BIASPattern {
         let ma_last = ma.last().unwrap();
         let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
         price.close < ma_last
-            && (((ma_last.clone() - price.close.clone()) / ma_last) > BigDecimal::from_f32(0.15).unwrap())
+            && (((ma_last.clone() - price.close.clone()) / ma_last)
+                > BigDecimal::from_f32(0.15).unwrap())
     }
 
     fn name(&self) -> String {
-        "BAIS".to_string()
+        "BIAS".to_string()
     }
 }
-
 
 pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
