@@ -273,7 +273,7 @@ impl StockPattern for BIASPattern {
         let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
         price.close < ma_last
             && (((ma_last.clone() - price.close.clone()) / ma_last)
-                > BigDecimal::from_f32(0.15).unwrap())
+                > BigDecimal::from_f32(0.2).unwrap())
     }
 
     fn name(&self) -> String {
