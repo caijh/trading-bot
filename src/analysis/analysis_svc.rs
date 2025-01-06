@@ -11,6 +11,7 @@ use polars::io::SerReader;
 use polars::prelude::JsonReader;
 use std::error::Error;
 use std::io::Cursor;
+use std::ops::Not;
 use tracing::{error, info};
 
 pub async fn analysis_index(
@@ -47,23 +48,24 @@ pub async fn analysis_stock(
     let json = serde_json::to_string(&prices).unwrap();
     let polars = JsonReader::new(Cursor::new(json)).finish();
     let df = polars?;
-    let patterns = get_candlestick_patterns();
+    let candlestick_patterns = get_candlestick_patterns();
     let ma_patterns = get_ma_patterns();
     let mut match_patterns = Vec::new();
-    for pattern in patterns {
-        info!("test pattern {}", pattern.name());
+    for pattern in candlestick_patterns {
         if pattern.is_match(&stock, &prices, &df) {
             info!("pattern {} matched", pattern.name());
-            let match_ma_patterns = ma_patterns
-                .iter()
-                .filter(|ma| ma.is_match(&stock, &prices, &df))
-                .collect::<Vec<_>>();
-            if !match_ma_patterns.is_empty() {
-                match_patterns.push(pattern.name());
-                for ele in match_ma_patterns {
-                    info!("pattern {} matched", ele.name());
-                    match_patterns.push(ele.name());
-                }
+            match_patterns.push(pattern.name());
+        }
+    }
+    if match_patterns.is_empty().not() {
+        let match_ma_patterns = ma_patterns
+            .iter()
+            .filter(|ma| ma.is_match(&stock, &prices, &df))
+            .collect::<Vec<_>>();
+        if !match_ma_patterns.is_empty() {
+            for ele in match_ma_patterns {
+                info!("pattern {} matched", ele.name());
+                match_patterns.push(ele.name());
             }
         }
     }

@@ -85,6 +85,11 @@ impl StockPattern for DojiStarPattern {
         };
         real_body <= factor_1
             && lower_shadow > upper_shadow
+            && (if upper_shadow > BigDecimal::from(0) {
+                lower_shadow <= upper_shadow * BigDecimal::from(2)
+            } else {
+                true
+            })
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
     }
@@ -275,7 +280,7 @@ impl StockPattern for BIASPattern {
         let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
         price.close < ma_last
             && (((ma_last.clone() - price.close.clone()) / ma_last)
-                > BigDecimal::from_f32(0.2).unwrap())
+                >= BigDecimal::from_f32(0.2).unwrap())
     }
 
     fn name(&self) -> String {
