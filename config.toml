@@ -24,5 +24,4 @@ charting = "https://charting.nasdaq.com"
 
 [notification]
 url = "https://message.joinspace.pp.ua"
-token = ""
 receiver = ""
