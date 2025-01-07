@@ -247,15 +247,11 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
         None => {}
         Some(notification_config) => {
             let url = format!(
-                "{}/send/{}",
+                "{}/send/user/{}",
                 notification_config.url, notification_config.receiver
             );
             Notification::create(&title, &content)
-                .send(
-                    url.as_str(),
-                    notification_config.token.as_str(),
-                    notification_config.receiver.as_str(),
-                )
+                .send(url.as_str(), notification_config.receiver.as_str())
                 .await
         }
     }
@@ -273,15 +269,11 @@ async fn notification_error(content: String) {
         None => {}
         Some(notification_config) => {
             let url = format!(
-                "{}/send/{}",
+                "{}/send/user/{}",
                 notification_config.url, notification_config.receiver
             );
             Notification::create(&title, &content)
-                .send(
-                    url.as_str(),
-                    notification_config.token.as_str(),
-                    notification_config.receiver.as_str(),
-                )
+                .send(url.as_str(), notification_config.receiver.as_str())
                 .await
         }
     }
@@ -362,15 +354,11 @@ async fn do_notification_index_stocks_changed(
         None => {}
         Some(notification_config) => {
             let url = format!(
-                "{}/send/{}",
+                "{}/send/user/{}",
                 notification_config.url, notification_config.receiver
             );
             Notification::create(&title, &content)
-                .send(
-                    url.as_str(),
-                    notification_config.token.as_str(),
-                    notification_config.receiver.as_str(),
-                )
+                .send(url.as_str(), notification_config.receiver.as_str())
                 .await
         }
     }
