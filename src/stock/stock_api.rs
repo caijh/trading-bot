@@ -126,7 +126,11 @@ pub async fn get_stock_daily_price(
                 .unwrap();
             let token = token_svc::get_hkex_token().await;
             let timestramp = Local::now().timestamp_millis();
-            let code = format!("{:0>4}.HK", stock.code);
+            let code = if stock.stock_type == "Index" {
+                format!(".{}", stock.code)
+            } else {
+                format!("{:0>4}.HK", stock.code)
+            };
             let url = format!(
                 "{}/hkexwidget/data/getchartdata2?hchart=1&span=6&int=5&ric={}&token={}&qid={}&callback=jQuery_{}&_={}",
                 url,
