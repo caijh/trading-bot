@@ -179,7 +179,10 @@ pub async fn get_stock_daily_price(
                 let open_time = Local::now()
                     .with_time(NaiveTime::from_hms_opt(9, 30, 0).unwrap())
                     .unwrap();
-                if Local::now() > open_time && !dates.contains(&date) && !holiday_result.is_holiday
+                if stock.stock_type == "Stock"
+                    && Local::now() > open_time
+                    && !dates.contains(&date)
+                    && !holiday_result.is_holiday
                 {
                     // append today price
                     let stock_price = get_current_price(&stock.code).await?;
