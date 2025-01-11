@@ -307,11 +307,7 @@ pub struct StockPriceDTO {
 
 pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
     let stock = get_stock(code).await?;
-    let code = if let Some(code) = stock.to_code {
-        code
-    } else {
-        code.to_string()
-    };
+    let code = stock.get_search_symbol();
     let client = Request::client().await;
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
@@ -388,7 +384,7 @@ pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Erro
                 get_current_stock_price_from_hk(&code).await
             }
         }
-        Exchange::NASDAQ => get_current_price_from_nasdaq(&code).await,
+        Exchange::NASDAQ => get_current_price_from_nasdaq(&stock).await,
     }
 }
 
@@ -514,14 +510,26 @@ async fn get_current_index_price_from_hk(code: &str) -> Result<StockPriceDTO, Bo
     })
 }
 
-async fn get_current_price_from_nasdaq(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+async fn get_current_price_from_nasdaq(
+    stock: &stock_model::Model,
+) -> Result<StockPriceDTO, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
     let base_url = environment
         .get_property::<String>("stock.api.nasdaq.baseurl")
         .unwrap();
-    let url = format!("{}/api/quote/{}/info?assetclass=stocks", base_url, code,);
-    info!("Get stock {} daily price from url = {}", code, url);
+    let url = if stock.stock_type == "Index" {
+        format!(
+            "{}/api/quote/{}/info?assetclass=index",
+            base_url, &stock.code
+        )
+    } else {
+        format!(
+            "{}/api/quote/{}/info?assetclass=stocks",
+            base_url, &stock.code
+        )
+    };
+    info!("Get stock {} daily price from url = {}", &stock.code, url);
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
     headers.insert("Accept", "*/*".parse().unwrap());
@@ -541,6 +549,7 @@ async fn get_current_price_from_nasdaq(code: &str) -> Result<StockPriceDTO, Box<
     let mut price: String;
     let mut v: String;
     let mut pc: String;
+    let mut ud: String;
     let update_time: String;
     if market_status == "Closed" {
         price = primary_data["lastSalePrice"].as_str().unwrap().to_string();
@@ -549,6 +558,7 @@ async fn get_current_price_from_nasdaq(code: &str) -> Result<StockPriceDTO, Box<
             .as_str()
             .unwrap()
             .to_string();
+        ud = primary_data["netChange"].as_str().unwrap().to_string();
         update_time = primary_data["lastTradeTimestamp"]
             .as_str()
             .unwrap()
@@ -563,14 +573,16 @@ async fn get_current_price_from_nasdaq(code: &str) -> Result<StockPriceDTO, Box<
             .as_str()
             .unwrap()
             .to_string();
+        ud = primary_data["netChange"].as_str().unwrap().to_string();
         update_time = secondary_data["lastTradeTimestamp"]
             .as_str()
             .unwrap()
             .to_string();
     }
-    price = price.replace("$", "");
+    price = price.replace("$", "").replace(",", "");
     pc = pc.replace("%", "");
     v = v.replace(",", "");
+    ud = ud.replace("$", "").replace(",", "");
     let t = update_time;
     Ok(StockPriceDTO {
         h: "".to_string(),
@@ -579,7 +591,7 @@ async fn get_current_price_from_nasdaq(code: &str) -> Result<StockPriceDTO, Box<
         pc,
         p: price,
         cje: "".to_string(),
-        ud: "".to_string(),
+        ud,
         v,
         yc: "".to_string(),
         t,

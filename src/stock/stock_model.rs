@@ -33,6 +33,16 @@ pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}
 
+impl Model {
+    pub fn get_search_symbol(&self) -> String {
+        if let Some(to_code) = &self.to_code {
+            format!("{}", to_code)
+        } else {
+            format!("{}", self.code)
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockPrice {
     pub code: String,
