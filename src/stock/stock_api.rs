@@ -549,6 +549,7 @@ async fn get_current_price_from_nasdaq(
     let mut price: String;
     let mut v: String;
     let mut pc: String;
+    let mut ud: String;
     let update_time: String;
     if market_status == "Closed" {
         price = primary_data["lastSalePrice"].as_str().unwrap().to_string();
@@ -557,6 +558,7 @@ async fn get_current_price_from_nasdaq(
             .as_str()
             .unwrap()
             .to_string();
+        ud = primary_data["netChange"].as_str().unwrap().to_string();
         update_time = primary_data["lastTradeTimestamp"]
             .as_str()
             .unwrap()
@@ -571,14 +573,16 @@ async fn get_current_price_from_nasdaq(
             .as_str()
             .unwrap()
             .to_string();
+        ud = primary_data["netChange"].as_str().unwrap().to_string();
         update_time = secondary_data["lastTradeTimestamp"]
             .as_str()
             .unwrap()
             .to_string();
     }
-    price = price.replace("$", "");
+    price = price.replace("$", "").replace(",", "");
     pc = pc.replace("%", "");
     v = v.replace(",", "");
+    ud = ud.replace("$", "").replace(",", "");
     let t = update_time;
     Ok(StockPriceDTO {
         h: "".to_string(),
@@ -587,7 +591,7 @@ async fn get_current_price_from_nasdaq(
         pc,
         p: price,
         cje: "".to_string(),
-        ud: "".to_string(),
+        ud,
         v,
         yc: "".to_string(),
         t,
