@@ -19,7 +19,6 @@ use crate::analysis::analysis_model::AnalyzedStock;
 use crate::analysis::analysis_svc;
 use crate::analysis::analysis_svc::analysis_index;
 use crate::fund::fund_svc;
-use crate::holiday::holiday_svc::sync_holidays;
 use crate::index::index_constituent_model::SyncIndexConstituents;
 use crate::index::index_svc::{
     get_all_stock_index, sync_constituent_stocks_daily_price, sync_constituents,
@@ -379,21 +378,6 @@ impl Runnable for SyncStocksJob {
             }
             Err(e) => {
                 error!("Sync {} stock error {}", &self.exchange, e);
-            }
-        }
-    }
-}
-
-pub struct SyncHolidayJob;
-
-#[async_trait]
-impl Runnable for SyncHolidayJob {
-    async fn run(&self) {
-        let r = sync_holidays().await;
-        match r {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Sync holiday error {}", e)
             }
         }
     }
