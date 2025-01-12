@@ -4,8 +4,8 @@ use application_web_macros::get;
 use axum::response::IntoResponse;
 use chrono::Local;
 
+use crate::holiday::holiday_job::SyncHolidayJob;
 use crate::holiday::holiday_svc::is_holiday;
-use crate::job::jobs::SyncHolidayJob;
 
 /// 检查今天是否为假日。如果今天是假日，返回`true`；否则，返回`false`.
 ///

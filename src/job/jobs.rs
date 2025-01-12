@@ -384,21 +384,6 @@ impl Runnable for SyncStocksJob {
     }
 }
 
-pub struct SyncHolidayJob;
-
-#[async_trait]
-impl Runnable for SyncHolidayJob {
-    async fn run(&self) {
-        let r = sync_holidays().await;
-        match r {
-            Ok(_) => {}
-            Err(e) => {
-                error!("Sync holiday error {}", e)
-            }
-        }
-    }
-}
-
 pub struct SyncHKEXTokenJob;
 #[async_trait]
 impl Runnable for SyncHKEXTokenJob {
