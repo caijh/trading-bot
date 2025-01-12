@@ -600,11 +600,11 @@ pub async fn get_stock(code: &str) -> Result<Stock, Box<dyn Error>> {
             .one(&dao.connection)
             .await?;
         match stock {
-            None => Err(format!("Stock {} not found", code).into()),
             Some(stock) => {
                 CacheManager::set(code, &serde_json::to_string(&stock).unwrap()).await;
                 Ok(stock)
             }
+            None => Err(format!("Stock {} not found or not support", code).into()),
         }
     } else {
         let stock = serde_json::from_str(&stock.unwrap()).unwrap();
