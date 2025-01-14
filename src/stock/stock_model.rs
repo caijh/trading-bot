@@ -36,9 +36,9 @@ impl ActiveModelBehavior for ActiveModel {}
 impl Model {
     pub fn get_search_symbol(&self) -> String {
         if let Some(to_code) = &self.to_code {
-            format!("{}", to_code)
+            to_code.to_string()
         } else {
-            format!("{}", self.code)
+            self.code.to_string()
         }
     }
 }
@@ -59,5 +59,3 @@ pub struct StockPrice {
     pub zs: Option<BigDecimal>,
     pub time: String,
 }
-
-pub const COLUMN_CODE: &str = "code";
