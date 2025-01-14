@@ -1,3 +1,4 @@
+use chrono_tz::Tz;
 use std::error::Error;
 use std::str::FromStr;
 
@@ -35,6 +36,17 @@ impl FromStr for Exchange {
             "HK" => Ok(Exchange::HK),
             "NASDAQ" => Ok(Exchange::NASDAQ),
             _ => Err("Error Exchange value, SH（上海证券交易所） or SZ（深圳证券交易所）".into()),
+        }
+    }
+}
+
+impl Exchange {
+    pub fn time_zone(&self) -> Tz {
+        match self {
+            Exchange::SH => chrono_tz::Asia::Chongqing,
+            Exchange::SZ => chrono_tz::Asia::Chongqing,
+            Exchange::HK => chrono_tz::Asia::Hong_Kong,
+            Exchange::NASDAQ => chrono_tz::America::New_York,
         }
     }
 }

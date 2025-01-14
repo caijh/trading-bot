@@ -73,3 +73,13 @@ create table stock.stock_index
 )
     comment '股票指数';
 
+create table market_time
+(
+    id         bigint unsigned auto_increment
+        primary key,
+    exchange   varchar(10) not null comment '交易所',
+    start_time time        not null comment '开始时间',
+    end_time   time        not null comment '结束时间'
+)
+    comment '市场交易时间';
+
