@@ -216,7 +216,7 @@ pub async fn get_stock_daily_price(
 }
 
 async fn get_stock_daily_price_from_nasdaq(
-    _exchange: &Exchange,
+    exchange: &Exchange,
     stock: &stock_model::Model,
 ) -> Result<Vec<StockDailyPriceDTO>, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
@@ -225,7 +225,7 @@ async fn get_stock_daily_price_from_nasdaq(
     let url = environment
         .get_property::<String>("stock.api.nasdaq.charting")
         .unwrap();
-    let now = Local::now();
+    let now = Utc::now().with_timezone(&exchange.time_zone());
     let today = now.format("%Y-%m-%d").to_string();
     let year_day_before_now = now
         .checked_sub_signed(Duration::days(360))
