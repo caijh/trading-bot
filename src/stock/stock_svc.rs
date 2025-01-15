@@ -1,9 +1,17 @@
+use crate::exchange::exchange_model::Exchange;
+use crate::fund::fund_model;
+use crate::holiday::holiday_svc::today_is_holiday;
+use crate::index::index_api;
+use crate::stock::stock_api::StockDailyPriceDTO;
+use crate::stock::stock_model::{Model as Stock, Model, StockPrice};
+use crate::stock::stock_price_model::Model as StockDailyPrice;
+use crate::stock::{stock_api, stock_model, stock_price_model, sync_record_model};
 use application_beans::factory::bean_factory::BeanFactory;
 use application_cache::CacheManager;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use bigdecimal::BigDecimal;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
-use chrono::{Local, Timelike};
+use chrono::{Local, Timelike, Utc};
 use database_mysql_seaorm::Dao;
 use rand::{thread_rng, Rng};
 use redis::Commands;
@@ -21,15 +29,6 @@ use std::str::FromStr;
 use tempfile::tempdir;
 use tracing::info;
 use util::request::Request;
-
-use crate::exchange::exchange_model::Exchange;
-use crate::fund::fund_model;
-use crate::holiday::holiday_svc::today_is_holiday;
-use crate::index::index_api;
-use crate::stock::stock_api::StockDailyPriceDTO;
-use crate::stock::stock_model::{Model as Stock, Model, StockPrice};
-use crate::stock::stock_price_model::Model as StockDailyPrice;
-use crate::stock::{stock_api, stock_model, stock_price_model, sync_record_model};
 
 pub async fn sync(exchange: &str) -> Result<(), Box<dyn Error>> {
     let exchange = Exchange::from_str(exchange)?;
@@ -438,7 +437,9 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
 
 pub async fn sync_stock_daily_price(code: &str) -> Result<(), Box<dyn Error>> {
     let stock = get_stock(code).await?;
-    let date = Local::now()
+    let exchange = Exchange::from_str(&stock.exchange)?;
+    let date = Utc::now()
+        .with_timezone(&exchange.time_zone())
         .format("%Y%m%d")
         .to_string()
         .parse::<u64>()
