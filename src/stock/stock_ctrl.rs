@@ -1,12 +1,9 @@
-use crate::job::jobs::SyncStocksJob;
-use crate::stock::stock_svc::{get_stock_daily_price, get_stock_price, sync_stock_daily_price};
-use application_core::lang::runnable::Runnable;
+use crate::stock::stock_svc;
 use application_web::response::RespBody;
 use application_web_macros::get;
-use axum::extract::{Path, Query};
+use axum::extract::Query;
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
-use tokio::spawn;
 use tracing::info;
 
 #[derive(Serialize, Deserialize)]
@@ -14,37 +11,18 @@ struct StockParams {
     code: String,
 }
 
-/**
- * 同步指定交易所的股票数据。
- *
- * # 参数
- * `exchange`: 代表需要同步的交易所的名称, sh or sz.
- *
- * # 返回值
- * 实现了 `IntoResponse` 的一个类型，通常用于构建HTTP响应。
- */
-#[get("/stock/sync/:exchange")]
-async fn sync(Path(exchange): Path<String>) -> impl IntoResponse {
-    spawn(async {
-        let job = SyncStocksJob { exchange };
-        job.run().await;
-    });
-
-    RespBody::<()>::success_info("Sync Stocks in background")
-}
-
 /// 获取股票当前价格
 #[get("/stock/price")]
 async fn stock_price(Query(params): Query<StockParams>) -> impl IntoResponse {
     info!("Query stock price, code = {}", params.code);
-    let r = get_stock_price(&params.code).await;
+    let r = stock_svc::get_stock_price(&params.code).await;
     RespBody::result(&r).response()
 }
 
 /// 获取股票日线价格
 #[get("/stock/price/daily")]
-async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
-    let r = get_stock_daily_price(&params.code).await;
+async fn stock_daily_price(Query(params): Query<StockParams>) -> impl IntoResponse {
+    let r = stock_svc::get_stock_daily_price(&params.code).await;
     RespBody::result(&r).response()
 }
 
@@ -58,7 +36,7 @@ async fn stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
 ///
 /// 返回一个实现了`IntoResponse` trait的对象，用于构建HTTP响应
 #[get("/stock/price/daily/sync")]
-async fn sync_stock_daily(Query(params): Query<StockParams>) -> impl IntoResponse {
-    let r = sync_stock_daily_price(&params.code).await;
+async fn sync_stock_daily_price(Query(params): Query<StockParams>) -> impl IntoResponse {
+    let r = stock_svc::sync_stock_daily_price(&params.code).await;
     RespBody::result(&r).response()
 }

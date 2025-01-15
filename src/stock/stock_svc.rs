@@ -3,7 +3,7 @@ use crate::fund::fund_api::FundApi;
 use crate::fund::fund_model;
 use crate::holiday::holiday_svc::today_is_holiday;
 use crate::index::index_api::IndexApi;
-use crate::stock::stock_api::StockDailyPriceDTO;
+use crate::stock::stock_api::{StockApi, StockDailyPriceDTO};
 use crate::stock::stock_model::{Model as Stock, Model, StockPrice};
 use crate::stock::stock_price_model::Model as StockDailyPrice;
 use crate::stock::{stock_api, stock_model, stock_price_model, sync_record_model};
@@ -12,7 +12,7 @@ use application_cache::CacheManager;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use bigdecimal::BigDecimal;
 use calamine::{open_workbook, Reader, Xls, Xlsx};
-use chrono::{Local, Timelike, Utc};
+use chrono::{Timelike, Utc};
 use database_mysql_seaorm::Dao;
 use rand::{thread_rng, Rng};
 use redis::Commands;
@@ -330,7 +330,9 @@ pub async fn get_stock_daily_price_from_cache(
                 let client = Redis::get_client();
                 let mut con = client.get_connection()?;
                 let key = "Stock:".to_string() + &stock.code;
-                let seconds = 3600 * 24 - Local::now().num_seconds_from_midnight();
+                let exchange = Exchange::from_str(&stock.exchange)?;
+                let now = Utc::now().with_timezone(&exchange.time_zone());
+                let seconds = 3600 * 24 - now.num_seconds_from_midnight();
                 con.set_ex::<&str, String, String>(
                     &key,
                     serde_json::to_string(&prices).unwrap(),
@@ -361,7 +363,9 @@ pub async fn get_stock_daily_price(code: &str) -> Result<Vec<StockDailyPrice>, B
         return Err("Stock not found".into());
     }
     let stock = stock.unwrap();
-    let date = Local::now()
+    let exchange = Exchange::from_str(&stock.exchange)?;
+    let date = Utc::now()
+        .with_timezone(&exchange.time_zone())
         .format("%Y%m%d")
         .to_string()
         .parse::<u64>()
@@ -484,7 +488,9 @@ fn create_stock_daily_price(code: &str, dto: &StockDailyPriceDTO) -> StockDailyP
 }
 
 pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
-    let price_dto = stock_api::get_current_price(code).await?;
+    let stock = get_stock(code).await?;
+    let exchange = Exchange::from_str(&stock.exchange)?;
+    let price_dto = exchange.get_current_price(code).await?;
 
     let price = StockPrice {
         code: code.to_string(),
