@@ -1,4 +1,5 @@
 use crate::exchange::exchange_model::Exchange;
+use crate::fund::fund_api::FundApi;
 use crate::fund::fund_model;
 use crate::holiday::holiday_svc::today_is_holiday;
 use crate::index::index_api::IndexApi;
@@ -24,6 +25,7 @@ use serde_json::Value;
 use std::error::Error;
 use std::fs::File;
 use std::io::copy;
+use std::ops::Not;
 use std::path::Path;
 use std::str::FromStr;
 use tempfile::tempdir;
@@ -112,72 +114,11 @@ async fn get_stock_from_hk() -> Result<Vec<Model>, Box<dyn Error>> {
 }
 
 pub async fn sync_funds(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
-    match exchange {
-        Exchange::SH => {
-            let url = format!(
-                "https://query.sse.com.cn/commonSoaQuery.do?sqlId=FUND_LIST&fundType=00&_={}",
-                thread_rng().gen::<f64>()
-            );
-            let stocks = download_funds(&url, exchange.as_ref()).await?;
-            delete_funds(exchange.as_ref()).await?;
-            save_stocks(&stocks).await?;
-            save_funds(&stocks).await?;
-        }
-        Exchange::SZ => {
-            let url = format!("http://www.szse.cn/api/report/ShowReport?SHOWTYPE=xlsx&CATALOGID=1105&TABKEY=tab1&random={}", thread_rng().gen::<f64>());
-            let dir = tempdir()?;
-            let path_buf = dir.path().join("sz_funds.xlsx");
-            Request::download(&url, path_buf.as_path()).await?;
-            let stocks = read_funds_from_sz_excel(path_buf.as_path(), exchange.as_ref())?;
-            delete_funds(exchange.as_ref()).await?;
-            save_stocks(&stocks).await?;
-            save_funds(&stocks).await?;
-        }
-        Exchange::HK => {}
-        Exchange::NASDAQ => {}
-    }
+    let stocks = exchange.get_funds().await?;
+    delete_funds(exchange.as_ref()).await?;
+    save_stocks(&stocks).await?;
+    save_funds(&stocks).await?;
     Ok(())
-}
-
-pub async fn download_funds(url: &str, exchange: &str) -> Result<Vec<Stock>, Box<dyn Error>> {
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36".parse().unwrap());
-    headers.insert("X-Requested-With", "XMLHttpRequest".parse().unwrap());
-    headers.insert("Referer", "https://www.sse.com.cn/".parse().unwrap());
-    headers.insert("Connection", "keep-alive".parse().unwrap());
-    let client = reqwest::Client::builder().build().unwrap();
-    let response = client.get(url).headers(headers).send().await;
-    match response {
-        Ok(response) => {
-            let json: Value = response.json().await?;
-            let data = json
-                .get("pageHelp")
-                .unwrap()
-                .get("data")
-                .unwrap()
-                .as_array();
-            let mut funds = Vec::new();
-            if let Some(data) = data {
-                for fund in data {
-                    let stock = Stock {
-                        code: fund.get("fundCode").unwrap().as_str().unwrap().to_string(),
-                        name: fund
-                            .get("secNameFull")
-                            .unwrap()
-                            .as_str()
-                            .unwrap()
-                            .to_string(),
-                        exchange: exchange.to_string(),
-                        stock_type: "Fund".to_string(),
-                        to_code: None,
-                    };
-                    funds.push(stock);
-                }
-            }
-            Ok(funds)
-        }
-        Err(e) => Err(e.into()),
-    }
 }
 
 pub async fn download(url: &str, path: &Path) -> Result<(), Box<dyn Error>> {
@@ -300,10 +241,12 @@ async fn save_stocks(stocks: &[Stock]) -> Result<(), Box<dyn Error>> {
         .iter()
         .map(|e| e.clone().into_active_model())
         .collect();
-    stock_model::Entity::insert_many(stocks)
-        .on_empty_do_nothing()
-        .exec(&dao.connection)
-        .await?;
+    if stocks.is_empty().not() {
+        stock_model::Entity::insert_many(stocks)
+            .on_empty_do_nothing()
+            .exec(&dao.connection)
+            .await?;
+    }
     Ok(())
 }
 
@@ -320,10 +263,12 @@ async fn save_funds(stocks: &Vec<Stock>) -> Result<(), Box<dyn Error>> {
         });
     }
 
-    fund_model::Entity::insert_many(funds)
-        .on_empty_do_nothing()
-        .exec(&dao.connection)
-        .await?;
+    if funds.is_empty().not() {
+        fund_model::Entity::insert_many(funds)
+            .on_empty_do_nothing()
+            .exec(&dao.connection)
+            .await?;
+    }
 
     Ok(())
 }
