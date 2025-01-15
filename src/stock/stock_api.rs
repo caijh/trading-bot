@@ -20,12 +20,12 @@ use crate::token::token_svc;
 
 #[async_trait]
 pub trait StockApi {
-    async fn get_current_price(&self, code: &str) -> Result<StockPriceDTO, Box<dyn Error>>;
+    async fn get_stock_price(&self, code: &str) -> Result<StockPriceDTO, Box<dyn Error>>;
 }
 
 #[async_trait]
 impl StockApi for Exchange {
-    async fn get_current_price(&self, code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+    async fn get_stock_price(&self, code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
         match self {
             Exchange::SH => get_current_price_from_sse(code).await,
             Exchange::SZ => get_current_price_from_szse(code).await,
@@ -290,7 +290,7 @@ pub async fn get_stock_daily_price(
                     && !holiday_result.is_holiday
                 {
                     // append today price
-                    let stock_price = exchange.get_current_price(&stock.code).await?;
+                    let stock_price = exchange.get_stock_price(&stock.code).await?;
                     let date = NaiveDateTime::parse_from_str(&stock_price.t, "%Y-%m-%d %H:%M:%S")
                         .unwrap()
                         .format("%Y%m%d")
