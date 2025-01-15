@@ -100,7 +100,7 @@ pub async fn get_stock_index(index: &str) -> Result<index_model::Model, Box<dyn 
         .one(&dao.connection)
         .await?;
     match index {
-        None => Err("Stock index is no Supported".into()),
+        None => Err("Stock index is not Supported".into()),
         Some(index) => Ok(index),
     }
 }
