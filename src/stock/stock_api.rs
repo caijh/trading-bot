@@ -1,5 +1,6 @@
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use application_core::env::property_resolver::PropertyResolver;
+use async_trait::async_trait;
 use bigdecimal::num_traits::Bounded;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Duration, Local, NaiveDateTime, NaiveTime, Utc};
@@ -16,6 +17,105 @@ use crate::holiday::holiday_svc::today_is_holiday;
 use crate::stock::stock_model;
 use crate::stock::stock_svc::get_stock;
 use crate::token::token_svc;
+
+#[async_trait]
+pub trait StockApi {
+    async fn get_stock_price(&self, code: &str) -> Result<StockPriceDTO, Box<dyn Error>>;
+}
+
+#[async_trait]
+impl StockApi for Exchange {
+    async fn get_stock_price(&self, code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+        match self {
+            Exchange::SH => get_current_price_from_sse(code).await,
+            Exchange::SZ => get_current_price_from_szse(code).await,
+            Exchange::HK => {
+                let stock = get_stock(code).await?;
+                if stock.stock_type == "Index" {
+                    get_current_index_price_from_hk(self, code).await
+                } else {
+                    get_current_stock_price_from_hk(code).await
+                }
+            }
+            Exchange::NASDAQ => {
+                let stock = get_stock(code).await?;
+                get_current_price_from_nasdaq(&stock).await
+            }
+        }
+    }
+}
+
+async fn get_current_price_from_sse(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.get_environment().await;
+    let base_url = environment
+        .get_property::<String>("stock.api.sh.baseurl")
+        .unwrap();
+    let url = format!(
+        "{}/v1/sh1/snap/{}?_={}",
+        base_url,
+        code,
+        Local::now().timestamp_millis()
+    );
+    info!("Get stock {} daily price from url = {}", code, url);
+    let client = Request::client().await;
+    let response = client.get(url).send().await?;
+    let json: Value = response.json().await?;
+    let snap = json.get("snap").unwrap();
+    let date = json.get("date").unwrap().to_string();
+    let time = json.get("time").unwrap().to_string();
+    let time = if time.len() < 6 {
+        format!("{}{}", 0, time)
+    } else {
+        time
+    };
+    Ok(StockPriceDTO {
+        h: snap.get(3).unwrap().to_string(),
+        l: snap.get(4).unwrap().to_string(),
+        o: snap.get(2).unwrap().to_string(),
+        pc: snap.get(7).unwrap().to_string(),
+        p: snap.get(5).unwrap().to_string(),
+        cje: snap.get(10).unwrap().to_string(),
+        ud: snap.get(8).unwrap().to_string(),
+        v: snap.get(9).unwrap().to_string(),
+        yc: snap.get(1).unwrap().to_string(),
+        t: NaiveDateTime::parse_from_str(&format!("{}{}", date, time), "%Y%m%d%H%M%S")
+            .unwrap()
+            .format("%Y-%m-%d %H:%M:%S")
+            .to_string(),
+    })
+}
+
+async fn get_current_price_from_szse(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+    let application_context = APPLICATION_CONTEXT.read().await;
+    let environment = application_context.get_environment().await;
+    let base_url = environment
+        .get_property::<String>("stock.api.sz.baseurl")
+        .unwrap();
+    let url = format!(
+        "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
+        base_url,
+        thread_rng().gen::<f64>(),
+        code
+    );
+    info!("Get stock {} daily price from url = {}", code, url);
+    let client = Request::client().await;
+    let response = client.get(url).send().await?;
+    let json: Value = response.json().await?;
+    let data = json.get("data").unwrap();
+    Ok(StockPriceDTO {
+        h: data["high"].as_str().unwrap().to_string(),
+        l: data["low"].as_str().unwrap().to_string(),
+        o: data["open"].as_str().unwrap().to_string(),
+        pc: data["deltaPercent"].as_str().unwrap().to_string(),
+        p: data["now"].as_str().unwrap().to_string(),
+        cje: data["amount"].as_number().unwrap().to_string(),
+        ud: data["delta"].as_str().unwrap().to_string(),
+        v: data["volume"].as_number().unwrap().to_string(),
+        yc: "".to_string(),
+        t: data["marketTime"].as_str().unwrap().to_string(),
+    })
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StockDailyPriceDTO {
@@ -190,7 +290,7 @@ pub async fn get_stock_daily_price(
                     && !holiday_result.is_holiday
                 {
                     // append today price
-                    let stock_price = get_current_price(&stock.code).await?;
+                    let stock_price = exchange.get_stock_price(&stock.code).await?;
                     let date = NaiveDateTime::parse_from_str(&stock_price.t, "%Y-%m-%d %H:%M:%S")
                         .unwrap()
                         .format("%Y%m%d")
@@ -305,89 +405,6 @@ pub struct StockPriceDTO {
     pub t: String,
 }
 
-pub async fn get_current_price(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
-    let stock = get_stock(code).await?;
-    let code = stock.get_search_symbol();
-    let client = Request::client().await;
-    let application_context = APPLICATION_CONTEXT.read().await;
-    let environment = application_context.get_environment().await;
-    let exchange = Exchange::from_str(&stock.exchange)?;
-    match exchange {
-        Exchange::SH => {
-            let base_url = environment
-                .get_property::<String>("stock.api.sh.baseurl")
-                .unwrap();
-            let url = format!(
-                "{}/v1/sh1/snap/{}?_={}",
-                base_url,
-                code,
-                Local::now().timestamp_millis()
-            );
-            info!("Get stock {} daily price from url = {}", code, url);
-            let response = client.get(url).send().await?;
-            let json: Value = response.json().await?;
-            let snap = json.get("snap").unwrap();
-            let date = json.get("date").unwrap().to_string();
-            let time = json.get("time").unwrap().to_string();
-            let time = if time.len() < 6 {
-                format!("{}{}", 0, time)
-            } else {
-                time
-            };
-            Ok(StockPriceDTO {
-                h: snap.get(3).unwrap().to_string(),
-                l: snap.get(4).unwrap().to_string(),
-                o: snap.get(2).unwrap().to_string(),
-                pc: snap.get(7).unwrap().to_string(),
-                p: snap.get(5).unwrap().to_string(),
-                cje: snap.get(10).unwrap().to_string(),
-                ud: snap.get(8).unwrap().to_string(),
-                v: snap.get(9).unwrap().to_string(),
-                yc: snap.get(1).unwrap().to_string(),
-                t: NaiveDateTime::parse_from_str(&format!("{}{}", date, time), "%Y%m%d%H%M%S")
-                    .unwrap()
-                    .format("%Y-%m-%d %H:%M:%S")
-                    .to_string(),
-            })
-        }
-        Exchange::SZ => {
-            let base_url = environment
-                .get_property::<String>("stock.api.sz.baseurl")
-                .unwrap();
-            let url = format!(
-                "{}/api/market/ssjjhq/getTimeData?random={}&marketId=1&code={}",
-                base_url,
-                thread_rng().gen::<f64>(),
-                code
-            );
-            info!("Get stock {} daily price from url = {}", code, url);
-            let response = client.get(url).send().await?;
-            let json: Value = response.json().await?;
-            let data = json.get("data").unwrap();
-            Ok(StockPriceDTO {
-                h: data["high"].as_str().unwrap().to_string(),
-                l: data["low"].as_str().unwrap().to_string(),
-                o: data["open"].as_str().unwrap().to_string(),
-                pc: data["deltaPercent"].as_str().unwrap().to_string(),
-                p: data["now"].as_str().unwrap().to_string(),
-                cje: data["amount"].as_number().unwrap().to_string(),
-                ud: data["delta"].as_str().unwrap().to_string(),
-                v: data["volume"].as_number().unwrap().to_string(),
-                yc: "".to_string(),
-                t: data["marketTime"].as_str().unwrap().to_string(),
-            })
-        }
-        Exchange::HK => {
-            if stock.stock_type == "Index" {
-                get_current_index_price_from_hk(&code).await
-            } else {
-                get_current_stock_price_from_hk(&code).await
-            }
-        }
-        Exchange::NASDAQ => get_current_price_from_nasdaq(&stock).await,
-    }
-}
-
 async fn get_current_stock_price_from_hk(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
@@ -432,14 +449,19 @@ async fn get_current_stock_price_from_hk(code: &str) -> Result<StockPriceDTO, Bo
     })
 }
 
-async fn get_current_index_price_from_hk(code: &str) -> Result<StockPriceDTO, Box<dyn Error>> {
+async fn get_current_index_price_from_hk(
+    exchange: &Exchange,
+    code: &str,
+) -> Result<StockPriceDTO, Box<dyn Error>> {
     let application_context = APPLICATION_CONTEXT.read().await;
     let environment = application_context.get_environment().await;
     let base_url = environment
         .get_property::<String>("stock.api.hk.baseurl")
         .unwrap();
     let token = token_svc::get_hkex_token().await;
-    let timestamp = Local::now().timestamp_millis();
+    let timestamp = Utc::now()
+        .with_timezone(&exchange.time_zone())
+        .timestamp_millis();
     let url = format!(
         "{}/hkexwidget/data/getchartdata2?hchart=1&span=0&int=0&ric=.{}&token={}&qid={}&callback=jQuery_{}&_={}",
         base_url,

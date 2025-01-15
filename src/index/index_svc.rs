@@ -1,6 +1,7 @@
 use crate::exchange::exchange_model::Exchange;
+use crate::index::index_api::IndexApi;
 use crate::index::index_constituent_model::SyncIndexConstituents;
-use crate::index::{index_api, index_constituent_model, index_model};
+use crate::index::{index_constituent_model, index_model};
 use crate::stock::stock_svc::sync_stock_daily_price;
 use application_beans::factory::bean_factory::BeanFactory;
 use application_context::context::application_context::APPLICATION_CONTEXT;
@@ -40,7 +41,7 @@ pub async fn get_constituent_stocks(
 pub async fn sync_constituents(index: &str) -> Result<SyncIndexConstituents, Box<dyn Error>> {
     let index = get_stock_index(index).await?;
     let exchange = Exchange::from_str(&index.exchange)?;
-    let stocks = index_api::get_stocks(&exchange, &index.code).await?;
+    let stocks = exchange.get_index_stocks(&index.code).await?;
 
     let application_context = APPLICATION_CONTEXT.read().await;
     let dao = application_context.get_bean_factory().get::<Dao>();
@@ -99,7 +100,7 @@ pub async fn get_stock_index(index: &str) -> Result<index_model::Model, Box<dyn 
         .one(&dao.connection)
         .await?;
     match index {
-        None => Err("Stock index is no Supported".into()),
+        None => Err("Stock index is not Supported".into()),
         Some(index) => Ok(index),
     }
 }
