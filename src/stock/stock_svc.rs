@@ -1,7 +1,7 @@
 use crate::exchange::exchange_model::Exchange;
 use crate::fund::fund_model;
 use crate::holiday::holiday_svc::today_is_holiday;
-use crate::index::index_api;
+use crate::index::index_api::IndexApi;
 use crate::stock::stock_api::StockDailyPriceDTO;
 use crate::stock::stock_model::{Model as Stock, Model, StockPrice};
 use crate::stock::stock_price_model::Model as StockDailyPrice;
@@ -62,7 +62,7 @@ pub async fn sync_stocks(exchange: &Exchange) -> Result<(), Box<dyn Error>> {
             save_stocks(&stocks).await?;
         }
         Exchange::NASDAQ => {
-            let stocks = index_api::get_stocks(&Exchange::NASDAQ, "nasdaq100").await?;
+            let stocks = exchange.get_index_stocks("nasdaq100").await?;
             delete_stocks(exchange.as_ref()).await?;
             save_stocks(&stocks).await?;
         }
