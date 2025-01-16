@@ -7,6 +7,7 @@ use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
 use tokio::spawn;
+use tracing::info;
 
 #[derive(Serialize, Deserialize)]
 struct MarketStatusParams {
@@ -17,6 +18,7 @@ struct MarketStatusParams {
 async fn get_market_status_by_stock_code(
     Query(params): Query<MarketStatusParams>,
 ) -> impl IntoResponse {
+    info!("Get market status by stock_code {}", params.stock_code);
     let r = exchange_svc::get_market_status_by_stock_code_from_cache(&params.stock_code).await;
     RespBody::result(&r)
 }
