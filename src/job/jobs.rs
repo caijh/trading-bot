@@ -45,23 +45,23 @@ pub async fn load_jobs() -> Result<(), Box<dyn Error>> {
             Box::new(SyncHKEXTokenJob),
         )
         .await;
-    let _ = scheduler
-        .add_job(
-            2,
-            "同步指数成分份股股价",
-            "0 30 15,16 * * *",
-            Box::new(SyncAllIndexStockPriceJob),
-        )
-        .await;
+    // let _ = scheduler
+    //     .add_job(
+    //         2,
+    //         "同步指数成分份股股价",
+    //         "0 30 15,16 * * *",
+    //         Box::new(SyncAllIndexStockPriceJob),
+    //     )
+    //     .await;
 
-    let _ = scheduler
-        .add_job(
-            3,
-            "同步基金股价",
-            "0 30 15,16 * * *",
-            Box::new(SyncFundPriceJob),
-        )
-        .await;
+    // let _ = scheduler
+    //     .add_job(
+    //         3,
+    //         "同步基金股价",
+    //         "0 30 15,16 * * *",
+    //         Box::new(SyncFundPriceJob),
+    //     )
+    //     .await;
 
     Ok(())
 }
