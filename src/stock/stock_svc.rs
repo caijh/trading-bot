@@ -490,7 +490,8 @@ fn create_stock_daily_price(code: &str, dto: &StockDailyPriceDTO) -> StockDailyP
 pub async fn get_stock_price(code: &str) -> Result<StockPrice, Box<dyn Error>> {
     let stock = get_stock(code).await?;
     let exchange = Exchange::from_str(&stock.exchange)?;
-    let price_dto = exchange.get_stock_price(code).await?;
+    let symbol = stock.get_search_symbol();
+    let price_dto = exchange.get_stock_price(symbol.as_str()).await?;
 
     let price = StockPrice {
         code: code.to_string(),
