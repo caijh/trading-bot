@@ -1,6 +1,7 @@
 use crate::exchange::{exchange_model, market_time};
 use crate::stock::stock_svc;
 use application_beans::factory::bean_factory::BeanFactory;
+use application_cache::CacheManager;
 use application_context::context::application_context::APPLICATION_CONTEXT;
 use chrono::Utc;
 use database_mysql_seaorm::Dao;
@@ -8,7 +9,7 @@ use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use std::error::Error;
 use std::str::FromStr;
 
-pub async fn get_market_status_by_stock_code(code: &str) -> Result<String, Box<dyn Error>> {
+async fn get_market_status_by_stock_code(code: &str) -> Result<String, Box<dyn Error>> {
     let stock = stock_svc::get_stock(code).await?;
     let exchange = &stock.exchange;
     let application_context = APPLICATION_CONTEXT.read().await;
@@ -40,4 +41,18 @@ pub async fn get_market_status_by_stock_code(code: &str) -> Result<String, Box<d
     }
 
     Ok("MarketClosed".to_string())
+}
+
+pub async fn get_market_status_by_stock_code_from_cache(
+    code: &str,
+) -> Result<String, Box<dyn Error>> {
+    let key = format!("MarketStatus:{}", code);
+    let market_status = CacheManager::get(&key).await;
+    if market_status.is_some() {
+        let market_status = market_status.unwrap();
+        return Ok(market_status);
+    }
+    let market_status = get_market_status_by_stock_code(code).await?;
+    CacheManager::set(&key, &market_status).await;
+    Ok(market_status)
 }
