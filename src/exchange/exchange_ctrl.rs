@@ -17,7 +17,7 @@ struct MarketStatusParams {
 async fn get_market_status_by_stock_code(
     Query(params): Query<MarketStatusParams>,
 ) -> impl IntoResponse {
-    let r = exchange_svc::get_market_status_by_stock_code(&params.stock_code).await;
+    let r = exchange_svc::get_market_status_by_stock_code_from_cache(&params.stock_code).await;
     RespBody::result(&r)
 }
 
