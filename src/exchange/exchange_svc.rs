@@ -52,6 +52,7 @@ pub async fn get_market_status_by_stock_code_from_cache(
         let market_status = market_status.unwrap();
         return Ok(market_status);
     }
+
     let market_status = get_market_status_by_stock_code(code).await?;
     CacheManager::set(&key, &market_status).await;
     Ok(market_status)
