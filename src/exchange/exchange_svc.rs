@@ -8,6 +8,7 @@ use database_mysql_seaorm::Dao;
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use std::error::Error;
 use std::str::FromStr;
+use std::time::Duration;
 
 async fn get_market_status_by_stock_code(code: &str) -> Result<String, Box<dyn Error>> {
     let stock = stock_svc::get_stock(code).await?;
@@ -47,13 +48,19 @@ pub async fn get_market_status_by_stock_code_from_cache(
     code: &str,
 ) -> Result<String, Box<dyn Error>> {
     let key = format!("MarketStatus:{}", code);
-    let market_status = CacheManager::get(&key).await;
+    let market_status = CacheManager::get_from("MarketStatus", &key).await;
     if market_status.is_some() {
         let market_status = market_status.unwrap();
         return Ok(market_status);
     }
 
     let market_status = get_market_status_by_stock_code(code).await?;
-    CacheManager::set(&key, &market_status).await;
+    CacheManager::set_to(
+        "MarketStatus",
+        &key,
+        &market_status,
+        Duration::from_secs(300),
+    )
+    .await;
     Ok(market_status)
 }

@@ -57,6 +57,7 @@ pub async fn sync_holidays() -> Result<(), Box<dyn Error>> {
         .exec(&dao.connection)
         .await?;
     holiday_model::Entity::insert_many(holidays)
+        .on_empty_do_nothing()
         .exec(&dao.connection)
         .await?;
     Ok(())
