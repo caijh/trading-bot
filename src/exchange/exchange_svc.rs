@@ -59,7 +59,7 @@ pub async fn get_market_status_by_stock_code_from_cache(
         "MarketStatus",
         &key,
         &market_status,
-        Duration::from_secs(1800),
+        Duration::from_secs(300),
     )
     .await;
     Ok(market_status)
