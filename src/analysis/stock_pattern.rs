@@ -31,7 +31,7 @@ impl StockPattern for HammerPattern {
         &self,
         stock: &stock_model::Model,
         prices: &[StockDailyPrice],
-        _df: &DataFrame,
+        df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
@@ -45,12 +45,15 @@ impl StockPattern for HammerPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
+
+        let volumn_pattern = VolumnMaPattern { ma: 20};
         // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
         real_body > BigDecimal::from_u8(0).unwrap()
             && lower_shadow >= (real_body.clone() * factor_2.clone())
             && lower_shadow >= (upper_shadow.clone() * factor_1.clone())
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
+            && volumn_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
@@ -66,7 +69,7 @@ impl StockPattern for DojiStarPattern {
         &self,
         stock: &stock_model::Model,
         prices: &[StockDailyPrice],
-        _df: &DataFrame,
+        df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
@@ -83,6 +86,7 @@ impl StockPattern for DojiStarPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
+        let volumn_pattern = VolumnMaPattern { ma: 20};
         real_body <= factor_1
             && lower_shadow > upper_shadow
             && (if upper_shadow > BigDecimal::from(0) {
@@ -92,6 +96,7 @@ impl StockPattern for DojiStarPattern {
             })
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
+            && volumn_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
@@ -106,7 +111,7 @@ impl StockPattern for BullishEngulfingPattern {
         &self,
         stock: &stock_model::Model,
         prices: &[StockDailyPrice],
-        _df: &DataFrame,
+        df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
         if price.is_down() {
@@ -128,6 +133,7 @@ impl StockPattern for BullishEngulfingPattern {
             let pre_close = &pre_price.close;
             if pre_price.is_down() {
                 let pre_real_body: BigDecimal = pre_price.get_real_body();
+                let volumn_pattern = VolumnMaPattern { ma: 20};
                 if price.open < pre_close.clone()
                     && price.close > pre_open.clone()
                     && real_body > pre_real_body
@@ -135,6 +141,7 @@ impl StockPattern for BullishEngulfingPattern {
                     && down_at_least(&prices[0..prices.len() - 1], n)
                     && (price.volume.clone().unwrap()
                         > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
+                    && volumn_pattern.is_match(stock, prices, df)
                 {
                     return true;
                 }
@@ -156,7 +163,7 @@ impl StockPattern for PiercingPattern {
         &self,
         stock: &stock_model::Model,
         prices: &[StockDailyPrice],
-        _df: &DataFrame,
+        df: &DataFrame,
     ) -> bool {
         if prices.len() < 2 {
             return false;
@@ -172,6 +179,7 @@ impl StockPattern for PiercingPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
+        let volumn_pattern = VolumnMaPattern { ma: 20};
         price.is_up()
             && pre_price.is_down()
             && price.open < pre_price.close
@@ -181,6 +189,7 @@ impl StockPattern for PiercingPattern {
             && down_at_least(&prices[0..prices.len() - 1], n)
             && (price.volume.clone().unwrap()
                 > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
+            && volumn_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
@@ -196,7 +205,7 @@ impl StockPattern for RisingWindowPattern {
         &self,
         stock: &stock_model::Model,
         prices: &[StockDailyPrice],
-        _df: &DataFrame,
+        df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
@@ -208,12 +217,14 @@ impl StockPattern for RisingWindowPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
+        let volumn_pattern = VolumnMaPattern { ma: 20};
         price.is_up()
             // && pre_price.is_down()
             && price.open > pre_price.high
             && real_body > (upper_shadow.clone() * factor.clone())
             && down_at_least(&prices[0..prices.len() - 1], n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
+            && volumn_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
@@ -280,13 +291,44 @@ impl StockPattern for BIASPattern {
         let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
         price.close < ma_last
             && (((ma_last.clone() - price.close.clone()) / ma_last)
-                >= BigDecimal::from_f32(0.2).unwrap())
+                >= BigDecimal::from_f32(0.15).unwrap())
     }
 
     fn name(&self) -> String {
         "BIAS".to_string()
     }
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct VolumnMaPattern {
+    pub ma: usize,
+}
+
+impl StockPattern for VolumnMaPattern {
+    fn is_match(
+        &self,
+        _stock: &stock_model::Model,
+        prices: &[StockDailyPrice],
+        df: &DataFrame,
+    ) -> bool {
+        let price = prices.last().unwrap();
+        let volumn_df = df
+            .clone()
+            .lazy()
+            .select([col("volumn").cast(DataType::Float32)])
+            .collect()
+            .unwrap();
+        let ma = ma(&volumn_df["volumn"], self.ma);
+        let ma_last = ma.get(ma.len() - 2).unwrap();
+        let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
+        price.volume.clone().unwrap() >= ma_last
+    }
+
+    fn name(&self) -> String {
+        "VOL".to_string()
+    }
+}
+
 
 pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
