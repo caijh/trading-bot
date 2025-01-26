@@ -312,13 +312,13 @@ impl StockPattern for VolumnMaPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
-        let volumn_df = df
+        let volume_df = df
             .clone()
             .lazy()
-            .select([col("volumn").cast(DataType::Float32)])
+            .select([col("volume").cast(DataType::Float32)])
             .collect()
             .unwrap();
-        let ma = ma(&volumn_df["volumn"], self.ma);
+        let ma = ma(&volume_df["volume"], self.ma);
         let ma_last = ma.get(ma.len() - 2).unwrap();
         let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
         price.volume.clone().unwrap() >= ma_last
