@@ -47,7 +47,7 @@ pub async fn analysis_stock(
 
     let json = serde_json::to_string(&prices).unwrap();
     let polars = JsonReader::new(Cursor::new(json)).finish();
-    let df = polars?;
+    let df: polars::prelude::DataFrame = polars?;
     let candlestick_patterns = get_candlestick_patterns();
     let ma_patterns = get_ma_patterns();
     let mut match_patterns = Vec::new();
@@ -70,7 +70,7 @@ pub async fn analysis_stock(
         }
     }
 
-    let (max, min) = first_max_min(&df);
+    let (max, min) = first_max_min(&df, &prices);
     let current = prices.last().unwrap().close.clone();
     let analyzed_stock = Some(AnalyzedStock {
         code: stock.code.to_string(),
