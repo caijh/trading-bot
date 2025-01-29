@@ -1,5 +1,5 @@
 use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
-use bigdecimal::{BigDecimal, FromPrimitive, RoundingMode};
+use bigdecimal::BigDecimal;
 use polars::datatypes::DataType;
 use polars::frame::DataFrame;
 use polars::prelude::{col, IntoLazy};
@@ -79,24 +79,31 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
 /// or smaller than the current min
 ///
 /// return the first max and min
-pub fn first_max_min(prices: &DataFrame) -> (BigDecimal, BigDecimal) {
-    let close_df = prices
+pub fn first_max_min(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecimal, BigDecimal) {
+    let close_df = df
         .clone()
         .lazy()
         .select([col("close").cast(DataType::Float32)])
         .collect()
         .unwrap();
     let ma5 = ma(&close_df["close"], 5);
+
     let max = find_first_max(&ma5);
+    let max_price = prices.get(max).unwrap().high.clone();
+
+
     let min = find_first_min(&ma5);
-    (max, min)
+    let min_price = prices.get(min).unwrap().low.clone();
+    (max_price, min_price)
 }
 
-pub fn find_first_max(prices: &[f32]) -> BigDecimal {
+pub fn find_first_max(prices: &[f32]) -> usize {
     let mut max = prices.last().unwrap();
     let len = prices.len();
+    let last_idx =  len - 1;
+    let mut j = last_idx;
     for i in 0..len {
-        let j = len - 1 - i;
+        j = last_idx - i;
         let price = &prices[j];
         if price > max {
             max = price;
@@ -108,16 +115,16 @@ pub fn find_first_max(prices: &[f32]) -> BigDecimal {
             }
         }
     }
-    BigDecimal::from_f32(*max)
-        .unwrap()
-        .with_scale_round(2, RoundingMode::Up)
+    j
 }
 
-pub fn find_first_min(prices: &[f32]) -> BigDecimal {
+pub fn find_first_min(prices: &[f32]) -> usize {
     let mut min = prices.last().unwrap();
     let len = prices.len();
+    let last_idx = len - 1;
+    let mut j = last_idx;
     for i in 0..len {
-        let j = len - 1 - i;
+        j = last_idx - i;
         let price = &prices[j];
         if price < min {
             min = price;
@@ -129,9 +136,7 @@ pub fn find_first_min(prices: &[f32]) -> BigDecimal {
             }
         }
     }
-    BigDecimal::from_f32(*min)
-        .unwrap()
-        .with_scale_round(2, RoundingMode::Up)
+    j
 }
 
 pub fn min(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
