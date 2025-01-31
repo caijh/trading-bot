@@ -47,10 +47,7 @@ impl StockPattern for HammerPattern {
         };
 
         let volumn_pattern = VolumnMaPattern { ma: 20};
-        // 下影线长度是实体长度的2倍并且下影线长度要大于上影线长度
-        real_body > BigDecimal::from_u8(0).unwrap()
-            && lower_shadow >= (real_body.clone() * factor_2.clone())
-            && lower_shadow >= (upper_shadow.clone() * factor_1.clone())
+        (lower_shadow.clone() / (lower_shadow + real_body + upper_shadow)) >= (factor_2 / factor_1)
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
             && volumn_pattern.is_match(stock, prices, df)
@@ -73,7 +70,7 @@ impl StockPattern for DojiStarPattern {
     ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
-        let factor_1 = if stock.stock_type == "Fund" {
+        let factor = if stock.stock_type == "Fund" {
             BigDecimal::from_str("0.001").unwrap()
         } else {
             BigDecimal::from_str("0.01").unwrap()
@@ -87,13 +84,8 @@ impl StockPattern for DojiStarPattern {
             DOWN_AT_LEAST_DAYS + 1
         };
         let volumn_pattern = VolumnMaPattern { ma: 20};
-        real_body <= factor_1
-            && lower_shadow > upper_shadow
-            && (if upper_shadow > BigDecimal::from(0) {
-                lower_shadow <= upper_shadow * BigDecimal::from(2)
-            } else {
-                true
-            })
+        (real_body.clone() / (lower_shadow.clone() + real_body.clone() + upper_shadow.clone())) <= factor
+            && lower_shadow >= upper_shadow
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
             && volumn_pattern.is_match(stock, prices, df)
@@ -270,6 +262,7 @@ impl StockPattern for MaPattern {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct BIASPattern {
     pub ma: usize,
+    pub bias: f32,
 }
 
 impl StockPattern for BIASPattern {
@@ -291,7 +284,7 @@ impl StockPattern for BIASPattern {
         let ma_last = BigDecimal::from_f32(*ma_last).unwrap();
         price.close < ma_last
             && (((ma_last.clone() - price.close.clone()) / ma_last)
-                >= BigDecimal::from_f32(0.15).unwrap())
+                >= BigDecimal::from_f32(self.bias).unwrap())
     }
 
     fn name(&self) -> String {
@@ -344,6 +337,6 @@ pub fn get_ma_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
         Box::new(MaPattern { ma: 60 }),
         Box::new(MaPattern { ma: 120 }),
-        Box::new(BIASPattern { ma: 25 }),
+        Box::new(BIASPattern { ma: 20, bias: 0.15 }),
     ]
 }
