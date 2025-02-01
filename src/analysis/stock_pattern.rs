@@ -35,8 +35,6 @@ impl StockPattern for HammerPattern {
     ) -> bool {
         let price = prices.last().unwrap();
         let pre_price = prices.get(prices.len() - 2).unwrap();
-        let factor_1 = BigDecimal::from_str("3").unwrap();
-        let factor_2 = BigDecimal::from_str("2").unwrap();
         let real_body = price.get_real_body();
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
@@ -47,7 +45,7 @@ impl StockPattern for HammerPattern {
         };
 
         let volumn_pattern = VolumnMaPattern { ma: 20};
-        (lower_shadow.clone() / (lower_shadow + real_body + upper_shadow)) >= (factor_2 / factor_1)
+        (lower_shadow.clone() / (lower_shadow + real_body + upper_shadow)) > BigDecimal::from_f32(0.618).unwrap()
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
             && volumn_pattern.is_match(stock, prices, df)
