@@ -1,8 +1,8 @@
 use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
 use bigdecimal::BigDecimal;
-// use polars::datatypes::DataType;
+use polars::datatypes::DataType;
 use polars::frame::DataFrame;
-// use polars::prelude::{col, IntoLazy};
+use polars::prelude::{col, IntoLazy};
 use polars::series::Series;
 use std::str::FromStr;
 
@@ -79,25 +79,25 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
 /// or smaller than the current min
 ///
 /// return the first max and min
-pub fn first_max_min(_df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecimal, BigDecimal) {
-    // let close_df = df
-    //     .clone()
-    //     .lazy()
-    //     .select([col("close").cast(DataType::Float32)])
-    //     .collect()
-    //     .unwrap();
-    // let ma5 = ma(&close_df["close"], 5);
+pub fn first_max_min(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecimal, BigDecimal) {
+    let close_df = df
+        .clone()
+        .lazy()
+        .select([col("close").cast(DataType::Float32)])
+        .collect()
+        .unwrap();
+    let ma5 = ma(&close_df["close"], 5);
 
-    let max = find_first_resistance(prices);
-    let max_price = prices.get(max).unwrap().high.clone();
+    let max = find_first_resistance(&ma5);
+    let max_price = prices.get(max).unwrap().low.clone();
 
 
-    let min = find_first_support(prices);
-    let min_price = prices.get(min).unwrap().low.clone();
+    let min = find_first_support(&ma5);
+    let min_price = prices.get(min).unwrap().high.clone();
     (max_price, min_price)
 }
 
-pub fn find_first_resistance(prices: &Vec<StockDailyPrice>) -> usize {
+pub fn find_first_resistance(prices: &[f32]) -> usize {
     let latest_price = prices.last().unwrap();
     let len = prices.len();
     let last_idx =  len - 1;
@@ -105,13 +105,13 @@ pub fn find_first_resistance(prices: &Vec<StockDailyPrice>) -> usize {
     for i in 0..len {
         j = last_idx - i;
         let price = &prices[j];
-        if &price.low > &latest_price.close {
+        if price > latest_price {
             let pre_idx = j - 1;
             let next_idx = j + 1;
             if j > 0 && next_idx <= last_idx {
                 let pre_price = &prices[pre_idx];
                 let next_price = &prices[next_idx];
-                if &pre_price.low > &price.low  && &next_price.low > &price.low {
+                if pre_price > &price  && &next_price > &price {
                     break;
                 }
             }
@@ -120,7 +120,7 @@ pub fn find_first_resistance(prices: &Vec<StockDailyPrice>) -> usize {
     j
 }
 
-pub fn find_first_support(prices: &Vec<StockDailyPrice>) -> usize {
+pub fn find_first_support(prices: &[f32]) -> usize {
     let latest_price = prices.last().unwrap();
     let len = prices.len();
     let last_idx =  len - 1;
@@ -128,13 +128,13 @@ pub fn find_first_support(prices: &Vec<StockDailyPrice>) -> usize {
     for i in 0..len {
         j = last_idx - i;
         let price = &prices[j];
-        if &price.high < &latest_price.close {
+        if &price < &latest_price {
             let pre_idx = j - 1;
             let next_idx = j + 1;
             if j > 0 && next_idx <= last_idx {
                 let pre_price = &prices[pre_idx];
                 let next_price = &prices[next_idx];
-                if &pre_price.high < &price.high  && &next_price.high < &price.high {
+                if &pre_price < &price  && &next_price < &price {
                     break;
                 }
             }
