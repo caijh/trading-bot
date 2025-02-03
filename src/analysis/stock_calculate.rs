@@ -1,5 +1,5 @@
 use crate::stock::stock_price_model::{KLine, Model as StockDailyPrice};
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, FromPrimitive};
 use polars::datatypes::DataType;
 use polars::frame::DataFrame;
 use polars::prelude::{col, IntoLazy};
@@ -87,31 +87,34 @@ pub fn first_max_min(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecim
         .collect()
         .unwrap();
     let ma5 = ma(&close_df["close"], 5);
-
-    let max = find_first_resistance(&ma5);
+    let latest_price = prices.last().unwrap();
+    let max = find_first_resistance(&ma5, latest_price);
     let max_price = prices.get(max).unwrap().low.clone();
 
 
-    let min = find_first_support(&ma5);
+    let min = find_first_support(&ma5, latest_price);
     let min_price = prices.get(min).unwrap().high.clone();
     (max_price, min_price)
 }
 
-pub fn find_first_resistance(prices: &[f32]) -> usize {
-    let latest_price = prices.last().unwrap();
+pub fn find_first_resistance(prices: &[f32], latest_price: &StockDailyPrice) -> usize {
+    let latest_price = latest_price.close.clone();
     let len = prices.len();
     let last_idx =  len - 1;
     let mut j = last_idx;
     for i in 0..len {
         j = last_idx - i;
         let price = &prices[j];
+        let price = BigDecimal::from_f32(*price).unwrap();
         if price > latest_price {
             let pre_idx = j - 1;
             let next_idx = j + 1;
             if j > 0 && next_idx <= last_idx {
                 let pre_price = &prices[pre_idx];
+                let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
                 let next_price = &prices[next_idx];
-                if pre_price > &price  && &next_price > &price {
+                let next_price = BigDecimal::from_f32(*next_price).unwrap();
+                if pre_price > price  && next_price > price {
                     break;
                 }
             }
@@ -120,21 +123,24 @@ pub fn find_first_resistance(prices: &[f32]) -> usize {
     j
 }
 
-pub fn find_first_support(prices: &[f32]) -> usize {
-    let latest_price = prices.last().unwrap();
+pub fn find_first_support(prices: &[f32], latest_price: &StockDailyPrice) -> usize {
+    let latest_price = latest_price.close.clone();
     let len = prices.len();
     let last_idx =  len - 1;
     let mut j = last_idx;
     for i in 0..len {
         j = last_idx - i;
         let price = &prices[j];
-        if &price < &latest_price {
+        let price = BigDecimal::from_f32(*price).unwrap();
+        if price < latest_price {
             let pre_idx = j - 1;
             let next_idx = j + 1;
             if j > 0 && next_idx <= last_idx {
                 let pre_price = &prices[pre_idx];
+                let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
                 let next_price = &prices[next_idx];
-                if &pre_price < &price  && &next_price < &price {
+                let next_price = BigDecimal::from_f32(*next_price).unwrap();
+                if pre_price < price  && next_price < price {
                     break;
                 }
             }
