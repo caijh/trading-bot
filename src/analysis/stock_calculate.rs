@@ -88,9 +88,9 @@ pub fn first_max_min(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecim
         .unwrap();
     let ma5 = ma(&close_df["close"], 5);
     let latest_price = prices.last().unwrap();
+
     let max = find_first_resistance(&ma5, latest_price);
     let max_price = prices.get(max).unwrap().low.clone();
-
 
     let min = find_first_support(&ma5, latest_price);
     let min_price = prices.get(min).unwrap().high.clone();
@@ -114,7 +114,7 @@ pub fn find_first_resistance(prices: &[f32], latest_price: &StockDailyPrice) -> 
                 let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
                 let next_price = &prices[next_idx];
                 let next_price = BigDecimal::from_f32(*next_price).unwrap();
-                if pre_price > price  && next_price > price {
+                if pre_price > price && next_price > price {
                     break;
                 }
             }
