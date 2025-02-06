@@ -34,6 +34,9 @@ impl StockPattern for HammerPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let real_body = price.get_real_body();
         let lower_shadow = price.get_lower_shadow();
@@ -67,6 +70,10 @@ impl StockPattern for DojiStarPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
+
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let factor = if stock.stock_type == "Fund" {
             BigDecimal::from_str("0.001").unwrap()
@@ -159,6 +166,9 @@ impl StockPattern for PiercingPattern {
             return false;
         }
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let mid_price = pre_price.get_middle_price();
         let factor = BigDecimal::from_str("2").unwrap();
@@ -198,6 +208,9 @@ impl StockPattern for RisingWindowPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
         let pre_price = prices.get(prices.len() - 2).unwrap();
         let factor = BigDecimal::from_str("2").unwrap();
         let real_body = price.get_real_body();
@@ -235,6 +248,9 @@ impl StockPattern for MaPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
         let _pre_price = prices.get(prices.len() - 2).unwrap();
         let n = self.ma;
         let close_df = df
@@ -271,6 +287,9 @@ impl StockPattern for BIASPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
         let close_df = df
             .clone()
             .lazy()
@@ -303,6 +322,9 @@ impl StockPattern for VolumnMaPattern {
         df: &DataFrame,
     ) -> bool {
         let price = prices.last().unwrap();
+        if price.is_no_trade() {
+            return false;
+        }
         let volume_df = df
             .clone()
             .lazy()
