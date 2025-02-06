@@ -47,6 +47,8 @@ pub trait KLine {
     fn get_upper_shadow(&self) -> BigDecimal;
 
     fn get_middle_price(&self) -> BigDecimal;
+
+    fn is_no_trade(&self) -> bool;
 }
 
 impl KLine for Model {
@@ -84,5 +86,9 @@ impl KLine for Model {
 
     fn get_middle_price(&self) -> BigDecimal {
         (self.open.clone() + self.close.clone()) / BigDecimal::from(2)
+    }
+
+    fn is_no_trade(&self) -> bool {
+        self.get_lower_shadow() + self.get_real_body() + self.get_upper_shadow() == BigDecimal::from(0)
     }
 }
