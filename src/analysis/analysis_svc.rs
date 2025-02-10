@@ -76,8 +76,8 @@ pub async fn analysis_stock(
         code: stock.code.to_string(),
         name: stock.name.to_string(),
         current,
-        min,
-        max,
+        support: min,
+        resistance: max,
         pattern: match_patterns,
     });
     Ok(analyzed_stock)
