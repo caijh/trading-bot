@@ -1,6 +1,6 @@
 use crate::analysis::analysis_ctrl::{IndexAnalysisParams, StockAnalysisParams};
 use crate::analysis::analysis_model::AnalyzedStock;
-use crate::analysis::stock_calculate::first_max_min;
+use crate::analysis::stock_calculate::first_resistance_support_price;
 use crate::analysis::stock_pattern::get_candlestick_patterns;
 use crate::analysis::stock_pattern::get_ma_patterns;
 use crate::fund::fund_svc;
@@ -70,14 +70,14 @@ pub async fn analysis_stock(
         }
     }
 
-    let (max, min) = first_max_min(&df, &prices);
+    let (max, min) = first_resistance_support_price(&df, &prices);
     let current = prices.last().unwrap().close.clone();
     let analyzed_stock = Some(AnalyzedStock {
         code: stock.code.to_string(),
         name: stock.name.to_string(),
         current,
-        min,
-        max,
+        support: min,
+        resistance: max,
         pattern: match_patterns,
     });
     Ok(analyzed_stock)

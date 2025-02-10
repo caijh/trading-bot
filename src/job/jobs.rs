@@ -233,8 +233,8 @@ async fn notification_stocks_price(stocks: Vec<AnalyzedStock>, index: StockIndex
         let patterns = stock.pattern.join(",");
         content.push_str(
             format!(
-                "{:<5} {} C: {} MIN: {} MAX: {} {}\n",
-                stock.name, stock.code, stock.current, stock.min, stock.max, patterns
+                "{:<5} {} C: {} S: {} R: {} {}\n",
+                stock.name, stock.code, stock.current, stock.support, stock.resistance, patterns
             )
             .as_str(),
         );

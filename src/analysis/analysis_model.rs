@@ -9,11 +9,14 @@ pub struct AnalyzedStock {
     /// 股票名称。
     pub name: String,
     /// current price
+    #[serde(rename = "C")]
     pub current: BigDecimal,
     /// min recent
-    pub min: BigDecimal,
+    #[serde(rename = "S")]
+    pub support: BigDecimal,
     /// max recent
-    pub max: BigDecimal,
+    #[serde(rename = "R")]
+    pub resistance: BigDecimal,
     /// 股票的技术分析模式，用于描述股票价格走势的特定模式。
     pub pattern: Vec<String>,
 }

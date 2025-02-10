@@ -79,7 +79,7 @@ pub fn max(prices: &[StockDailyPrice], n: usize) -> BigDecimal {
 /// or smaller than the current min
 ///
 /// return the first max and min
-pub fn first_max_min(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecimal, BigDecimal) {
+pub fn first_resistance_support_price(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecimal, BigDecimal) {
     let close_df = df
         .clone()
         .lazy()
@@ -89,19 +89,39 @@ pub fn first_max_min(df: &DataFrame, prices: &Vec<StockDailyPrice>) -> (BigDecim
     let ma5 = ma(&close_df["close"], 5);
     let latest_price = prices.last().unwrap();
 
-    let max = find_first_resistance(&ma5, latest_price);
-    let max_price = prices.get(max).unwrap().low.clone();
+    let resistance_indexes = find_resistance_indexes(&ma5, latest_price);
+    let mut min_resistance_price = latest_price.high.clone();
+    if !resistance_indexes.is_empty() {
+        min_resistance_price = prices.get(resistance_indexes[0]).unwrap().low.clone();
+        for i in resistance_indexes {
+            let price = prices.get(i).unwrap().low.clone();
+            if price < min_resistance_price {
+                min_resistance_price = price;
+            }
+        }
+    }
 
-    let min = find_first_support(&ma5, latest_price);
-    let min_price = prices.get(min).unwrap().high.clone();
-    (max_price, min_price)
+    let support_indexes = find_support_indexes(&ma5, latest_price);
+    let mut max_support_price = latest_price.low.clone();
+    if !support_indexes.is_empty() {
+        max_support_price = prices.get(support_indexes[0]).unwrap().high.clone();
+        for i in support_indexes {
+            let price = prices.get(i).unwrap().high.clone();
+            if price > max_support_price {
+                max_support_price = price;
+            }
+        }
+    }
+
+    (min_resistance_price, max_support_price)
 }
 
-pub fn find_first_resistance(prices: &[f32], latest_price: &StockDailyPrice) -> usize {
+pub fn find_resistance_indexes(prices: &[f32], latest_price: &StockDailyPrice) -> Vec<usize> {
     let latest_price = latest_price.close.clone();
     let len = prices.len();
     let last_idx =  len - 1;
-    let mut j = last_idx;
+    let mut j: usize;
+    let mut idxes = Vec::new();
     for i in 0..len {
         j = last_idx - i;
         let price = &prices[j];
@@ -115,19 +135,20 @@ pub fn find_first_resistance(prices: &[f32], latest_price: &StockDailyPrice) -> 
                 let next_price = &prices[next_idx];
                 let next_price = BigDecimal::from_f32(*next_price).unwrap();
                 if pre_price > price && next_price > price {
-                    break;
+                    idxes.push(j);
                 }
             }
         }
     }
-    j
+    idxes
 }
 
-pub fn find_first_support(prices: &[f32], latest_price: &StockDailyPrice) -> usize {
+pub fn find_support_indexes(prices: &[f32], latest_price: &StockDailyPrice) -> Vec<usize> {
     let latest_price = latest_price.close.clone();
     let len = prices.len();
     let last_idx =  len - 1;
-    let mut j = last_idx;
+    let mut j: usize;
+    let mut idxes = Vec::new();
     for i in 0..len {
         j = last_idx - i;
         let price = &prices[j];
@@ -141,12 +162,12 @@ pub fn find_first_support(prices: &[f32], latest_price: &StockDailyPrice) -> usi
                 let next_price = &prices[next_idx];
                 let next_price = BigDecimal::from_f32(*next_price).unwrap();
                 if pre_price < price  && next_price < price {
-                    break;
+                    idxes.push(j);
                 }
             }
         }
     }
-    j
+    idxes
 }
 
 
