@@ -95,7 +95,7 @@ pub fn first_resistance_support_price(df: &DataFrame, prices: &Vec<StockDailyPri
         min_resistance_price = prices.get(resistance_indexes[0]).unwrap().low.clone();
         for i in resistance_indexes {
             let price = prices.get(i).unwrap().low.clone();
-            if price < min_resistance_price && price > latest_price.close.clone() {
+            if price > latest_price.close.clone() && price < min_resistance_price {
                 min_resistance_price = price;
             }
         }
@@ -107,7 +107,7 @@ pub fn first_resistance_support_price(df: &DataFrame, prices: &Vec<StockDailyPri
         max_support_price = prices.get(support_indexes[0]).unwrap().high.clone();
         for i in support_indexes {
             let price = prices.get(i).unwrap().high.clone();
-            if price > max_support_price && price < latest_price.close.clone() {
+            if price < latest_price.close.clone() && price > max_support_price  {
                 max_support_price = price;
             }
         }
