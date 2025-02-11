@@ -86,10 +86,10 @@ pub fn first_resistance_support_price(df: &DataFrame, prices: &Vec<StockDailyPri
         .select([col("close").cast(DataType::Float32)])
         .collect()
         .unwrap();
-    let ma5 = ma(&close_df["close"], 5);
+    let ma_prices = ma(&close_df["close"], 3);
     let latest_price = prices.last().unwrap();
 
-    let resistance_indexes = find_resistance_indexes(&ma5, latest_price);
+    let resistance_indexes = find_resistance_indexes(&ma_prices, latest_price);
     let mut min_resistance_price = latest_price.high.clone();
     if !resistance_indexes.is_empty() {
         min_resistance_price = prices.get(resistance_indexes[0]).unwrap().low.clone();
@@ -101,7 +101,7 @@ pub fn first_resistance_support_price(df: &DataFrame, prices: &Vec<StockDailyPri
         }
     }
 
-    let support_indexes = find_support_indexes(&ma5, latest_price);
+    let support_indexes = find_support_indexes(&ma_prices, latest_price);
     let mut max_support_price = latest_price.low.clone();
     if !support_indexes.is_empty() {
         max_support_price = prices.get(support_indexes[0]).unwrap().high.clone();
