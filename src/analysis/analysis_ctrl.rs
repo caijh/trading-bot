@@ -1,6 +1,6 @@
 use application_core::lang::runnable::Runnable;
 use application_web::response::RespBody;
-use application_web_macros::get;
+use application_web_macros::post;
 use axum::extract::Query;
 use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
@@ -33,7 +33,7 @@ pub struct StockAnalysisParams {
 /// # Returns
 ///
 /// 返回一个实现了`IntoResponse`的类型，用于生成HTTP响应。
-#[get("/analysis/index")]
+#[post("/analysis/index")]
 async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoResponse {
     let code = params.code.clone();
     spawn(async {
@@ -49,7 +49,7 @@ async fn analysis_index(Query(params): Query<IndexAnalysisParams>) -> impl IntoR
 ///
 /// # Returns
 /// * `impl IntoResponse` - 返回一个实现了`IntoResponse` trait的响应对象，包含基金分析数据
-#[get("/analysis/funds")]
+#[post("/analysis/funds")]
 async fn analysis_funds(Query(params): Query<FundsAnalysisParams>) -> impl IntoResponse {
     let code = params.code.clone();
     spawn(async {
@@ -71,7 +71,7 @@ async fn analysis_funds(Query(params): Query<FundsAnalysisParams>) -> impl IntoR
 ///
 /// 返回一个实现了`IntoResponse` trait的对象，通常是一个HTTP响应。响应体中包含股票分析的结果。
 /// 如果分析过程中遇到错误，将返回一个表示错误的HTTP响应。
-#[get("/analysis/stock")]
+#[post("/analysis/stock")]
 async fn analysis_stock(Query(params): Query<StockAnalysisParams>) -> impl IntoResponse {
     let r = analysis_svc::analysis_stock(&params).await;
 
