@@ -223,7 +223,7 @@ impl StockPattern for RisingWindowPattern {
         let volumn_pattern = VolumnMaPattern { ma: 20};
         price.is_up()
             // && pre_price.is_down()
-            && price.open > pre_price.high
+            && price.low > pre_price.high
             && real_body > (upper_shadow.clone() * factor.clone())
             && down_at_least(&prices[0..prices.len() - 1], n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
