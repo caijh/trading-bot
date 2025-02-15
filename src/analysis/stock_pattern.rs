@@ -356,6 +356,7 @@ pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
 pub fn get_ma_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
         Box::new(MaPattern { ma: 10 }),
+        Box::new(MaPattern {ma : 20}),
         Box::new(MaPattern { ma: 200 }),
         Box::new(BIASPattern { ma: 25, bias: 0.15 }),
     ]
