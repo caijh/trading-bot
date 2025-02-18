@@ -47,11 +47,12 @@ impl StockPattern for HammerPattern {
             DOWN_AT_LEAST_DAYS + 1
         };
 
-        let volumn_pattern = VolumnMaPattern { ma: 20};
-        (lower_shadow.clone() / (lower_shadow + real_body + upper_shadow)) > BigDecimal::from_f32(0.618).unwrap()
+        let volume_pattern = VolumeMaPattern { ma: 20 };
+        (lower_shadow.clone() / (lower_shadow + real_body + upper_shadow))
+            > BigDecimal::from_f32(0.618).unwrap()
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
-            && volumn_pattern.is_match(stock, prices, df)
+            && volume_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
@@ -88,8 +89,9 @@ impl StockPattern for DojiStarPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
-        let volumn_pattern = VolumnMaPattern { ma: 20};
-        (real_body.clone() / (lower_shadow.clone() + real_body.clone() + upper_shadow.clone())) <= factor
+        let volumn_pattern = VolumeMaPattern { ma: 20 };
+        (real_body.clone() / (lower_shadow.clone() + real_body.clone() + upper_shadow.clone()))
+            <= factor
             && lower_shadow >= upper_shadow
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
@@ -130,7 +132,7 @@ impl StockPattern for BullishEngulfingPattern {
             let pre_close = &pre_price.close;
             if pre_price.is_down() {
                 let pre_real_body: BigDecimal = pre_price.get_real_body();
-                let volumn_pattern = VolumnMaPattern { ma: 20};
+                let volumn_pattern = VolumeMaPattern { ma: 20 };
                 if price.open < pre_close.clone()
                     && price.close > pre_open.clone()
                     && real_body > pre_real_body
@@ -179,7 +181,7 @@ impl StockPattern for PiercingPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
-        let volumn_pattern = VolumnMaPattern { ma: 20};
+        let volumn_pattern = VolumeMaPattern { ma: 20 };
         price.is_up()
             && pre_price.is_down()
             && price.open < pre_price.close
@@ -220,7 +222,7 @@ impl StockPattern for RisingWindowPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
-        let volumn_pattern = VolumnMaPattern { ma: 20};
+        let volumn_pattern = VolumeMaPattern { ma: 20 };
         price.is_up()
             // && pre_price.is_down()
             && price.low > pre_price.high
@@ -310,11 +312,11 @@ impl StockPattern for BIASPattern {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct VolumnMaPattern {
+pub struct VolumeMaPattern {
     pub ma: usize,
 }
 
-impl StockPattern for VolumnMaPattern {
+impl StockPattern for VolumeMaPattern {
     fn is_match(
         &self,
         _stock: &stock_model::Model,
@@ -342,7 +344,6 @@ impl StockPattern for VolumnMaPattern {
     }
 }
 
-
 pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
         Box::new(HammerPattern {}),
@@ -355,7 +356,7 @@ pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
 
 pub fn get_ma_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
-        Box::new(MaPattern {ma : 20 }),
+        Box::new(MaPattern { ma: 20 }),
         Box::new(MaPattern { ma: 200 }),
         Box::new(BIASPattern { ma: 25, bias: 0.15 }),
     ]
