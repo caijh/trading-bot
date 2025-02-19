@@ -132,7 +132,7 @@ impl StockPattern for BullishEngulfingPattern {
             let pre_close = &pre_price.close;
             if pre_price.is_down() {
                 let pre_real_body: BigDecimal = pre_price.get_real_body();
-                let volumn_pattern = VolumeMaPattern { ma: 20 };
+                let volume_pattern = VolumeMaPattern { ma: 20 };
                 if price.open < pre_close.clone()
                     && price.close > pre_open.clone()
                     && real_body > pre_real_body
@@ -140,7 +140,7 @@ impl StockPattern for BullishEngulfingPattern {
                     && down_at_least(&prices[0..prices.len() - 1], n)
                     && (price.volume.clone().unwrap()
                         > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
-                    && volumn_pattern.is_match(stock, prices, df)
+                    && volume_pattern.is_match(stock, prices, df)
                 {
                     return true;
                 }
@@ -181,7 +181,7 @@ impl StockPattern for PiercingPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
-        let volumn_pattern = VolumeMaPattern { ma: 20 };
+        let volume_pattern = VolumeMaPattern { ma: 20 };
         price.is_up()
             && pre_price.is_down()
             && price.open < pre_price.close
@@ -191,7 +191,7 @@ impl StockPattern for PiercingPattern {
             && down_at_least(&prices[0..prices.len() - 1], n)
             && (price.volume.clone().unwrap()
                 > pre_price.volume.clone().unwrap() * BigDecimal::from_f32(1.2).unwrap())
-            && volumn_pattern.is_match(stock, prices, df)
+            && volume_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
