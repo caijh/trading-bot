@@ -89,13 +89,13 @@ impl StockPattern for DojiStarPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
-        let volumn_pattern = VolumeMaPattern { ma: 20 };
+        let volume_pattern = VolumeMaPattern { ma: 20 };
         (real_body.clone() / (lower_shadow.clone() + real_body.clone() + upper_shadow.clone()))
             <= factor
             && lower_shadow >= upper_shadow
             && down_at_least(prices, n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
-            && volumn_pattern.is_match(stock, prices, df)
+            && volume_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
@@ -222,14 +222,14 @@ impl StockPattern for RisingWindowPattern {
         } else {
             DOWN_AT_LEAST_DAYS + 1
         };
-        let volumn_pattern = VolumeMaPattern { ma: 20 };
+        let volume_pattern = VolumeMaPattern { ma: 20 };
         price.is_up()
             // && pre_price.is_down()
             && price.low > pre_price.high
             && real_body > (upper_shadow.clone() * factor.clone())
             && down_at_least(&prices[0..prices.len() - 1], n)
             && price.volume.clone().unwrap() > pre_price.volume.clone().unwrap()
-            && volumn_pattern.is_match(stock, prices, df)
+            && volume_pattern.is_match(stock, prices, df)
     }
 
     fn name(&self) -> String {
