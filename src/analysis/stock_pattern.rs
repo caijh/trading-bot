@@ -9,7 +9,7 @@ use polars::frame::DataFrame;
 use polars::prelude::{col, IntoLazy};
 use serde::{Deserialize, Serialize};
 
-const DOWN_AT_LEAST_DAYS: i32 = 3;
+const DOWN_AT_LEAST_DAYS: i32 = 4;
 
 pub trait StockPattern {
     fn is_match(
