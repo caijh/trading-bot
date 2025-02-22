@@ -29,7 +29,6 @@ pub fn down_at_least(prices: &[StockDailyPrice], n: i32) -> bool {
     let len = prices.len();
     let mut cur = len - 1;
     let mut count = 0;
-    let n = n - 1;
     loop {
         let p1 = prices.get(cur);
         if p1.is_none() {
@@ -92,7 +91,7 @@ pub fn first_resistance_support_price(
     let ma_prices = ma(&close_df["close"], 5);
     let latest_price = prices.last().unwrap();
 
-    let resistance_indexes = find_resistance_indexes(&ma_prices, latest_price);
+    let resistance_indexes = find_indexes(&ma_prices, latest_price, IndexType::Resistance);
     let mut min_resistance_price = latest_price.high.clone();
     if !resistance_indexes.is_empty() {
         min_resistance_price = BigDecimal::from_f32(*ma_prices.get(resistance_indexes[0]).unwrap())
@@ -108,7 +107,7 @@ pub fn first_resistance_support_price(
         }
     }
 
-    let support_indexes = find_support_indexes(&ma_prices, latest_price);
+    let support_indexes = find_indexes(&ma_prices, latest_price, IndexType::Support);
     let mut max_support_price = latest_price.low.clone();
     if !support_indexes.is_empty() {
         max_support_price = BigDecimal::from_f32(*ma_prices.get(support_indexes[0]).unwrap())
@@ -127,53 +126,45 @@ pub fn first_resistance_support_price(
     (min_resistance_price, max_support_price)
 }
 
-pub fn find_resistance_indexes(prices: &[f32], latest_price: &StockDailyPrice) -> Vec<usize> {
-    let latest_price = latest_price.close.clone();
-    let len = prices.len();
-    let last_idx = len - 1;
-    let mut j: usize;
-    let mut idxes = Vec::new();
-    for i in 0..len {
-        j = last_idx - i;
-        let price = &prices[j];
-        let price = BigDecimal::from_f32(*price).unwrap();
-        if price > latest_price {
-            let pre_idx = j - 1;
-            let next_idx = j + 1;
-            if j > 0 && next_idx <= last_idx {
-                let pre_price = &prices[pre_idx];
-                let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
-                let next_price = &prices[next_idx];
-                let next_price = BigDecimal::from_f32(*next_price).unwrap();
-                if pre_price > price && next_price > price {
-                    idxes.push(j);
-                }
-            }
-        }
-    }
-    idxes
+enum IndexType {
+    Support,
+    Resistance,
 }
 
-pub fn find_support_indexes(prices: &[f32], latest_price: &StockDailyPrice) -> Vec<usize> {
+fn find_indexes(
+    prices: &[f32],
+    latest_price: &StockDailyPrice,
+    index_type: IndexType,
+) -> Vec<usize> {
     let latest_price = latest_price.close.clone();
     let len = prices.len();
     let last_idx = len - 1;
     let mut j: usize;
     let mut idxes = Vec::new();
-    for i in 0..len {
+    for i in 1..len {
         j = last_idx - i;
+        if j < 1 {
+            break;
+        }
         let price = &prices[j];
         let price = BigDecimal::from_f32(*price).unwrap();
         if price < latest_price {
             let pre_idx = j - 1;
             let next_idx = j + 1;
-            if j > 0 && next_idx <= last_idx {
-                let pre_price = &prices[pre_idx];
-                let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
-                let next_price = &prices[next_idx];
-                let next_price = BigDecimal::from_f32(*next_price).unwrap();
-                if pre_price < price && next_price < price {
-                    idxes.push(j);
+            let pre_price = &prices[pre_idx];
+            let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
+            let next_price = &prices[next_idx];
+            let next_price = BigDecimal::from_f32(*next_price).unwrap();
+            match index_type {
+                IndexType::Support => {
+                    if pre_price < price && next_price < price {
+                        idxes.push(j);
+                    }
+                }
+                IndexType::Resistance => {
+                    if pre_price > price && next_price > price {
+                        idxes.push(j);
+                    }
                 }
             }
         }

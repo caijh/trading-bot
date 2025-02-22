@@ -10,6 +10,8 @@ use polars::prelude::{col, IntoLazy};
 use serde::{Deserialize, Serialize};
 
 const DOWN_AT_LEAST_DAYS: i32 = 4;
+const STOCK_DOWN_AT_LEAST_DAYS: i32 = DOWN_AT_LEAST_DAYS;
+const FUND_DOWN_AT_LEAST_DAYS: i32 = DOWN_AT_LEAST_DAYS + 1;
 
 pub trait StockPattern {
     fn is_match(
@@ -42,9 +44,9 @@ impl StockPattern for HammerPattern {
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
         let n = if stock.stock_type != "Fund" {
-            DOWN_AT_LEAST_DAYS
+            STOCK_DOWN_AT_LEAST_DAYS
         } else {
-            DOWN_AT_LEAST_DAYS + 1
+            FUND_DOWN_AT_LEAST_DAYS
         };
 
         let volume_pattern = VolumeMaPattern { ma: 20 };
@@ -85,9 +87,9 @@ impl StockPattern for DojiStarPattern {
         let lower_shadow = price.get_lower_shadow();
         let upper_shadow = price.get_upper_shadow();
         let n = if stock.stock_type != "Fund" {
-            DOWN_AT_LEAST_DAYS
+            STOCK_DOWN_AT_LEAST_DAYS
         } else {
-            DOWN_AT_LEAST_DAYS + 1
+            FUND_DOWN_AT_LEAST_DAYS
         };
         let volume_pattern = VolumeMaPattern { ma: 20 };
         (real_body.clone() / (lower_shadow.clone() + real_body.clone() + upper_shadow.clone()))
@@ -123,9 +125,9 @@ impl StockPattern for BullishEngulfingPattern {
 
         let pre_price = prices.get(prices.len() - 2);
         let n = if stock.stock_type != "Fund" {
-            DOWN_AT_LEAST_DAYS
+            STOCK_DOWN_AT_LEAST_DAYS
         } else {
-            DOWN_AT_LEAST_DAYS + 1
+            FUND_DOWN_AT_LEAST_DAYS
         };
         if let Some(pre_price) = pre_price {
             let pre_open = &pre_price.open;
@@ -177,9 +179,9 @@ impl StockPattern for PiercingPattern {
         let real_body = price.get_real_body();
         let upper_shadow = price.get_upper_shadow();
         let n = if stock.stock_type != "Fund" {
-            DOWN_AT_LEAST_DAYS
+            STOCK_DOWN_AT_LEAST_DAYS
         } else {
-            DOWN_AT_LEAST_DAYS + 1
+            FUND_DOWN_AT_LEAST_DAYS
         };
         let volume_pattern = VolumeMaPattern { ma: 20 };
         price.is_up()
@@ -218,9 +220,9 @@ impl StockPattern for RisingWindowPattern {
         let real_body = price.get_real_body();
         let upper_shadow = price.get_upper_shadow();
         let n = if stock.stock_type != "Fund" {
-            DOWN_AT_LEAST_DAYS
+            STOCK_DOWN_AT_LEAST_DAYS
         } else {
-            DOWN_AT_LEAST_DAYS + 1
+            FUND_DOWN_AT_LEAST_DAYS
         };
         let volume_pattern = VolumeMaPattern { ma: 20 };
         price.is_up()
@@ -356,6 +358,7 @@ pub fn get_candlestick_patterns() -> Vec<Box<dyn StockPattern>> {
 
 pub fn get_ma_patterns() -> Vec<Box<dyn StockPattern>> {
     vec![
+        Box::new(MaPattern { ma: 10 }),
         Box::new(MaPattern { ma: 20 }),
         Box::new(MaPattern { ma: 200 }),
         Box::new(BIASPattern { ma: 25, bias: 0.15 }),
