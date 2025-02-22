@@ -98,12 +98,17 @@ pub fn first_resistance_support_price(
         min_resistance_price = BigDecimal::from_f32(*ma_prices.get(resistance_indexes[0]).unwrap())
             .unwrap()
             .with_scale_round(3, RoundingMode::Up);
+        let mut j = 0;
         for i in resistance_indexes {
             let price = BigDecimal::from_f32(*ma_prices.get(i).unwrap())
                 .unwrap()
                 .with_scale_round(3, RoundingMode::Up);
             if price > latest_price.close.clone() && price < min_resistance_price {
                 min_resistance_price = price;
+                j = i;
+            }
+            if j > 0 {
+                min_resistance_price = prices.get(j).unwrap().low.clone();
             }
         }
     }
@@ -115,13 +120,18 @@ pub fn first_resistance_support_price(
         max_support_price = BigDecimal::from_f32(*ma_prices.get(support_indexes[0]).unwrap())
             .unwrap()
             .with_scale_round(3, RoundingMode::Up);
+        let mut j = 0;
         for i in support_indexes {
             let price = BigDecimal::from_f32(*ma_prices.get(i).unwrap())
                 .unwrap()
                 .with_scale_round(3, RoundingMode::Up);
             if price < latest_price.close.clone() && price > max_support_price {
                 max_support_price = price;
+                j = i;
             }
+        }
+        if j > 0 {
+            max_support_price = prices.get(j).unwrap().high.clone();
         }
     }
 
