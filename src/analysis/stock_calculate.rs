@@ -108,7 +108,10 @@ pub fn first_resistance_support_price(
                 j = i;
             }
             if j > 0 {
-                min_resistance_price = prices.get(j).unwrap().low.clone();
+                let low = prices.get(j).unwrap().low.clone();
+                if low > latest_price.close {
+                    min_resistance_price = low;
+                }
             }
         }
     }
@@ -131,7 +134,10 @@ pub fn first_resistance_support_price(
             }
         }
         if j > 0 {
-            max_support_price = prices.get(j).unwrap().high.clone();
+            let high = prices.get(j).unwrap().high.clone();
+            if high < latest_price.close {
+                max_support_price = high;
+            }
         }
     }
 
