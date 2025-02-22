@@ -91,34 +91,52 @@ pub fn first_resistance_support_price(
     let ma_prices = ma(&close_df["close"], 5);
     let latest_price = prices.last().unwrap();
 
-    let resistance_indexes = find_indexes(&ma_prices, latest_price, IndexType::Resistance);
+    let resistance_indexes =
+        find_price_level_indexes(&ma_prices, latest_price, PriceLevelType::Resistance);
     let mut min_resistance_price = latest_price.high.clone();
     if !resistance_indexes.is_empty() {
         min_resistance_price = BigDecimal::from_f32(*ma_prices.get(resistance_indexes[0]).unwrap())
             .unwrap()
             .with_scale_round(3, RoundingMode::Up);
+        let mut j = 0;
         for i in resistance_indexes {
             let price = BigDecimal::from_f32(*ma_prices.get(i).unwrap())
                 .unwrap()
                 .with_scale_round(3, RoundingMode::Up);
             if price > latest_price.close.clone() && price < min_resistance_price {
                 min_resistance_price = price;
+                j = i;
+            }
+            if j > 0 {
+                let low = prices.get(j).unwrap().low.clone();
+                if low > latest_price.close {
+                    min_resistance_price = low;
+                }
             }
         }
     }
 
-    let support_indexes = find_indexes(&ma_prices, latest_price, IndexType::Support);
+    let support_indexes =
+        find_price_level_indexes(&ma_prices, latest_price, PriceLevelType::Support);
     let mut max_support_price = latest_price.low.clone();
     if !support_indexes.is_empty() {
         max_support_price = BigDecimal::from_f32(*ma_prices.get(support_indexes[0]).unwrap())
             .unwrap()
             .with_scale_round(3, RoundingMode::Up);
+        let mut j = 0;
         for i in support_indexes {
             let price = BigDecimal::from_f32(*ma_prices.get(i).unwrap())
                 .unwrap()
                 .with_scale_round(3, RoundingMode::Up);
             if price < latest_price.close.clone() && price > max_support_price {
                 max_support_price = price;
+                j = i;
+            }
+        }
+        if j > 0 {
+            let high = prices.get(j).unwrap().high.clone();
+            if high < latest_price.close {
+                max_support_price = high;
             }
         }
     }
@@ -126,15 +144,15 @@ pub fn first_resistance_support_price(
     (min_resistance_price, max_support_price)
 }
 
-enum IndexType {
+enum PriceLevelType {
     Support,
     Resistance,
 }
 
-fn find_indexes(
+fn find_price_level_indexes(
     prices: &[f32],
     latest_price: &StockDailyPrice,
-    index_type: IndexType,
+    level_type: PriceLevelType,
 ) -> Vec<usize> {
     let latest_price = latest_price.close.clone();
     let len = prices.len();
@@ -148,23 +166,21 @@ fn find_indexes(
         }
         let price = &prices[j];
         let price = BigDecimal::from_f32(*price).unwrap();
-        if price < latest_price {
-            let pre_idx = j - 1;
-            let next_idx = j + 1;
-            let pre_price = &prices[pre_idx];
-            let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
-            let next_price = &prices[next_idx];
-            let next_price = BigDecimal::from_f32(*next_price).unwrap();
-            match index_type {
-                IndexType::Support => {
-                    if pre_price < price && next_price < price {
-                        idxes.push(j);
-                    }
+        let pre_idx = j - 1;
+        let next_idx = j + 1;
+        let pre_price = &prices[pre_idx];
+        let pre_price = BigDecimal::from_f32(*pre_price).unwrap();
+        let next_price = &prices[next_idx];
+        let next_price = BigDecimal::from_f32(*next_price).unwrap();
+        match level_type {
+            PriceLevelType::Support => {
+                if price < latest_price && pre_price < price && next_price < price {
+                    idxes.push(j);
                 }
-                IndexType::Resistance => {
-                    if pre_price > price && next_price > price {
-                        idxes.push(j);
-                    }
+            }
+            PriceLevelType::Resistance => {
+                if price > latest_price && pre_price > price && next_price > price {
+                    idxes.push(j);
                 }
             }
         }
