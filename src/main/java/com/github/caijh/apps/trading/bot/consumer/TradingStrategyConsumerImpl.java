@@ -6,8 +6,9 @@ import com.github.caijh.apps.trading.bot.dto.ApiResponse;
 import com.github.caijh.apps.trading.bot.dto.StockPrice;
 import com.github.caijh.apps.trading.bot.entity.Holdings;
 import com.github.caijh.apps.trading.bot.entity.TradingStrategy;
-import com.github.caijh.apps.trading.bot.feign.TradingDataFeign;
+import com.github.caijh.apps.trading.bot.feign.TradingDataFeignClient;
 import com.github.caijh.apps.trading.bot.service.HoldingsService;
+import com.github.caijh.apps.trading.bot.service.NotificationService;
 import com.github.caijh.apps.trading.bot.service.TradingStrategyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -16,15 +17,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
 
-    private TradingDataFeign tradingDataFeign;
+    public static final String SELL_TITLE = "股票卖出通知";
+    public static final String BUY_TITLE = "股票买入通知";
+    private TradingDataFeignClient tradingDataFeignClient;
 
     private HoldingsService holdingsService;
 
     private TradingStrategyService tradingStrategyService;
 
+    private NotificationService notificationService;
+
     @Autowired
-    public void setTradingDataFeign(TradingDataFeign tradingDataFeign) {
-        this.tradingDataFeign = tradingDataFeign;
+    public void setTradingDataFeign(TradingDataFeignClient tradingDataFeignClient) {
+        this.tradingDataFeignClient = tradingDataFeignClient;
     }
 
     @Autowired
@@ -35,6 +40,11 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
     @Autowired
     public void setTradingStrategyService(TradingStrategyService tradingStrategyService) {
         this.tradingStrategyService = tradingStrategyService;
+    }
+
+    @Autowired
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 
     /**
@@ -49,7 +59,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
         // 获取股票代码
         String stockCode = tradingStrategy.getStockCode();
         // 通过Feign客户端获取股票价格信息
-        ApiResponse<StockPrice> response = tradingDataFeign.getPrice(stockCode);
+        ApiResponse<StockPrice> response = tradingDataFeignClient.getPrice(stockCode);
         // 如果响应状态码不为0，则直接返回，不执行后续操作
         if (response.getCode() != 0) {
             return;
@@ -66,12 +76,19 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             if (holdings == null) {
                 if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) <= 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) >= 0) {
                     holdingsService.buy(stockCode, price.getClose(), BigDecimal.valueOf(100));
+                    notificationService.sendMessage(BUY_TITLE, stockCode + "股价" + price.getClose() + "低于支撑价" + tradingStrategy.getBuyPrice() + "\n");
                 }
             } else {
                 // 如果有持仓，且当前收盘价低于或等于止损价，则进行卖出操作
                 if (price.getClose().compareTo(tradingStrategy.getStopLoss()) <= 0) {
                     holdingsService.sell(stockCode, price.getClose());
                     tradingStrategyService.deleteById(tradingStrategy.getId());
+                    notificationService.sendMessage(SELL_TITLE, stockCode + "股价" + price.getClose() + "低于止损价" + tradingStrategy.getStopLoss() + "\n");
+                }
+                if (price.getClose().compareTo(tradingStrategy.getSellPrice()) >= 0) {
+                    holdingsService.sell(stockCode, price.getClose());
+                    tradingStrategyService.deleteById(tradingStrategy.getId());
+                    notificationService.sendMessage(SELL_TITLE, stockCode + "股价" + price.getClose() + "高于止盈价" + tradingStrategy.getBuyPrice() + "\n");
                 }
             }
         } else if (signal == -1) {
@@ -80,6 +97,9 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             // 如果有持仓，则进行卖出操作
             if (holdings != null) {
                 holdingsService.sell(stockCode, price.getClose());
+                tradingStrategyService.deleteById(tradingStrategy.getId());
+                notificationService.sendMessage(SELL_TITLE, stockCode + "股价有卖出信息，执行卖出，股价" + price.getClose() + "\n");
+            } else {
                 tradingStrategyService.deleteById(tradingStrategy.getId());
             }
         }

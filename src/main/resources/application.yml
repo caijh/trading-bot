@@ -14,3 +14,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+
+notification:
+  user: ${NOTIFICATION_RECEIVER}
