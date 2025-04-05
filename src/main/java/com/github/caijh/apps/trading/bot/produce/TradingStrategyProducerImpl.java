@@ -3,11 +3,14 @@ package com.github.caijh.apps.trading.bot.produce;
 import java.util.List;
 
 import com.github.caijh.apps.trading.bot.consumer.TradingStrategyConsumer;
+import com.github.caijh.apps.trading.bot.dto.ApiResponse;
 import com.github.caijh.apps.trading.bot.entity.TradingStrategy;
+import com.github.caijh.apps.trading.bot.feign.TradingDataFeignClient;
 import com.github.caijh.apps.trading.bot.service.TradingStrategyService;
 import com.github.caijh.framework.core.util.LoggerUtils;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +21,8 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
 
     private TradingStrategyService tradingStrategyService;
     private TradingStrategyConsumer tradingStrategyConsumer;
+    private TradingDataFeignClient tradingDataFeignClient;
+
     @Autowired
     public void setTradingStrategyService(TradingStrategyService tradingStrategyService) {
         this.tradingStrategyService = tradingStrategyService;
@@ -28,14 +33,46 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
         this.tradingStrategyConsumer = tradingStrategyConsumer;
     }
 
-    // 按照cron表达式定时执行的任务，此任务每5分钟执行一次
-    @Scheduled(cron = "0 */5 * * * *")
-    @Override
-    public void produce() {
+    @Autowired
+    public void setTradingDataFeignClient(TradingDataFeignClient tradingDataFeignClient) {
+        this.tradingDataFeignClient = tradingDataFeignClient;
+    }
+
+    @Scheduled(cron = "0 */5 9-11,13-15 * * *")
+    public void produceSSE() {
+        produce("SSE");
+    }
+
+    @Scheduled(cron = "0 */5 9-11,13-15 * * *")
+    public void produceSZSE() {
+        produce("SZSE");
+    }
+
+    @Scheduled(cron = "0 */5 9-12,13-16 * * *")
+    public void produceHKEX() {
+        produce("SZSE");
+    }
+
+    @Scheduled(cron = "0 */5 21-23,0-5 * * *")
+    public void produceNASDAQ() {
+        produce("SZSE");
+    }
+
+    public void produce(String exchange) {
+        ApiResponse<String> marketStatus = tradingDataFeignClient.getMarketStatus("SSE");
+        if (marketStatus.getCode() != 0) {
+            return;
+        }
+        if (marketStatus.getData().equals("MarketClosed")) {
+            return;
+        }
+
         logger.info("Start fetch TradingStrategy");
 
         // 获取所有的交易策略
-        List<TradingStrategy> strategies = tradingStrategyService.findAll();
+        TradingStrategy tradingStrategy = new TradingStrategy();
+        tradingStrategy.setExchange(exchange);
+        List<TradingStrategy> strategies = tradingStrategyService.findAll(Example.of(tradingStrategy));
 
         logger.info("Strategy size = {}", strategies.size());
 
@@ -45,4 +82,5 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
             tradingStrategyConsumer.consume(strategy);
         }
     }
+
 }

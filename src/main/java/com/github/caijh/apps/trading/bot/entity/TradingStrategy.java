@@ -19,6 +19,8 @@ public class TradingStrategy extends AbstractEntity<Long> {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String stockCode;
+    private String stockName;
+    private String exchange;
     private BigDecimal buyPrice;
     private BigDecimal sellPrice;
     private BigDecimal stopLoss;

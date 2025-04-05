@@ -68,10 +68,10 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
         StockPrice price = response.getData();
         // 获取交易策略中的信号，1代表买入信号，-1代表卖出信号
         Integer signal = tradingStrategy.getSignal();
+        // 根据股票代码查询持仓信息
+        Holdings holdings = holdingsService.getByStockCode(stockCode);
         // 根据信号决定买卖操作
         if (signal == 1) {
-            // 根据股票代码查询持仓信息
-            Holdings holdings = holdingsService.getByStockCode(stockCode);
             // 如果没有持仓，且当前收盘价低于或等于买入价格且高于或等于止损价，则进行买入操作
             if (holdings == null) {
                 if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) <= 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) >= 0) {
@@ -92,8 +92,6 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 }
             }
         } else if (signal == -1) {
-            // 根据股票代码查询持仓信息
-            Holdings holdings = holdingsService.getByStockCode(stockCode);
             // 如果有持仓，则进行卖出操作
             if (holdings != null) {
                 holdingsService.sell(stockCode, price.getClose());
