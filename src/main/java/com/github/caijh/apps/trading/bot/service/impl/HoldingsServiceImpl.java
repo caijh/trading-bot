@@ -1,12 +1,15 @@
 package com.github.caijh.apps.trading.bot.service.impl;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import com.github.caijh.apps.trading.bot.entity.Account;
 import com.github.caijh.apps.trading.bot.entity.Holdings;
+import com.github.caijh.apps.trading.bot.entity.TradingRecord;
 import com.github.caijh.apps.trading.bot.repository.AccountRepository;
 import com.github.caijh.apps.trading.bot.repository.HoldingsRepository;
 import com.github.caijh.apps.trading.bot.service.HoldingsService;
+import com.github.caijh.apps.trading.bot.service.TradingRecordService;
 import com.github.caijh.framework.core.exception.ServiceException;
 import com.github.caijh.framework.data.jpa.BaseServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +21,16 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
 
     private AccountRepository accountRepository;
 
+    private TradingRecordService tradingRecordService;
+
     @Autowired
     public void setAccountRepository(AccountRepository accountRepository) {
         this.accountRepository = accountRepository;
+    }
+
+    @Autowired
+    public void setTradingRecordService(TradingRecordService tradingRecordService) {
+        this.tradingRecordService = tradingRecordService;
     }
 
     @Override
@@ -43,6 +53,13 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
         }
         account.setAmount(subtract);
         accountRepository.save(account);
+        TradingRecord tradingRecord = new TradingRecord();
+        tradingRecord.setAccountId(1L);
+        tradingRecord.setStockCode(stockCode);
+        tradingRecord.setPrice(price);
+        tradingRecord.setType("B");
+        tradingRecord.setCreatedAt(new Date());
+        tradingRecordService.save(tradingRecord);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -54,5 +71,12 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
         account.setAmount(account.getAmount().add(price.multiply(holdingNum)));
         accountRepository.save(account);
         getRepository().delete(holdings);
+        TradingRecord tradingRecord = new TradingRecord();
+        tradingRecord.setAccountId(1L);
+        tradingRecord.setStockCode(stockCode);
+        tradingRecord.setPrice(price);
+        tradingRecord.setType("S");
+        tradingRecord.setCreatedAt(new Date());
+        tradingRecordService.save(tradingRecord);
     }
 }
