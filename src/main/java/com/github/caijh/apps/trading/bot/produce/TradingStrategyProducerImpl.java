@@ -54,7 +54,7 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
     }
 
     @Scheduled(cron = "0 */5 21-23,0-5 * * *")
-    public void produceNASDAQ() {
+    public void produceUS() {
         produce("NASDAQ");
     }
 
