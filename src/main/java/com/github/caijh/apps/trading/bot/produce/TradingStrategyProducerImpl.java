@@ -50,16 +50,16 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
 
     @Scheduled(cron = "0 */5 9-12,13-16 * * *")
     public void produceHKEX() {
-        produce("SZSE");
+        produce("HKEX");
     }
 
     @Scheduled(cron = "0 */5 21-23,0-5 * * *")
     public void produceNASDAQ() {
-        produce("SZSE");
+        produce("NASDAQ");
     }
 
     public void produce(String exchange) {
-        ApiResponse<String> marketStatus = tradingDataFeignClient.getMarketStatus("SSE");
+        ApiResponse<String> marketStatus = tradingDataFeignClient.getMarketStatus(exchange);
         if (marketStatus.getCode() != 0) {
             return;
         }

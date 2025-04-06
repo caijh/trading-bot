@@ -7,14 +7,31 @@ spring:
   config:
     import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/stock?sslmode=require&client_encoding=utf8
+    url: ${DATABASE_URL}
     username: ${DATABASE_USER}
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
-
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:127.0.0.1}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        enabled: true
+        register: true
+        deregister: true
+        acl-token: ${CONSUL_DISCOVERY_TOKEN:}
+        prefer-ip-address: true
+        ip-address: ${HOST_IP:127.0.0.1}
+        port: ${HOST_PORT:8080}
+      config:
+        enabled: true
+        format: yaml
+        acl-token: ${CONSUL_CONFIG_TOKEN:}
+        default-context: ${spring.profiles.active}
+        data-key: ${spring.application.name}
 
 notification:
   user: ${NOTIFICATION_RECEIVER}
