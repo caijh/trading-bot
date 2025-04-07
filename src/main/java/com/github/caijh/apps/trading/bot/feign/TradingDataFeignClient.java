@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "trading-data")
+@FeignClient(name = "trading-data", url = "https://gateway.joinspace.pp.ua/trading-data")
 public interface TradingDataFeignClient {
 
     @GetMapping(value = "/stock/price")
