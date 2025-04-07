@@ -51,8 +51,7 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
         if (subtract.compareTo(BigDecimal.ZERO) < 0) {
             throw new ServiceException("AMOUNT_NOT_ENOUGH", null);
         }
-        account.setAmount(subtract);
-        accountRepository.save(account);
+        accountRepository.subtract(1L, price.multiply(num));
         TradingRecord tradingRecord = new TradingRecord();
         tradingRecord.setAccountId(1L);
         tradingRecord.setStockCode(stockCode);
@@ -67,9 +66,7 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
     public void sell(String stockCode, BigDecimal price) {
         Holdings holdings = getByStockCode(stockCode);
         BigDecimal holdingNum = holdings.getHoldingNum();
-        Account account = accountRepository.getReferenceById(1L);
-        account.setAmount(account.getAmount().add(price.multiply(holdingNum)));
-        accountRepository.save(account);
+        accountRepository.add(1L, price.multiply(holdingNum));
         getRepository().delete(holdings);
         TradingRecord tradingRecord = new TradingRecord();
         tradingRecord.setAccountId(1L);
