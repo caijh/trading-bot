@@ -130,7 +130,10 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             Date createdAt = holdings.getCreatedAt();
             // 检查创建日期是否非空，并且是否在当前日期之前
             // 这里解释了为什么使用当前日期与创建日期进行比较：为了判断持仓是否已经到达可以卖出的时间
-            return createdAt != null && !Objects.requireNonNull(DateUtils.asLocalDate(new Date())).isAfter(DateUtils.asLocalDate(createdAt));
+            if (createdAt == null) {
+                return false;
+            }
+            return !Objects.requireNonNull(DateUtils.asLocalDate(new Date())).isAfter(DateUtils.asLocalDate(createdAt));
         }
         // 如果交易市场不是SZSE或SSE，则默认不受卖出限制
         return false;
