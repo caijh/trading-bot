@@ -77,7 +77,9 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) <= 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) >= 0) {
                     holdingsService.buy(stockCode, price.getClose(), BigDecimal.valueOf(100));
                     notificationService.sendMessage(BUY_TITLE, tradingStrategy.getStockName() + "-" + stockCode + "股价" + price.getClose()
-                            + "低于支撑价" + tradingStrategy.getBuyPrice() + "\n" + String.join(",", tradingStrategy.getPatterns()));
+                            + "低于支撑价:" + tradingStrategy.getBuyPrice()
+                            + "\n" + String.join(",", tradingStrategy.getPatterns())
+                            + "\n 止损价:" + tradingStrategy.getStopLoss() + "止盈价:" + tradingStrategy.getSellPrice());
                 }
             } else {
                 // 如果有持仓，且当前收盘价低于或等于止损价，则进行卖出操作
@@ -100,7 +102,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 notificationService.sendMessage(SELL_TITLE, tradingStrategy.getStockName() + "-"
-                        + stockCode + "股价有卖出信息，执行卖出，股价" + price.getClose() + "\n" + String.join(",", tradingStrategy.getPatterns()));
+                        + stockCode + "股价有卖出信号，执行卖出，股价" + price.getClose() + "\n" + String.join(",", tradingStrategy.getPatterns()));
             } else {
                 tradingStrategyService.deleteById(tradingStrategy.getId());
             }

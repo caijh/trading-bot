@@ -67,14 +67,14 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
             return;
         }
 
-        logger.info("Start fetch TradingStrategy");
+        logger.info("Start fetch TradingStrategy Exchange = {}", exchange);
 
         // 获取所有的交易策略
         TradingStrategy tradingStrategy = new TradingStrategy();
         tradingStrategy.setExchange(exchange);
         List<TradingStrategy> strategies = tradingStrategyService.findAll(Example.of(tradingStrategy));
 
-        logger.info("Strategy size = {}", strategies.size());
+        logger.info("Strategy size = {}, Exchange = {}", strategies.size(), exchange);
 
         // 遍历并处理每个交易策略
         for (TradingStrategy strategy : strategies) {
