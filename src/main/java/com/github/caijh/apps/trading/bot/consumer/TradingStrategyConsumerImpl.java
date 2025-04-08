@@ -74,12 +74,12 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
         if (signal == 1) {
             // 如果没有持仓，且当前收盘价低于或等于买入价格且高于或等于止损价，则进行买入操作
             if (holdings == null) {
-                if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) <= 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) >= 0) {
+                if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) <= 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) > 0) {
                     holdingsService.buy(stockCode, price.getClose(), BigDecimal.valueOf(100));
                     notificationService.sendMessage(BUY_TITLE, tradingStrategy.getStockName() + "-" + stockCode + "股价" + price.getClose()
                             + "低于支撑价:" + tradingStrategy.getBuyPrice()
                             + "\n" + String.join(",", tradingStrategy.getPatterns())
-                            + "\n 止损价:" + tradingStrategy.getStopLoss() + "止盈价:" + tradingStrategy.getSellPrice());
+                            + "\n" + "止损价:" + tradingStrategy.getStopLoss() + "止盈价:" + tradingStrategy.getSellPrice());
                 }
             } else {
                 // 如果有持仓，且当前收盘价低于或等于止损价，则进行卖出操作
