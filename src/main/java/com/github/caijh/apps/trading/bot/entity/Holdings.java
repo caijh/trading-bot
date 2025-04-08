@@ -1,6 +1,7 @@
 package com.github.caijh.apps.trading.bot.entity;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 import com.github.caijh.framework.data.entity.AbstractEntity;
 import jakarta.persistence.Entity;
@@ -23,4 +24,7 @@ public class Holdings extends AbstractEntity<Long> {
     private BigDecimal holdingNum;
 
     private BigDecimal price;
+
+    private Date createdAt;
+
 }

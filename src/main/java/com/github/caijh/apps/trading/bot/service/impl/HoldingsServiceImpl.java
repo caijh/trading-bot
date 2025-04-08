@@ -45,6 +45,7 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
         holdings.setStockCode(stockCode);
         holdings.setHoldingNum(num);
         holdings.setPrice(price);
+        holdings.setCreatedAt(new Date());
         getRepository().save(holdings);
         Account account = accountRepository.getReferenceById(1L);
         BigDecimal subtract = account.getAmount().subtract(price.multiply(num));
