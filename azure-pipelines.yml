@@ -4,40 +4,65 @@
 # https://aka.ms/yaml
 
 trigger:
-- main
+  - main
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
-#- task: Maven@4
-#  inputs:
-#    mavenPomFile: 'pom.xml'
-#    publishJUnitResults: true
-#    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#    javaHomeOption: 'JDKVersion'
-#    jdkVersionOption: 'default'
-#    mavenVersionOption: 'Default'
-#    mavenAuthenticateFeed: false
-#    effectivePomSkip: false
-#    sonarQubeRunAnalysis: false
+  - task: DownloadSecureFile@1
+    displayName: Download gpg Secure file
+    inputs:
+      secureFile: '8A9A95864F12F7A70F1DC31F2233ACD21B562294.asc'
+    name: privateKeyRing
+  - task: CmdLine@2
+    inputs:
+      script: 'gpg --import --batch --passphrase $(GPG-PASSPHRASE) $(privateKeyRing.secureFilePath)'
+    displayName: Import gpg private key
+  - task: DownloadSecureFile@1
+    displayName: Download settings.xml
+    inputs:
+      secureFile: 'settings.xml'
+    name: settingsXml
+  - task: Bash@3
+    inputs:
+      targetType: 'inline'
+      script: |
+        rm -rf ${HOME}/.m2
+        mkdir ${HOME}/.m2
+        cp "$(settingsXml.secureFilePath)" "${HOME}/.m2"
 
-- task: Maven@4
-  displayName: Build Docker image
-  inputs:
-    mavenPomFile: 'pom.xml'
-    goals: 'spring-boot:build-image'
-    options: '-DskipTests=true'
-    publishJUnitResults: false
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.17'
-    mavenVersionOption: 'Default'
-    mavenOptions: '-Xmx3072m'
+  #- task: Maven@4
+  #  inputs:
+  #    mavenPomFile: 'pom.xml'
+  #    publishJUnitResults: true
+  #    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+  #    javaHomeOption: 'JDKVersion'
+  #    jdkVersionOption: 'default'
+  #    mavenVersionOption: 'Default'
+  #    mavenAuthenticateFeed: false
+  #    effectivePomSkip: false
+  #    sonarQubeRunAnalysis: false
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'DockerHub'
-    repository: 'caijunhui/trading-bot'
-    command: 'push'
-    tags: |
-      latest
+  - task: Maven@4
+    displayName: Build Docker image
+    inputs:
+      mavenPomFile: 'pom.xml'
+      goals: 'spring-boot:build-image'
+      options: '-DskipTests=true'
+      publishJUnitResults: false
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.17'
+      mavenVersionOption: 'Default'
+      mavenOptions: '-Xmx3072m'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
+
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'DockerHub'
+      repository: 'caijunhui/trading-bot'
+      command: 'push'
+      tags: |
+        latest
