@@ -11,15 +11,6 @@ pool:
 
 steps:
   - task: DownloadSecureFile@1
-    displayName: Download gpg Secure file
-    inputs:
-      secureFile: '8A9A95864F12F7A70F1DC31F2233ACD21B562294.asc'
-    name: privateKeyRing
-  - task: CmdLine@2
-    inputs:
-      script: 'gpg --import --batch --passphrase $(GPG-PASSPHRASE) $(privateKeyRing.secureFilePath)'
-    displayName: Import gpg private key
-  - task: DownloadSecureFile@1
     displayName: Download settings.xml
     inputs:
       secureFile: 'settings.xml'
