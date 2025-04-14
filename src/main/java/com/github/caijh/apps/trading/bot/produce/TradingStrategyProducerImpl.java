@@ -78,7 +78,7 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
 
         // 遍历并处理每个交易策略
         for (TradingStrategy strategy : strategies) {
-            logger.info("Consume TradingStrategy {}", strategy);
+            logger.info("Consume {}", strategy);
             tradingStrategyConsumer.consume(strategy);
         }
     }
