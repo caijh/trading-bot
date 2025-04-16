@@ -139,6 +139,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
         } else {
             // 检查是否达到卖出限制，如果达到则不进行后续操作
             if (isSellLimit(tradingStrategy.getExchange(), holdings)) {
+                logger.info("{}无法卖出，T+1限制", stockCode);
                 return;
             }
 
@@ -166,7 +167,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
      *
      * @param exchange 交易市场标识，如"SZSE"表示深圳证券交易所，"SSE"表示上海证券交易所
      * @param holdings 持仓信息对象，包含创建日期等信息
-     * @return 如果持仓不受卖出限制，则返回true；否则返回false
+     * @return 如果持仓受卖出限制，则返回true；否则返回false
      */
     private boolean isSellLimit(String exchange, Holdings holdings) {
         // 检查交易市场是否为深圳证券交易所(SZSE)或上海证券交易所(SSE)
