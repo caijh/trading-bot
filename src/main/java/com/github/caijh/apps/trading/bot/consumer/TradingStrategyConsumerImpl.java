@@ -1,6 +1,7 @@
 package com.github.caijh.apps.trading.bot.consumer;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.Objects;
 
@@ -147,17 +148,27 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             if (price.getClose().compareTo(tradingStrategy.getStopLoss()) <= 0) {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
+                // 计算止损比例
+                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
                 // 发送卖出通知，说明股价低于止损价
-                notificationService.sendMessage(SELL_TITLE, tradingStrategy.getStockName() + "-"
-                        + stockCode + "股价" + price.getClose() + "低于止损价" + tradingStrategy.getStopLoss() + "\n");
+                notificationService.sendMessage(SELL_TITLE,
+                        tradingStrategy.getStockName() + "-" + stockCode
+                                + "股价" + price.getClose() + "低于止损价" + tradingStrategy.getStopLoss()
+                                + ",预亏" + percent + "%"
+                                + "\n");
             }
             // 如果当前收盘价高于或等于止盈价，则进行卖出操作
             if (price.getClose().compareTo(tradingStrategy.getSellPrice()) >= 0) {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
+                // 计算止盈比例
+                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 4, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
                 // 发送卖出通知，说明股价高于止盈价
-                notificationService.sendMessage(SELL_TITLE, tradingStrategy.getStockName() + "-"
-                        + stockCode + "股价" + price.getClose() + "高于止盈价" + tradingStrategy.getBuyPrice() + "\n");
+                notificationService.sendMessage(SELL_TITLE,
+                        tradingStrategy.getStockName() + "-" + stockCode
+                                + "股价" + price.getClose() + "高于止盈价" + tradingStrategy.getBuyPrice()
+                                + ",预赚" + percent + "%"
+                                + "\n");
             }
         }
     }
