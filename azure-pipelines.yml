@@ -15,6 +15,7 @@ steps:
   - task: CmdLine@2
     inputs:
       script: wget https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-x64_bin.tar.gz
+      workingDirectory: /tmp
 
   # Java tool installer v1
   # Acquire a specific version of Java from a user-supplied Azure blob or the tool cache and sets JAVA_HOME.
@@ -23,7 +24,7 @@ steps:
       versionSpec: '21'
       jdkArchitectureOption: 'x64'
       jdkSourceOption: 'LocalDirectory'
-      jdkFile: 'graalvm-jdk-21_linux-x64_bin.tar.gz'
+      jdkFile: '/tmp/graalvm-jdk-21_linux-x64_bin.tar.gz'
 
   - task: DownloadSecureFile@1
     displayName: Download settings.xml
