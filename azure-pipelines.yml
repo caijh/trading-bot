@@ -60,7 +60,8 @@ steps:
       goals: 'spring-boot:build-image'
       options: '-DskipTests=true'
       publishJUnitResults: false
-      javaHomeOption: '/opt/graalvm'
+      javaHomeOption: 'Path'
+      jdkDirectory: '/opt/graalvm'
       mavenVersionOption: 'Default'
       mavenOptions: '-Xmx3072m'
       mavenAuthenticateFeed: false
