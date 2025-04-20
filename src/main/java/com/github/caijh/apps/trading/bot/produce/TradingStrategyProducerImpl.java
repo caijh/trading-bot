@@ -61,9 +61,11 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
     public void produce(String exchange) {
         ApiResponse<String> marketStatus = tradingDataFeignClient.getMarketStatus(exchange);
         if (marketStatus.getCode() != 0) {
+            logger.info("无法获取交易所的市场状态");
             return;
         }
         if (marketStatus.getData().equals("MarketClosed")) {
+            logger.info("交易所休市");
             return;
         }
 
