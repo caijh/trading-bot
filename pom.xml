@@ -113,7 +113,6 @@
                 <configuration>
                     <image>
                         <name>caijunhui/${project.artifactId}</name>
-                        <skipNativeTests>true</skipNativeTests>
                     </image>
                 </configuration>
             </plugin>
