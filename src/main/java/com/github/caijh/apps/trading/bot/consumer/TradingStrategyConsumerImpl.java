@@ -106,9 +106,11 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             holdingsService.sell(stockCode, price.getClose());
             // 删除交易策略
             tradingStrategyService.deleteById(tradingStrategy.getId());
+            BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 4, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
             // 发送通知，告知卖出操作已执行
             notificationService.sendMessage(SELL_TITLE, tradingStrategy.getStockName() + "-"
-                    + stockCode + "股价有卖出信号，执行卖出，股价" + price.getClose() + "\n" + String.join(",", tradingStrategy.getPatterns()));
+                    + stockCode + "有卖出信号，执行卖出，股价" + price.getClose() + "\n"
+                    + "盈亏比例:" + percent + "%");
         } else {
             // 如果不持有该股票，仅删除交易策略
             tradingStrategyService.deleteById(tradingStrategy.getId());
