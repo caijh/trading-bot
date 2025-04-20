@@ -14,7 +14,7 @@ steps:
   # Run a command line script using Bash on Linux and macOS and cmd.exe on Windows.
   - task: CmdLine@2
     inputs:
-      script: wget https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-x64_bin.tar.gz
+      script: wget -O graalvm-jdk.tar.gz https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-x64_bin.tar.gz
       workingDirectory: /tmp
 
   # Java tool installer v1
@@ -24,7 +24,7 @@ steps:
       versionSpec: '21'
       jdkArchitectureOption: 'x64'
       jdkSourceOption: 'LocalDirectory'
-      jdkFile: '/tmp/graalvm-jdk-21_linux-x64_bin.tar.gz'
+      jdkFile: '/tmp/graalvm-jdk.tar.gz'
       jdkDestinationDirectory: '/opt/graalvm'
 
   - task: DownloadSecureFile@1
@@ -61,7 +61,6 @@ steps:
       options: '-DskipTests=true'
       publishJUnitResults: false
       javaHomeOption: 'JDKVersion'
-#      jdkDirectory: '/opt/graalvm/JAVA_HOME_21_X64_graalvm-jdk-21_linux-x64_bin_tar.gz/graalvm-jdk-21.0.7+8.1'
       mavenVersionOption: 'Default'
       mavenOptions: '-Xmx3072m'
       mavenAuthenticateFeed: false
