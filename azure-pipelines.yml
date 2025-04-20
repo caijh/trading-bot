@@ -60,8 +60,7 @@ steps:
       goals: 'spring-boot:build-image'
       options: '-DskipTests=true'
       publishJUnitResults: false
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.17'
+      javaHomeOption: '/opt/graalvm'
       mavenVersionOption: 'Default'
       mavenOptions: '-Xmx3072m'
       mavenAuthenticateFeed: false
