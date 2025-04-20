@@ -10,11 +10,27 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+  # Command Line v2
+  # Run a command line script using Bash on Linux and macOS and cmd.exe on Windows.
+  - task: CmdLine@2
+    inputs:
+      script: wget https://download.oracle.com/graalvm/21/latest/graalvm-jdk-21_linux-x64_bin.tar.gz
+
+  # Java tool installer v1
+  # Acquire a specific version of Java from a user-supplied Azure blob or the tool cache and sets JAVA_HOME.
+  - task: JavaToolInstaller@1
+    inputs:
+      versionSpec: '21'
+      jdkArchitectureOption: 'x64'
+      jdkSourceOption: 'LocalDirectory'
+      jdkFile: 'graalvm-jdk-21_linux-x64_bin.tar.gz'
+
   - task: DownloadSecureFile@1
     displayName: Download settings.xml
     inputs:
       secureFile: 'settings.xml'
     name: settingsXml
+
   - task: Bash@3
     inputs:
       targetType: 'inline'
