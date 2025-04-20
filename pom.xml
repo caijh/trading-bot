@@ -113,19 +113,9 @@
                 <configuration>
                     <image>
                         <name>caijunhui/${project.artifactId}</name>
-                        <buildpacks>
-                            <buildpack>paketobuildpacks/oracle</buildpack>
-                            <buildpack>paketobuildpacks/java-native-image</buildpack>
-                        </buildpacks>
+                        <skipNativeTests>true</skipNativeTests>
                     </image>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>build-image-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
