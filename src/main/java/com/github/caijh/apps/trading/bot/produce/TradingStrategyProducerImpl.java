@@ -65,7 +65,7 @@ public class TradingStrategyProducerImpl implements TradingStrategyProducer {
             return;
         }
         if (marketStatus.getData().equals("MarketClosed")) {
-            logger.info("交易所休市");
+            logger.info("{}交易所休市", exchange);
             return;
         }
 
