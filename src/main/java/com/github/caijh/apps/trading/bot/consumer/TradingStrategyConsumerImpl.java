@@ -106,7 +106,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             holdingsService.sell(stockCode, price.getClose());
             // 删除交易策略
             tradingStrategyService.deleteById(tradingStrategy.getId());
-            BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 4, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
+            BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 2, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
             // 发送通知，告知卖出操作已执行
             notificationService.sendMessage(SELL_TITLE, tradingStrategy.getStockName() + "-"
                     + stockCode + "有卖出信号，执行卖出，股价" + price.getClose() + "\n"
@@ -151,7 +151,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 // 计算止损比例
-                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
                 // 发送卖出通知，说明股价低于止损价
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
@@ -164,7 +164,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 // 计算止盈比例
-                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 4, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
+                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 2, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
                 // 发送卖出通知，说明股价高于止盈价
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
