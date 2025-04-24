@@ -156,7 +156,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
                                 + "\n股价" + price.getClose() + "低于止损价" + tradingStrategy.getStopLoss()
-                                + "\n预亏" + percent + "%"
+                                + "\n买入价：" + holdings.getPrice() + "，预亏" + percent + "%"
                                 + "\n");
             }
             // 如果当前收盘价高于或等于止盈价，则进行卖出操作
@@ -169,7 +169,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
                                 + "\n股价" + price.getClose() + "高于止盈价" + tradingStrategy.getBuyPrice()
-                                + "\n预赚" + percent + "%"
+                                + "\n买入价：" + holdings.getPrice() + ",预赚" + percent + "%"
                                 + "\n");
             }
         }
