@@ -2,6 +2,7 @@ package com.github.caijh.apps.trading.bot.consumer;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Objects;
 
@@ -106,11 +107,11 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             holdingsService.sell(stockCode, price.getClose());
             // 删除交易策略
             tradingStrategyService.deleteById(tradingStrategy.getId());
-            BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 2, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
+            BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 3, RoundingMode.HALF_DOWN);
             // 发送通知，告知卖出操作已执行
             notificationService.sendMessage(SELL_TITLE, tradingStrategy.getStockName() + "-"
                     + stockCode + "有卖出信号，执行卖出，股价" + price.getClose() + "\n"
-                    + "盈亏比例:" + percent + "%");
+                    + "盈亏比例:" + NumberFormat.getPercentInstance().format(percent));
         } else {
             // 如果不持有该股票，仅删除交易策略
             tradingStrategyService.deleteById(tradingStrategy.getId());
@@ -130,8 +131,8 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
         // 检查是否已经持有该股票
         Holdings holdings = holdingsService.getByStockCode(stockCode);
         if (holdings == null) {
-            // 如果没有持仓，且当前收盘价低于或等于买入价格且高于或等于止损价，则进行买入操作
-            if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) <= 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) > 0) {
+            // 如果没有持仓，且当前收盘价低于买入价格且高于或等于止损价，则进行买入操作
+            if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) < 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) > 0) {
                 holdingsService.buy(stockCode, price.getClose(), BigDecimal.valueOf(100));
                 // 发送买入通知，包括股票名称、代码、当前股价、买入价格、止损价和止盈价等信息
                 notificationService.sendMessage(BUY_TITLE, tradingStrategy.getStockName() + "-" + stockCode
@@ -146,17 +147,17 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 return;
             }
 
-            // 如果有持仓，且当前收盘价低于或等于止损价，则进行卖出操作
-            if (price.getClose().compareTo(tradingStrategy.getStopLoss()) <= 0) {
+            // 如果有持仓，且当前收盘价低于，则进行卖出操作
+            if (price.getClose().compareTo(tradingStrategy.getStopLoss()) < 0) {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 // 计算止损比例
-                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 2, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 3, RoundingMode.HALF_UP);
                 // 发送卖出通知，说明股价低于止损价
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
                                 + "\n股价" + price.getClose() + "低于止损价" + tradingStrategy.getStopLoss()
-                                + "\n买入价：" + holdings.getPrice() + "，预亏" + percent + "%"
+                                + "\n买入价：" + holdings.getPrice() + "，预亏" + NumberFormat.getPercentInstance().format(percent)
                                 + "\n");
             }
             // 如果当前收盘价高于或等于止盈价，则进行卖出操作
@@ -164,12 +165,12 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 // 计算止盈比例
-                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 2, RoundingMode.HALF_DOWN).multiply(BigDecimal.valueOf(100));
+                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 3, RoundingMode.HALF_DOWN);
                 // 发送卖出通知，说明股价高于止盈价
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
                                 + "\n股价" + price.getClose() + "高于止盈价" + tradingStrategy.getBuyPrice()
-                                + "\n买入价：" + holdings.getPrice() + ",预赚" + percent + "%"
+                                + "\n买入价：" + holdings.getPrice() + ",预赚" + NumberFormat.getPercentInstance().format(percent)
                                 + "\n");
             }
         }
