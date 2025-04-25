@@ -135,10 +135,13 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
             if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) < 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) > 0) {
                 holdingsService.buy(stockCode, price.getClose(), BigDecimal.valueOf(100));
                 // 发送买入通知，包括股票名称、代码、当前股价、买入价格、止损价和止盈价等信息
+                BigDecimal profit = tradingStrategy.getSellPrice().subtract(price.getClose());
+                BigDecimal loss = price.getClose().subtract(tradingStrategy.getStopLoss());
+                BigDecimal percent = profit.divide(loss, 2, RoundingMode.HALF_DOWN);
                 notificationService.sendMessage(BUY_TITLE, tradingStrategy.getStockName() + "-" + stockCode
                         + "\n股价" + price.getClose() + "低于支撑价:" + tradingStrategy.getBuyPrice()
                         + "\n" + String.join(",", tradingStrategy.getPatterns()) + "\n"
-                        + "\n止损价:" + tradingStrategy.getStopLoss() + "止盈价:" + tradingStrategy.getSellPrice());
+                        + "\n止损价:" + tradingStrategy.getStopLoss() + "止盈价:" + tradingStrategy.getSellPrice() + "盈亏比:" + percent + ":1");
             }
         } else {
             // 检查是否达到卖出限制，如果达到则不进行后续操作
