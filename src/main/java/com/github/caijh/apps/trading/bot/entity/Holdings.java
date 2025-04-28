@@ -21,6 +21,8 @@ public class Holdings extends AbstractEntity<Long> {
 
     private String stockCode;
 
+    private String stockName;
+
     private BigDecimal holdingNum;
 
     private BigDecimal price;

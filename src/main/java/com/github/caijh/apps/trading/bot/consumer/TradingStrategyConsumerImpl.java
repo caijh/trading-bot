@@ -84,9 +84,9 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
         // 获取交易策略中的信号，1代表买入信号，-1代表卖出信号
         Integer signal = tradingStrategy.getSignal();
         if (signal == 1) {
-            handleBuySignal(tradingStrategy, stockCode, price);
+            handleBuySignal(tradingStrategy, price);
         } else if (signal == -1) {
-            handleSellSignal(tradingStrategy, stockCode, price);
+            handleSellSignal(tradingStrategy, price);
         }
     }
 
@@ -96,10 +96,10 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
      * 如果不持有该股票，则仅删除交易策略
      *
      * @param tradingStrategy 交易策略，指导如何进行股票交易
-     * @param stockCode       股票代码，标识特定的股票
      * @param price           股票价格信息，包括收盘价等
      */
-    private void handleSellSignal(TradingStrategy tradingStrategy, String stockCode, StockPrice price) {
+    private void handleSellSignal(TradingStrategy tradingStrategy, StockPrice price) {
+        String stockCode = tradingStrategy.getStockCode();
         // 根据股票代码获取持仓信息
         Holdings holdings = holdingsService.getByStockCode(stockCode);
         if (holdings != null) {
@@ -124,16 +124,16 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
      * 如果已经持有该股票，则根据当前股价和交易策略决定是否卖出
      *
      * @param tradingStrategy 交易策略，包含买入价格、止损价等信息
-     * @param stockCode       股票代码，用于标识特定的股票
      * @param price           当前股票价格信息，包括收盘价等
      */
-    private void handleBuySignal(TradingStrategy tradingStrategy, String stockCode, StockPrice price) {
+    private void handleBuySignal(TradingStrategy tradingStrategy, StockPrice price) {
+        String stockCode = tradingStrategy.getStockCode();
         // 检查是否已经持有该股票
         Holdings holdings = holdingsService.getByStockCode(stockCode);
         if (holdings == null) {
             // 如果没有持仓，且当前收盘价低于买入价格且高于或等于止损价，则进行买入操作
             if (price.getClose().compareTo(tradingStrategy.getBuyPrice()) < 0 && price.getClose().compareTo(tradingStrategy.getStopLoss()) > 0) {
-                holdingsService.buy(stockCode, price.getClose(), BigDecimal.valueOf(100));
+                holdingsService.buy(stockCode, tradingStrategy.getStockName(), price.getClose(), BigDecimal.valueOf(100));
                 // 发送买入通知，包括股票名称、代码、当前股价、买入价格、止损价和止盈价等信息
                 BigDecimal profit = tradingStrategy.getSellPrice().subtract(price.getClose());
                 BigDecimal loss = price.getClose().subtract(tradingStrategy.getStopLoss());

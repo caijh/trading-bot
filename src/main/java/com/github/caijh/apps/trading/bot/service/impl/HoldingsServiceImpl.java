@@ -40,9 +40,10 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void buy(String stockCode, BigDecimal price, BigDecimal num) {
+    public void buy(String stockCode, String stockName, BigDecimal price, BigDecimal num) {
         Holdings holdings = new Holdings();
         holdings.setStockCode(stockCode);
+        holdings.setStockCode(stockName);
         holdings.setHoldingNum(num);
         holdings.setPrice(price);
         holdings.setCreatedAt(new Date());
