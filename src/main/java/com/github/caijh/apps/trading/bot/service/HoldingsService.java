@@ -23,6 +23,7 @@ public interface HoldingsService extends BaseService<Holdings, Long> {
      * 执行买入操作
      *
      * @param stockCode 股票代码，标识要买入的股票
+     * @param stockName 股票名称
      * @param price     买入时的股票价格
      * @param num       买入的股票数量
      */
