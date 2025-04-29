@@ -43,7 +43,7 @@ public class HoldingsServiceImpl extends BaseServiceImpl<Holdings, Long> impleme
     public void buy(String stockCode, String stockName, BigDecimal price, BigDecimal num) {
         Holdings holdings = new Holdings();
         holdings.setStockCode(stockCode);
-        holdings.setStockCode(stockName);
+        holdings.setStockName(stockName);
         holdings.setHoldingNum(num);
         holdings.setPrice(price);
         holdings.setCreatedAt(new Date());
