@@ -155,7 +155,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 // 计算止损比例
-                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 3, RoundingMode.HALF_UP);
+                BigDecimal percent = holdings.getPrice().subtract(price.getClose()).divide(holdings.getPrice(), 4, RoundingMode.HALF_UP);
                 // 发送卖出通知，说明股价低于止损价
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
@@ -168,7 +168,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
                 holdingsService.sell(stockCode, price.getClose());
                 tradingStrategyService.deleteById(tradingStrategy.getId());
                 // 计算止盈比例
-                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 3, RoundingMode.HALF_DOWN);
+                BigDecimal percent = price.getClose().subtract(holdings.getPrice()).divide(holdings.getPrice(), 4, RoundingMode.HALF_DOWN);
                 // 发送卖出通知，说明股价高于止盈价
                 notificationService.sendMessage(SELL_TITLE,
                         tradingStrategy.getStockName() + "-" + stockCode
