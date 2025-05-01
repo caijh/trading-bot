@@ -10,6 +10,7 @@ import com.github.caijh.apps.trading.bot.dto.ApiResponse;
 import com.github.caijh.apps.trading.bot.dto.StockPrice;
 import com.github.caijh.apps.trading.bot.entity.Holdings;
 import com.github.caijh.apps.trading.bot.entity.TradingStrategy;
+import com.github.caijh.apps.trading.bot.enums.Exchange;
 import com.github.caijh.apps.trading.bot.feign.TradingDataFeignClient;
 import com.github.caijh.apps.trading.bot.service.HoldingsService;
 import com.github.caijh.apps.trading.bot.service.NotificationService;
@@ -188,7 +189,7 @@ public class TradingStrategyConsumerImpl implements TradingStrategyConsumer {
      */
     private boolean isSellLimit(String exchange, Holdings holdings) {
         // 检查交易市场是否为深圳证券交易所(SZSE)或上海证券交易所(SSE)
-        if ("SZSE".equals(exchange) || "SSE".equals(exchange)) {
+        if (Exchange.SSE.name().equals(exchange) || Exchange.SZSE.name().equals(exchange)) {
             // 获取持仓的创建日期
             Date createdAt = holdings.getCreatedAt();
             // 检查创建日期是否非空，并且是否在当前日期之前
