@@ -32,6 +32,11 @@ spring:
         acl-token: ${CONSUL_CONFIG_TOKEN:}
         default-context: ${spring.profiles.active}
         data-key: ${spring.application.name}
-
+    openfeign:
+      okhttp:
+        enabled: true
+      httpclient:
+        connection-timeout: 2000
+        max-connections: 200
 notification:
   user: ${NOTIFICATION_RECEIVER}

@@ -251,7 +251,7 @@
   }, {
     "pattern":"\\Qcom/github/caijh/framework/web/autoconfigure/CorsAutoConfiguration.class\\E"
   }, {
-    "pattern":"\\Qcom/github/caijh/framework/web/autoconfigure/JacksonAutoConfiguration$$Lambda/0x000001d3c8b81620.class\\E"
+    "pattern":"\\Qcom/github/caijh/framework/web/autoconfigure/JacksonAutoConfiguration$$Lambda/0x0000021d1eb94b48.class\\E"
   }, {
     "pattern":"\\Qcom/github/caijh/framework/web/autoconfigure/JacksonAutoConfiguration$$SpringCGLIB$$0.class\\E"
   }, {
@@ -393,21 +393,21 @@
   }, {
     "pattern":"\\Qjavax/sql/DataSource.class\\E"
   }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy163.class\\E"
+    "pattern":"\\Qjdk/proxy2/$Proxy167.class\\E"
   }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy181.class\\E"
+    "pattern":"\\Qjdk/proxy2/$Proxy187.class\\E"
   }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy186.class\\E"
-  }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy189.class\\E"
-  }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy194.class\\E"
+    "pattern":"\\Qjdk/proxy2/$Proxy192.class\\E"
   }, {
     "pattern":"\\Qjdk/proxy2/$Proxy195.class\\E"
   }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy196.class\\E"
+    "pattern":"\\Qjdk/proxy2/$Proxy200.class\\E"
   }, {
-    "pattern":"\\Qjdk/proxy2/$Proxy199.class\\E"
+    "pattern":"\\Qjdk/proxy2/$Proxy201.class\\E"
+  }, {
+    "pattern":"\\Qjdk/proxy2/$Proxy202.class\\E"
+  }, {
+    "pattern":"\\Qjdk/proxy2/$Proxy205.class\\E"
   }, {
     "pattern":"\\Qjndi.properties\\E"
   }, {
@@ -432,6 +432,12 @@
     "pattern":"\\Qlogback.xml\\E"
   }, {
     "pattern":"\\Qmozilla/public-suffix-list.txt\\E"
+  }, {
+    "pattern":"\\Qokhttp3/ConnectionPool.class\\E"
+  }, {
+    "pattern":"\\Qokhttp3/OkHttpClient$Builder.class\\E"
+  }, {
+    "pattern":"\\Qokhttp3/OkHttpClient.class\\E"
   }, {
     "pattern":"\\Qorg/apache/catalina/core/RestrictedFilters.properties\\E"
   }, {
@@ -545,7 +551,7 @@
   }, {
     "pattern":"\\Qorg/springframework/beans/factory/support/NullBean.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/boot/LazyInitializationExcludeFilter$$Lambda/0x000001d3c8bdd800.class\\E"
+    "pattern":"\\Qorg/springframework/boot/LazyInitializationExcludeFilter$$Lambda/0x0000021d1ebf2f10.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/boot/LazyInitializationExcludeFilter.class\\E"
   }, {
@@ -583,7 +589,7 @@
   }, {
     "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/endpoint/expose/IncludeExcludeEndpointFilter.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/endpoint/jackson/JacksonEndpointAutoConfiguration$$Lambda/0x000001d3c8955700.class\\E"
+    "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/endpoint/jackson/JacksonEndpointAutoConfiguration$$Lambda/0x0000021d1e95d028.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/endpoint/jackson/JacksonEndpointAutoConfiguration.class\\E"
   }, {
@@ -871,7 +877,7 @@
   }, {
     "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/web/servlet/ServletManagementChildContextConfiguration.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/web/servlet/ServletManagementContextAutoConfiguration$$Lambda/0x000001d3c8bd3eb0.class\\E"
+    "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/web/servlet/ServletManagementContextAutoConfiguration$$Lambda/0x0000021d1ebe7168.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/boot/actuate/autoconfigure/web/servlet/ServletManagementContextAutoConfiguration$ApplicationContextFilterConfiguration.class\\E"
   }, {
@@ -1089,9 +1095,9 @@
   }, {
     "pattern":"\\Qorg/springframework/boot/autoconfigure/data/jpa/JpaRepositoriesRegistrar.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/boot/autoconfigure/data/web/SpringDataWebAutoConfiguration$$Lambda/0x000001d3c8b98000.class\\E"
+    "pattern":"\\Qorg/springframework/boot/autoconfigure/data/web/SpringDataWebAutoConfiguration$$Lambda/0x0000021d1ebab278.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/boot/autoconfigure/data/web/SpringDataWebAutoConfiguration$$Lambda/0x000001d3c8b98718.class\\E"
+    "pattern":"\\Qorg/springframework/boot/autoconfigure/data/web/SpringDataWebAutoConfiguration$$Lambda/0x0000021d1ebab990.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/boot/autoconfigure/data/web/SpringDataWebAutoConfiguration.class\\E"
   }, {
@@ -1221,7 +1227,7 @@
   }, {
     "pattern":"\\Qorg/springframework/boot/autoconfigure/jdbc/metadata/DataSourcePoolMetadataProvidersConfiguration$CommonsDbcp2PoolDataSourceMetadataProviderConfiguration.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/boot/autoconfigure/jdbc/metadata/DataSourcePoolMetadataProvidersConfiguration$HikariPoolDataSourceMetadataProviderConfiguration$$Lambda/0x000001d3c859de90.class\\E"
+    "pattern":"\\Qorg/springframework/boot/autoconfigure/jdbc/metadata/DataSourcePoolMetadataProvidersConfiguration$HikariPoolDataSourceMetadataProviderConfiguration$$Lambda/0x0000021d1e5a22c8.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/boot/autoconfigure/jdbc/metadata/DataSourcePoolMetadataProvidersConfiguration$HikariPoolDataSourceMetadataProviderConfiguration.class\\E"
   }, {
@@ -1623,7 +1629,7 @@
   }, {
     "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancedRetryFactory.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$$Lambda/0x000001d3c8bf9980.class\\E"
+    "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$$Lambda/0x0000021d1ec0b438.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig.class\\E"
   }, {
@@ -1631,7 +1637,7 @@
   }, {
     "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryAutoConfiguration.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryInterceptorAutoConfiguration$$Lambda/0x000001d3c8bf9760.class\\E"
+    "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryInterceptorAutoConfiguration$$Lambda/0x0000021d1ec0b218.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryInterceptorAutoConfiguration.class\\E"
   }, {
@@ -1645,7 +1651,7 @@
   }, {
     "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerClientsProperties.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerDefaultMappingsProviderAutoConfiguration$$Lambda/0x000001d3c85128f0.class\\E"
+    "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerDefaultMappingsProviderAutoConfiguration$$Lambda/0x0000021d1e516cf8.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/client/loadbalancer/LoadBalancerDefaultMappingsProviderAutoConfiguration.class\\E"
   }, {
@@ -1715,7 +1721,7 @@
   }, {
     "pattern":"\\Qorg/springframework/cloud/consul/ConditionalOnConsulEnabled.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/cloud/consul/ConsulAutoConfiguration$$Lambda/0x000001d3c8966268.class\\E"
+    "pattern":"\\Qorg/springframework/cloud/consul/ConsulAutoConfiguration$$Lambda/0x0000021d1e96e6d0.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/consul/ConsulAutoConfiguration$ConsulHealthConfig.class\\E"
   }, {
@@ -1751,7 +1757,7 @@
   }, {
     "pattern":"\\Qorg/springframework/cloud/consul/discovery/HeartbeatProperties.class\\E"
   }, {
-    "pattern":"\\Qorg/springframework/cloud/consul/discovery/ReregistrationPredicate$$Lambda/0x000001d3c89e7bc8.class\\E"
+    "pattern":"\\Qorg/springframework/cloud/consul/discovery/ReregistrationPredicate$$Lambda/0x0000021d1e9a4d10.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/consul/discovery/ReregistrationPredicate.class\\E"
   }, {
@@ -1894,6 +1900,10 @@
     "pattern":"\\Qorg/springframework/cloud/openfeign/FeignAutoConfiguration$HttpClient5FeignConfiguration.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/openfeign/FeignAutoConfiguration$Oauth2FeignConfiguration.class\\E"
+  }, {
+    "pattern":"\\Qorg/springframework/cloud/openfeign/FeignAutoConfiguration$OkHttpFeignConfiguration$DisableValidationTrustManager.class\\E"
+  }, {
+    "pattern":"\\Qorg/springframework/cloud/openfeign/FeignAutoConfiguration$OkHttpFeignConfiguration$TrustAllHostnames.class\\E"
   }, {
     "pattern":"\\Qorg/springframework/cloud/openfeign/FeignAutoConfiguration$OkHttpFeignConfiguration.class\\E"
   }, {
