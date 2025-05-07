@@ -36,7 +36,7 @@ spring:
       okhttp:
         enabled: true
       httpclient:
-        connection-timeout: 2000
+        connection-timeout: 6000
         max-connections: 200
 notification:
   user: ${NOTIFICATION_RECEIVER}
